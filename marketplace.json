@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "Enterprise governance and workflow plugin",
   "owner": {
-    "name": "Evyasys Software Solutions"
+    "name": "Evyasys Software Solutions",
+    "url": "https://github.com/Evyasys-Software-Solutions",
+    "email": "contact@evyasys.com"
   }
 }
