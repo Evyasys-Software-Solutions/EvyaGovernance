@@ -1,0 +1,19 @@
+{
+  "name": "evyasys",
+  "version": "0.2.0",
+  "description": "Evyasys delivery pipeline plugin — story → dev → QA → release",
+  "author": "Evya Systems",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "scripts": {
+    "setup": "node -e \"require('./scripts/lib/config')\" && echo 'Config loader OK'",
+    "scan": "python3 scripts/repo_scan.py --summary"
+  },
+  "keywords": ["evyasys", "evya", "azure-devops", "teams", "agile", "delivery"]
+}

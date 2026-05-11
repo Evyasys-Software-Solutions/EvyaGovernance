@@ -1,0 +1,16 @@
+provider: azure_devops
+objects:
+  epic:
+    type: work_item
+    work_item_type: Epic
+  story:
+    type: work_item
+    work_item_type: User Story
+  task:
+    type: work_item
+    work_item_type: Task
+sync:
+  on_confirmation:
+    create_or_link_epic: true
+    create_story: true
+    move_to_backlog: true

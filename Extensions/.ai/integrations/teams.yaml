@@ -1,0 +1,8 @@
+provider: teams
+events:
+  story_ready_for_confirmation:
+    message: "Story draft is ready for review."
+  story_confirmed:
+    message: "Story confirmed and moved to the board."
+  epic_linked:
+    message: "Story linked to epic."

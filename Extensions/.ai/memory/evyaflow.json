@@ -1,0 +1,40 @@
+{
+  "_comment": "Runtime memory for the Evyasys session-start hook. Merged into every /Evya* command's context. Project-level memory in .evyasys/memory/ takes priority over this file.",
+  "version": "0.2.0",
+  "plugin": "evyasys",
+
+  "story_id_counter": 1001,
+
+  "known_epics": [],
+  "known_stories": [],
+
+  "team_glossary": {
+    "requester": "The person who initiates a business request",
+    "approver": "The person who must confirm before the request proceeds",
+    "backlog": "The prioritised list of stories ready for development",
+    "epic": "A group of related stories delivering one business capability",
+    "DoR": "Definition of Ready — gates a story into a sprint",
+    "DoD": "Definition of Done — gates a story out of development",
+    "AC": "Acceptance Criterion — a testable condition the story must satisfy"
+  },
+
+  "recurring_patterns": [],
+
+  "delivery_rules": {
+    "business_first": true,
+    "no_tech_in_story": true,
+    "human_confirmation_required": true,
+    "dry_run_by_default": false,
+    "self_review_before_show": true,
+    "ask_only_critical_questions": true
+  },
+
+  "workflow_states": {
+    "create-story":   { "ado_state": "New",          "teams_event": "story-created" },
+    "create-subtask": { "ado_state": "New",          "teams_event": null },
+    "start-dev":      { "ado_state": "In Progress",  "teams_event": "dev-kickoff"  },
+    "finish-dev":     { "ado_state": "Ready for QA", "teams_event": "dev-finished" },
+    "start-qa":       { "ado_state": "In QA",        "teams_event": "qa-started"   },
+    "finish-qa":      { "ado_state": "Done",         "teams_event": "qa-finished"  }
+  }
+}

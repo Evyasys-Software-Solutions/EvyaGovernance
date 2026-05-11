@@ -1,0 +1,13 @@
+{
+  "name": "evyasys-marketplace",
+  "description": "Local dev marketplace for Evyasys. Add this folder via `/plugin marketplace add` to install the plugin from source.",
+  "plugins": [
+    {
+      "id": "evyasys",
+      "name": "Evyasys",
+      "path": ".",
+      "version": "0.2.0",
+      "description": "End-to-end /Evya* delivery pipeline."
+    }
+  ]
+}

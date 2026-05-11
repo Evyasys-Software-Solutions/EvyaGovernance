@@ -1,0 +1,26 @@
+# .evyasys/project.yaml — checked into your project's git repo.
+# Each project (i.e. each git repo) gets its own copy with its own settings.
+# Secrets (the personal access token) DO NOT live here — they live per-user
+# in ~/.evyasys/credentials. This file is safe to commit.
+
+# Human-readable project name (shows up in Teams cards).
+name: "Customer Portal"
+
+# Story ID prefix (also used in branch and PR names).
+story:
+  id_prefix: "EVYA"
+
+# Azure DevOps target for /Evya* commands.
+azure_devops:
+  org: "EvyaCorp"
+  project: "CustomerPortal"
+
+# Microsoft Teams incoming webhook for this project's channel.
+# Different projects → different webhooks. The /Evya* commands will
+# prompt for this and write it here automatically the first time.
+teams:
+  webhook: ""
+
+# Optional: override Definition-of-Ready or naming-conventions for this project
+# by adding files under `.evyasys/rules/` next to this file. They merge over
+# the plugin defaults.

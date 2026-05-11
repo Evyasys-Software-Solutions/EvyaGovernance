@@ -1,0 +1,41 @@
+{
+  "description": "Evyasys delivery pipeline commands. Every command starts with `Evya` so they work in any agent runtime that supports slash commands — no namespace required.",
+  "commands": [
+    {
+      "name": "EvyaCreateStory",
+      "description": "Draft a complete user story from project context and (on approval) push it to Azure DevOps + Teams.",
+      "skill": "evyasys-create-story",
+      "args": []
+    },
+    {
+      "name": "EvyaCreateSubtask",
+      "description": "Break a story into developer-ready subtasks. Requires StoryID.",
+      "skill": "evyasys-create-subtask",
+      "args": [{ "name": "storyId", "required": true }]
+    },
+    {
+      "name": "EvyaStartDev",
+      "description": "Kick off development for a story: branch/PR checklist, set ADO state to In Progress.",
+      "skill": "evyasys-start-dev",
+      "args": [{ "name": "storyId", "required": true }]
+    },
+    {
+      "name": "EvyaFinishDev",
+      "description": "Complete development: TDD review, merge checklist, transition to Ready for QA.",
+      "skill": "evyasys-finish-dev",
+      "args": [{ "name": "storyId", "required": true }]
+    },
+    {
+      "name": "EvyaStartQa",
+      "description": "Generate test plan/cases and transition the story to In QA.",
+      "skill": "evyasys-start-qa",
+      "args": [{ "name": "storyId", "required": true }]
+    },
+    {
+      "name": "EvyaFinishQa",
+      "description": "Validate QA pass, prepare release notes, transition the story to Done.",
+      "skill": "evyasys-finish-qa",
+      "args": [{ "name": "storyId", "required": true }]
+    }
+  ]
+}

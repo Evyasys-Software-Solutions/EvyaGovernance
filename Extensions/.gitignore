@@ -1,0 +1,17 @@
+# Evyasys
+.env
+.env.local
+node_modules/
+__pycache__/
+*.pyc
+*.pyc
+.DS_Store
+test.txt
+
+# Generated story + epic artefacts belong in the *project* repo, not the plugin repo.
+docs/stories/
+docs/epics/
+
+# Editor
+.vscode/
+.idea/

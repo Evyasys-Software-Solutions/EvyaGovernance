@@ -1,0 +1,85 @@
+# Evyasys command registry — maps each /Evya* trigger to its workflow files.
+# All files are relative to the plugin root's .ai/ folder unless otherwise noted.
+
+commands:
+
+  create-story:
+    trigger: /EvyaCreateStory
+    skill: evyasys-create-story
+    agent: workflows/create-story/AGENT.md
+    workflow: workflows/create-story/WORKFLOW.md
+    prompt: workflows/create-story/PROMPT.md
+    template: workflows/create-story/STORY_TEMPLATE.md
+    epic_template: workflows/create-story/EPIC_TEMPLATE.md
+    checklist: workflows/create-story/CHECKLIST.md
+    validation: workflows/create-story/VALIDATION.md
+    questioning: workflows/create-story/QUESTIONING.md
+    integration: workflows/create-story/INTEGRATION.md
+    examples: workflows/create-story/EXAMPLES.md
+    output: docs/stories/<id>_UserStory.md
+
+  create-subtask:
+    trigger: /EvyaCreateSubtask
+    skill: evyasys-create-subtask
+    agent: workflows/create-subtask/AGENT.md
+    prompt: workflows/create-subtask/PROMPT.md
+    template: workflows/create-subtask/TASK_TEMPLATE.md
+    checklist: workflows/create-subtask/CHECKLIST.md
+    args:
+      - name: storyId
+        required: true
+        hint: "e.g. EVYA-1042"
+    output: docs/stories/<id>_Subtasks.md
+
+  start-dev:
+    trigger: /EvyaStartDev
+    skill: evyasys-start-dev
+    agent: workflows/start-dev/AGENT.md
+    prompt: workflows/start-dev/PROMPT.md
+    checklist: workflows/start-dev/CHECKLIST.md
+    args:
+      - name: storyId
+        required: true
+    ado_state: "In Progress"
+    teams_event: dev-kickoff
+
+  finish-dev:
+    trigger: /EvyaFinishDev
+    skill: evyasys-finish-dev
+    agent: workflows/finish-dev/AGENT.md
+    prompt: workflows/finish-dev/PROMPT.md
+    checklist: workflows/finish-dev/CHECKLIST.md
+    args:
+      - name: storyId
+        required: true
+    ado_state: "Ready for QA"
+    teams_event: dev-finished
+    output: docs/stories/<id>_DevSummary.md
+
+  start-qa:
+    trigger: /EvyaStartQa
+    skill: evyasys-start-qa
+    agent: workflows/start-qa/AGENT.md
+    prompt: workflows/start-qa/PROMPT.md
+    template: workflows/start-qa/TEST_PLAN_TEMPLATE.md
+    checklist: workflows/start-qa/CHECKLIST.md
+    args:
+      - name: storyId
+        required: true
+    ado_state: "In QA"
+    teams_event: qa-started
+    output: docs/stories/<id>_TestPlan.md
+
+  finish-qa:
+    trigger: /EvyaFinishQa
+    skill: evyasys-finish-qa
+    agent: workflows/finish-qa/AGENT.md
+    prompt: workflows/finish-qa/PROMPT.md
+    template: workflows/finish-qa/RELEASE_NOTES_TEMPLATE.md
+    checklist: workflows/finish-qa/CHECKLIST.md
+    args:
+      - name: storyId
+        required: true
+    ado_state: "Done"
+    teams_event: qa-finished
+    output: docs/stories/<id>_ReleaseNotes.md

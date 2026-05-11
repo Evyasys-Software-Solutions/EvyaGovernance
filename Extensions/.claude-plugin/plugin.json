@@ -1,0 +1,29 @@
+{
+  "name": "evyasys",
+  "id": "evyasys",
+  "version": "0.2.0",
+  "description": "Evyasys: tool-agnostic delivery pipeline (story → dev → QA → release) driven by /Evya* commands. Plain markdown + Node + Python — no vendor lock-in.",
+  "author": "Evya Systems",
+  "license": "MIT",
+  "main": "hooks/evyasys-load-context.js",
+  "engines": {
+    "claude-code": ">=1.0.0"
+  },
+  "keywords": [
+    "evyasys",
+    "evya",
+    "azure-devops",
+    "teams",
+    "user-story",
+    "agile",
+    "delivery-pipeline"
+  ],
+  "directories": {
+    "commands": "commands",
+    "skills": "skills",
+    "hooks": "hooks"
+  },
+  "hooks": {
+    "session-start": "hooks/evyasys-load-context.js"
+  }
+}

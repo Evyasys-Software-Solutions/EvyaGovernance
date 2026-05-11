@@ -1,0 +1,30 @@
+version: 1
+name: EvyaFlow
+description: AI-assisted delivery control plane stored in Git.
+source_of_truth: git
+
+defaults:
+  confirmation_required: true
+  business_first: true
+  no_technical_details_in_business_story: true
+  repo_scan_required: true
+  self_review_required: true
+
+artifacts:
+  stories_path: docs/stories
+  epics_path: docs/epics
+  decisions_path: .ai/memory/decisions.md
+  learnings_path: .ai/memory/learnings.md
+
+integrations:
+  repo: local_git
+  board: azure_devops
+  chat: teams
+
+workflow_packages:
+  - workflows/create-story
+  - workflows/create-subtask
+  - workflows/start-dev
+  - workflows/finish-dev
+  - workflows/start-qa
+  - workflows/finish-qa

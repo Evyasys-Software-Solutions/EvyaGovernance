@@ -1,0 +1,11 @@
+provider: git
+sources:
+  - local_repository
+  - docs
+  - transcripts
+  - wireframes
+actions:
+  - scan_context
+  - detect_impact
+  - link_related_files
+  - store_artifacts
