@@ -1,45 +1,8 @@
 {
-  "schema_version": "1.0",
   "name": "EvyaGovernance",
-  "display_name": "Evya Governance",
-  "description": "Enterprise governance, workflow automation, compliance management, and team operational controls plugin for Claude and internal business systems.",
   "version": "1.0.0",
-  "author": {
-    "name": "Evyasys Software Solutions",
-    "email": "support@evyasys.com",
-    "url": "https://github.com/Evyasys-Software-Solutions"
-  },
+  "description": "Enterprise governance and workflow plugin",
   "owner": {
-    "name": "Evyasys Software Solutions",
-    "email": "business@evyasys.com"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git"
-  },
-  "homepage": "https://github.com/Evyasys-Software-Solutions/EvyaGovernance",
-  "license": "MIT",
-  "keywords": [
-    "governance",
-    "workflow",
-    "automation",
-    "enterprise",
-    "compliance",
-    "claude-plugin",
-    "business-operations"
-  ],
-  "entrypoint": "setup.sh",
-  "runtime": "node",
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "permissions": [
-    "filesystem",
-    "network"
-  ],
-  "capabilities": {
-    "commands": true,
-    "workflows": true,
-    "team_management": true
+    "name": "Evyasys Software Solutions"
   }
 }
