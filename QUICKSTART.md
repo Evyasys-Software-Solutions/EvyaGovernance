@@ -1,152 +1,115 @@
 # Evyasys — Quick-Start Guide
 
 > **One-page reference for new team members.**
-> Full details are in `README.md`. This card gets you running in under 10 minutes.
+> Full details are in `README.md`. This card gets you running in under 5 minutes.
 
 ---
 
 ## Step 1 — Install the plugin (once per machine)
 
-Clone the Evyasys plugin folder to a stable location, then register it:
+Open your AI agent and run these two commands:
 
-```bash
-# macOS / Linux
-bash ~/tools/evyasys/setup.sh
-
-# In your AI agent:
-/plugin marketplace add ~/tools/evyasys
-/plugin install evyasys
+```
+/plugin marketplace add https://github.com/dhaval-patel/EvyaGovernance
 ```
 
-```powershell
-# Windows
-powershell -ExecutionPolicy Bypass -File C:\Tools\evyasys\setup.ps1
-
-# In your AI agent:
-/plugin marketplace add C:\Tools\evyasys
-/plugin install evyasys
+```
+/plugin install evyasys@EvyaGovernance
 ```
 
-The setup script checks for Node.js, Python, and all required workflow files.
-If anything is missing it tells you exactly what to fix.
+That's it — no cloning, no scripts. The plugin installs directly from GitHub.
 
 ---
 
 ## Step 2 — Save your Azure DevOps PAT (once per machine)
 
-```bash
-# macOS / Linux
-bash ~/tools/evyasys/scripts/login.sh
+Evyasys needs a token to create and update work items in Azure DevOps.
 
-# Windows
-powershell -ExecutionPolicy Bypass -File C:\Tools\evyasys\scripts\login.ps1
-```
-
-Generate the PAT at `https://dev.azure.com/<org>/_usersSettings/tokens`
+Generate one at `https://dev.azure.com/<your-org>/_usersSettings/tokens`
 — scope: **Work Items (Read & write)**.
 
-Stored at `~/.evyasys/credentials` (mode 0600) — never committed to any repo.
+Then save it:
+
+```bash
+# macOS / Linux
+bash ~/.claude/plugins/evyasys/scripts/login.sh
+
+# Windows
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.claude\plugins\evyasys\scripts\login.ps1"
+```
+
+Stored at `~/.evyasys/credentials` — never committed to any repo.
 
 ---
 
 ## Step 3 — Add Evyasys config to your project repo (once per project)
 
 ```bash
-# from your project root
-cp -r ~/tools/evyasys/project-template/.evyasys ./.evyasys
-# Windows: Copy-Item -Recurse C:\Tools\evyasys\project-template\.evyasys .\.evyasys
+# macOS / Linux
+cp -r ~/.claude/plugins/evyasys/project-template/.evyasys ./.evyasys
 
-# Open .evyasys/project.yaml and fill in:
-#   name: "Your Project Name"
-#   azure_devops.org: "YourAzureOrg"
-#   azure_devops.project: "YourAzureProject"
+# Windows
+Copy-Item -Recurse "$env:USERPROFILE\.claude\plugins\evyasys\project-template\.evyasys" ".\.evyasys"
+```
 
+Edit `.evyasys/project.yaml` — fill in your project name, ADO org, ADO project — then commit:
+
+```bash
 git add .evyasys/project.yaml
 git commit -m "Add Evyasys config"
 git push
 ```
 
-Other teammates `git pull` and they're set.
-The Teams webhook is saved here too — Evyasys will prompt and write it on first use.
+Teammates just `git pull` — they're set. The Teams webhook is stored here too and gets set automatically on first use.
 
 ---
 
 ## The 6 commands — full delivery pipeline
 
-Open your AI agent from **inside your project folder**, then:
+Open your AI agent from inside your project folder, then:
 
-| Command | Who runs it | What happens |
+| Command | Who | What happens |
 |---|---|---|
-| `/EvyaCreateStory` | BA / PO | Drafts business story → saves to `docs/stories/` → creates ADO item → notifies Teams |
-| `/EvyaCreateSubtask EVYA-1042` | Tech Lead | Decomposes story into 3–8 tasks → creates ADO child Tasks |
-| `/EvyaStartDev EVYA-1042` | Eng Lead | **Brainstorm** (3+ approaches, team approval) → gates check → ADO **In Progress** → Teams kickoff |
-| `/EvyaFinishDev EVYA-1042` | Dev | AC coverage audit → diff check → Dev Summary → ADO **Ready for QA** → Teams handoff |
-| `/EvyaStartQa EVYA-1042` | QA | Test plan (Gherkin) → ADO **In QA** → Teams card |
-| `/EvyaFinishQa EVYA-1042` | QA / Release | TC validation + release notes → ADO **Done** → Teams release card |
+| `/EvyaCreateStory` | BA / PO | Asks questions one at a time → drafts business story → saves to chosen folder → ADO item → Teams |
+| `/EvyaCreateSubtask EVYA-1042` | Tech Lead | 2–3 decomposition strategies → team approval → 3–8 dev tasks → ADO child Tasks |
+| `/EvyaStartDev EVYA-1042` | Eng Lead | **Technical brainstorm** (3+ approaches, team approval) → gates → ADO **In Progress** → Teams |
+| `/EvyaFinishDev EVYA-1042` | Dev | AC audit → diff check → Dev Summary → ADO **Ready for QA** → Teams |
+| `/EvyaStartQa EVYA-1042` | QA | Confirms environment + data → test plan → ADO **In QA** → Teams |
+| `/EvyaFinishQa EVYA-1042` | QA / Release | TC validation + release notes → ADO **Done** → Teams |
 
-**Nothing touches ADO or Teams until you explicitly approve.** Every command
-shows its output first.
-
----
-
-## The start-dev brainstorm (what makes it different)
-
-`/EvyaStartDev` doesn't just check boxes. It first runs a structured technical brainstorm:
-
-1. Reads the story + subtasks + codebase scan
-2. Generates **at least 3 distinct** implementation approaches — each with explicit pros, cons, and effort delta
-3. Recommends one with a clear reason
-4. **Waits for your team to agree** before running the process gates
-5. Saves the agreed approach to `docs/stories/<id>_TechBrainstorm.md` — it travels with the PR
+**Nothing touches ADO or Teams until you explicitly approve.**
 
 ---
 
 ## Output files (all in your project repo)
 
 ```
-docs/stories/
-  EVYA-1042_UserStory.md       ← /EvyaCreateStory
-  EVYA-1042_Subtasks.md        ← /EvyaCreateSubtask
-  EVYA-1042_TechBrainstorm.md  ← /EvyaStartDev
-  EVYA-1042_DevSummary.md      ← /EvyaFinishDev
-  EVYA-1042_TestPlan.md        ← /EvyaStartQa
-  EVYA-1042_ReleaseNotes.md    ← /EvyaFinishQa
+docs/
+  stories/
+    EVYA-1042_UserStory.md        ← /EvyaCreateStory
+    EVYA-1042_Subtasks.md         ← /EvyaCreateSubtask
+    EVYA-1042_TechBrainstorm.md   ← /EvyaStartDev
+    EVYA-1042_DevSummary.md       ← /EvyaFinishDev
+    EVYA-1042_TestPlan.md         ← /EvyaStartQa
+    EVYA-1042_ReleaseNotes.md     ← /EvyaFinishQa
+  epics/
+    EP-001/
+      EVYA-1042_UserStory.md      ← reference copy when Epic is set
 ```
-
-All artefacts committed to git alongside the code.
 
 ---
 
-## Dry-run mode — preview without side effects
+## Dry-run mode
+
+Preview any command without touching ADO or Teams:
 
 ```bash
 # macOS / Linux
 EVYASYS_DRY_RUN=1 /EvyaCreateStory
 
 # Windows PowerShell
-$env:EVYASYS_DRY_RUN = "1"
-/EvyaCreateStory
+$env:EVYASYS_DRY_RUN = "1"; /EvyaStartDev EVYA-1042
 ```
-
-Logs what _would_ be sent to ADO and Teams without actually doing it.
-Use this when testing new project configs or custom overrides.
-
----
-
-## Customising for your project
-
-Override any plugin default by adding a same-named file in your project's `.evyasys/`:
-
-| You want to change | Create this in your project |
-|---|---|
-| Story rules / naming | `.evyasys/rules/<same-name>.md` |
-| A workflow prompt | `.evyasys/workflows/<workflow>/<same-name>.md` |
-| Business glossary | `.evyasys/memory/glossary.json` |
-| Known decisions | `.evyasys/memory/decisions.md` |
-| Module knowledge | `.evyasys/memory/modules.md` |
-| Input documents | `.evyasys/inputs/<any-file>` |
-
-The session hook merges all layers automatically — project overrides win.
 
 ---
 
@@ -154,21 +117,19 @@ The session hook merges all layers automatically — project overrides win.
 
 | Symptom | Fix |
 |---|---|
-| `No PAT provided` | Run `scripts/login.sh` (or `login.ps1`) |
-| `No Teams webhook configured` | Run any `/Evya*` command — it prompts and saves to `project.yaml` |
-| ADO calls return 401 | PAT expired — re-run `scripts/login.sh` |
-| `Missing AZURE_ORG / AZURE_PROJECT` | Edit `.evyasys/project.yaml` in your project root |
-| Wrong project config loaded | Make sure you're running from inside the project root |
-| Dry-run but want live | Remove `EVYASYS_DRY_RUN` from your shell environment |
+| PAT not found | Run `scripts/login.sh` (or `login.ps1`) |
+| Teams webhook missing | Run any `/Evya*` command — it prompts and saves automatically |
+| ADO 401 error | PAT expired — re-run `login.sh` |
+| Missing ADO org/project | Edit `.evyasys/project.yaml` in your project root |
+| Wrong project loaded | Make sure your AI agent is open from inside the project folder |
 
 ---
 
-## Where things live (summary)
+## Where things live
 
 | Location | What | In git? |
 |---|---|---|
-| `~/tools/evyasys/` | Plugin source (commands, skills, workflows) | ✅ Evyasys repo |
-| `<project>/.evyasys/project.yaml` | ADO org/project, Teams webhook, project name | ✅ project repo |
-| `<project>/.evyasys/rules/` etc. | Per-project overrides | ✅ project repo |
+| `~/.claude/plugins/evyasys/` | Plugin (auto-installed) | ✅ EvyaGovernance repo |
+| `<project>/.evyasys/project.yaml` | ADO org/project, Teams webhook | ✅ project repo |
 | `<project>/docs/stories/` | All generated artefacts | ✅ project repo |
 | `~/.evyasys/credentials` | Your Azure DevOps PAT | ❌ never committed |
