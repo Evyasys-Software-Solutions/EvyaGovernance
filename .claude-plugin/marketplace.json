@@ -1,13 +1,16 @@
 {
-  "name": "evyasys-marketplace",
-  "description": "Local dev marketplace for Evyasys. Add this folder via `/plugin marketplace add` to install the plugin from source.",
+  "name": "EvyaGovernance",
+  "version": "1.0.0",
+  "description": "Enterprise governance and workflow plugin",
+  "owner": {
+    "name": "Evyasys Software Solutions",
+    "email": "business@evyasys.com"
+  },
   "plugins": [
     {
-      "id": "evyasys",
-      "name": "Evyasys",
-      "path": ".",
-      "version": "0.2.0",
-      "description": "End-to-end /Evya* delivery pipeline."
+      "name": "evya-governance",
+      "source": "./",
+      "description": "Enterprise governance and workflow plugin"
     }
   ]
 }
