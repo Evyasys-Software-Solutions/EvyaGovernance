@@ -3,7 +3,9 @@
   "id": "evyasys",
   "version": "0.2.0",
   "description": "Evyasys: tool-agnostic delivery pipeline (story → dev → QA → release) driven by /Evya* commands. Plain markdown + Node + Python — no vendor lock-in.",
-  "author": "Evya Systems",
+  "author": {
+    "name": "Evya Systems"
+  },
   "license": "MIT",
   "main": "hooks/evyasys-load-context.js",
   "engines": {
