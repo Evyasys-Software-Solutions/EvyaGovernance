@@ -10,7 +10,7 @@
 Open your AI agent and run these two commands:
 
 ```
-/plugin marketplace add https://github.com/dhaval-patel/EvyaGovernance
+/plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git
 ```
 
 ```

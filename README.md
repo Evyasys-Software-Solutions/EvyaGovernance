@@ -23,7 +23,7 @@ At every stage, nothing touches Azure DevOps or Teams until a human explicitly a
 Register the Evyasys marketplace and install the plugin — two commands:
 
 ```bash
-/plugin marketplace add https://github.com/dhaval-patel/EvyaGovernance
+/plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git
 ```
 
 ```bash
