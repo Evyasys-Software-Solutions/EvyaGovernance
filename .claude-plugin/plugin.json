@@ -10,5 +10,19 @@
   "engines": {
     "claude-code": ">=1.0.0"
   },
+  "keywords": [
+    "evyasys",
+    "evya",
+    "azure-devops",
+    "teams",
+    "user-story",
+    "agile",
+    "delivery-pipeline"
+  ],
+  "directories": {
+    "commands": "commands",
+    "skills": "skills",
+    "hooks": "hooks"
+  },
   "keywords": ["evyasys", "evya", "azure-devops", "teams", "user-story", "agile", "delivery-pipeline"]
 }
