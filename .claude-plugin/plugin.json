@@ -7,25 +7,8 @@
     "name": "Evya Systems"
   },
   "license": "MIT",
-  "main": "hooks/evyasys-load-context.js",
   "engines": {
     "claude-code": ">=1.0.0"
   },
-  "keywords": [
-    "evyasys",
-    "evya",
-    "azure-devops",
-    "teams",
-    "user-story",
-    "agile",
-    "delivery-pipeline"
-  ],
-  "directories": {
-    "commands": "commands",
-    "skills": "skills",
-    "hooks": "hooks"
-  },
-  "hooks": {
-    "session-start": "hooks/evyasys-load-context.js"
-  }
+  "keywords": ["evyasys", "evya", "azure-devops", "teams", "user-story", "agile", "delivery-pipeline"]
 }
