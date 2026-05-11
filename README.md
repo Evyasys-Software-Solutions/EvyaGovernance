@@ -1,202 +1,151 @@
 # Evyasys
 
-A delivery-pipeline plugin for AI agents: story → dev → QA → release, driven by
-single-token slash commands that all start with **`Evya`**.
+Evyasys is a complete AI-assisted delivery pipeline for software teams — story creation, technical brainstorming, development gates, QA planning, and release sign-off — all driven by six slash commands that work inside your AI coding agent.
 
-Built on plain markdown + Node.js + Python — no vendor lock-in.
-Every prompt, rule, template, and checklist lives in Git and travels with your code.
+## Quickstart
 
----
+Install Evyasys for [Claude Code](#claude-code).
 
-## What your team gets
+## How it works
 
-Six commands, every one starts with `Evya`:
+From the moment a BA types `/EvyaCreateStory`, Evyasys takes over the delivery workflow. It doesn't just draft a story — it asks clarifying questions one at a time, scans your repository for context, drafts a board-ready business story, self-reviews it against a Definition-of-Ready checklist, and only then asks for approval before pushing to Azure DevOps and notifying Teams.
 
-| Command | Who runs it | What it does | Output written to your project |
-|---|---|---|---|
-| `/EvyaCreateStory` | BA / PO | Draft a complete business story from project context | `docs/stories/<id>_UserStory.md` |
-| `/EvyaCreateSubtask <id>` | Tech Lead | Decompose a story into 3–8 developer tasks | `docs/stories/<id>_Subtasks.md` |
-| `/EvyaStartDev <id>` | Eng Lead | **Technical brainstorm (3+ approaches) + branch/PR/DoR gates** → ADO **In Progress** | `docs/stories/<id>_TechBrainstorm.md` |
-| `/EvyaFinishDev <id>` | Dev | AC coverage audit + diff check + Dev Summary → ADO **Ready for QA** | `docs/stories/<id>_DevSummary.md` |
-| `/EvyaStartQa <id>` | QA | Comprehensive test plan (Gherkin) → ADO **In QA** | `docs/stories/<id>_TestPlan.md` |
-| `/EvyaFinishQa <id>` | Release Mgr | Validate results + draft release notes → ADO **Done** | `docs/stories/<id>_ReleaseNotes.md` |
+When a developer starts work with `/EvyaStartDev`, the agent runs a full **technical brainstorm** — generates at least three meaningfully different implementation approaches, states pros, cons, and effort delta for each, recommends one with a clear reason, and waits for the team to agree before running any process gates. The agreed approach is saved to the repo so the architectural decision travels with the PR.
 
-All artefacts land **inside the project repo** (in `docs/stories/`), so they
-travel with the code through normal git PRs and reviews.
+At every stage, nothing touches Azure DevOps or Teams until a human explicitly approves.
 
 ---
 
-## How a teammate gets started (3 steps)
+## Installation
 
-### Step 1 — Install the plugin (once per machine)
+### Claude Code
 
-Clone this folder to a stable location on your machine:
+Register the Evyasys marketplace and install the plugin — two commands:
 
 ```bash
-git clone <evyasys-repo-url> C:\Tools\evyasys   # Windows
-git clone <evyasys-repo-url> ~/tools/evyasys     # macOS / Linux
+/plugin marketplace add dhaval-patel/EvyaGovernance
 ```
 
-Then run the setup validator:
+```bash
+/plugin install evyasys@EvyaGovernance
+```
+
+The plugin loads automatically at every session start for any project that has a `.evyasys/project.yaml` file.
+
+### Per-project setup (once per repo)
+
+Drop the Evyasys config into your project and commit it:
 
 ```bash
 # macOS / Linux
-bash ~/tools/evyasys/setup.sh
+cp -r ~/.claude/plugins/evyasys/project-template/.evyasys ./.evyasys
 
 # Windows
-powershell -ExecutionPolicy Bypass -File C:\Tools\evyasys\setup.ps1
+Copy-Item -Recurse "$env:USERPROFILE\.claude\plugins\evyasys\project-template\.evyasys" ".\.evyasys"
 ```
 
-Register the plugin in your AI agent:
+Edit `.evyasys/project.yaml` — fill in your project name and Azure DevOps org/project — then:
 
-```
-/plugin marketplace add ~/tools/evyasys
-/plugin install evyasys
+```bash
+git add .evyasys/project.yaml && git commit -m "Add Evyasys config" && git push
 ```
 
-### Step 2 — Save your personal access token (once per machine)
+Teammates `git pull` and they're set. The Teams webhook is stored here too — Evyasys prompts for it automatically on first use and writes it back so the whole team picks it up.
+
+### Azure DevOps PAT (once per machine)
+
+Generate a token at `https://dev.azure.com/<your-org>/_usersSettings/tokens` — scope: **Work Items (Read & write)** — then save it:
 
 ```bash
 # macOS / Linux
-bash ~/tools/evyasys/scripts/login.sh
+bash ~/.claude/plugins/evyasys/scripts/login.sh
 
 # Windows
-powershell -ExecutionPolicy Bypass -File C:\Tools\evyasys\scripts\login.ps1
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.claude\plugins\evyasys\scripts\login.ps1"
 ```
 
-Generate the PAT at `https://dev.azure.com/<org>/_usersSettings/tokens`,
-scope **Work Items (Read & write)**. The token is stored at
-`~/.evyasys/credentials` with `0600` permissions and is **never** written to
-any project repo.
+Stored at `~/.evyasys/credentials` (mode 0600). Never committed.
 
-### Step 3 — Drop a `.evyasys/` folder into each project
+---
+
+## The Six Commands
+
+| Command | Who | What it does |
+|---|---|---|
+| `/EvyaCreateStory` | BA / PO | Asks clarifying questions one at a time → drafts business story → saves to your chosen folder → pushes to ADO → notifies Teams. If an Epic is set, files a reference copy under `docs/epics/<id>/` and links the ADO item to the parent Epic. |
+| `/EvyaCreateSubtask EVYA-id` | Tech Lead | Presents 2–3 decomposition strategies (vertical slices / horizontal layers / spike-first), waits for team approval, then writes 3–8 developer tasks — each linked to story ACs and ≤ 1 day of work. |
+| `/EvyaStartDev EVYA-id` | Eng Lead | Full **technical brainstorm**: 3+ distinct approaches with pros, cons, effort delta, recommendation. Team agrees on approach. Then runs branch / PR / DoR / dependency gates. ADO → **In Progress**. |
+| `/EvyaFinishDev EVYA-id` | Dev | Audits AC coverage (asks one question at a time for any uncovered AC), runs DoD checklist, scans diff for scope anomalies. Produces Dev Summary as QA's starting document. ADO → **Ready for QA**. |
+| `/EvyaStartQa EVYA-id` | QA | Confirms test environment and data before writing anything. Generates AC-driven positive/negative/edge/regression/non-functional test plan. Gherkin where useful. ADO → **In QA**. |
+| `/EvyaFinishQa EVYA-id` | QA / Release | Verifies every TC has a recorded outcome, confirms no P0/P1 defects open, drafts user-facing release notes. ADO → **Done**. |
+
+**Nothing touches ADO or Teams until you explicitly approve.**
+
+---
+
+## Artefacts (all saved in your project repo)
+
+```
+docs/
+  stories/
+    EVYA-1042_UserStory.md        ← /EvyaCreateStory
+    EVYA-1042_Subtasks.md         ← /EvyaCreateSubtask
+    EVYA-1042_TechBrainstorm.md   ← /EvyaStartDev
+    EVYA-1042_DevSummary.md       ← /EvyaFinishDev
+    EVYA-1042_TestPlan.md         ← /EvyaStartQa
+    EVYA-1042_ReleaseNotes.md     ← /EvyaFinishQa
+  epics/
+    EP-001/
+      EVYA-1042_UserStory.md      ← reference copy when Epic is set
+```
+
+All artefacts committed to git alongside code — they travel with PRs.
+
+---
+
+## Dry-run mode
+
+Preview any command without touching ADO or Teams:
 
 ```bash
-# from the root of your project
-cp -r ~/tools/evyasys/project-template/.evyasys ./.evyasys
-# Edit .evyasys/project.yaml — fill in name, ADO org/project
-git add .evyasys/project.yaml
-git commit -m "Add Evyasys config"
-git push
+# macOS / Linux
+EVYASYS_DRY_RUN=1 /EvyaCreateStory
+
+# Windows PowerShell
+$env:EVYASYS_DRY_RUN = "1"
+/EvyaStartDev EVYA-1042
 ```
-
-Other teammates just `git pull` and they're set.
-The Teams webhook is stored in `project.yaml` too — Evyasys will prompt you on
-first use and write it back so the team picks it up automatically.
-
----
-
-## Where things live (and why)
-
-| Where | Owned by | What | In git? |
-|---|---|---|---|
-| `<plugin>/.ai/` | Evyasys (shared) | Default rules, prompts, templates, checklists | ✅ plugin repo |
-| `<project>/.evyasys/project.yaml` | per project | Project name, ADO org/project, Teams webhook | ✅ project repo |
-| `<project>/.evyasys/rules/` etc. | per project | Optional overrides on top of plugin defaults | ✅ project repo |
-| `<project>/docs/stories/` | per project | All generated artefacts | ✅ project repo |
-| `~/.evyasys/credentials` | per user | Personal Access Token | ❌ never committed |
-
----
-
-## Modes
-
-**Live (default)** — every approved command creates/updates the ADO work item
-and posts the Teams card.
-
-**Dry-run preview** — set `EVYASYS_DRY_RUN=1` to log payloads without
-touching ADO or Teams. Use this when iterating on prompts.
-
-```bash
-EVYASYS_DRY_RUN=1 /EvyaCreateStory     # preview only
-/EvyaCreateStory                        # live (default)
-```
-
----
-
-## The start-dev brainstorm
-
-`/EvyaStartDev` runs a full technical brainstorm before any gate check:
-
-1. Reads the story + subtasks + repo scan in full.
-2. Generates **at least 3 distinct** implementation approaches — each with explicit pros, cons, and effort delta.
-3. Recommends one with a clear deciding reason and top risk.
-4. **Waits for team approval** before proceeding to process gates.
-5. Saves the agreed approach to `docs/stories/<id>_TechBrainstorm.md` so the decision travels with the PR.
-
-Only after the brainstorm is agreed does it check branch naming, draft PR,
-Definition of Ready, and dependency clearance.
-
----
-
-## Why "starts with Evya" matters
-
-Single-token commands like `/EvyaCreateStory` work in any agent runtime that
-supports slash commands — no namespace required. The markdown prompts, rules,
-checklists, and integration scripts are portable: if your team changes AI
-tools, only the thin runtime adapter needs updating.
 
 ---
 
 ## Customising for your project
 
-Override any plugin default by placing a same-named file under your project's
-`.evyasys/` folder. The session-start hook merges all layers — project wins:
+Override any plugin default by placing a same-named file under `.evyasys/` in your project repo:
 
-| To change | Add this file in your project |
+| To change | File in your project |
 |---|---|
 | Naming conventions | `.evyasys/rules/naming.md` |
 | Definition of Ready | `.evyasys/rules/definition-of-ready.md` |
-| A workflow's prompt | `.evyasys/workflows/<name>/PROMPT.md` |
+| Any workflow prompt | `.evyasys/workflows/<name>/PROMPT.md` |
 | Business glossary | `.evyasys/memory/glossary.json` |
+| Past decisions | `.evyasys/memory/decisions.md` |
 | Module knowledge | `.evyasys/memory/modules.md` |
 | Input documents | `.evyasys/inputs/<any-file>` |
 
+Project overrides always win over plugin defaults.
+
 ---
 
-## File structure
+## Philosophy
 
-```
-evyasys/                                    ← install location
-├── README.md
-├── QUICKSTART.md                           ← one-page team reference card
-├── setup.sh / setup.ps1                    ← one-time machine validation
-├── .env.example                            ← optional CI overrides
-├── .claude-plugin/
-│   ├── plugin.json
-│   └── marketplace.json
-├── commands/
-│   ├── command.json
-│   ├── EvyaCreateStory.md
-│   ├── EvyaCreateSubtask.md
-│   ├── EvyaStartDev.md                     ← brainstorm + gates
-│   ├── EvyaFinishDev.md
-│   ├── EvyaStartQa.md
-│   └── EvyaFinishQa.md
-├── skills/
-│   ├── evyasys-create-story/   {SKILL.md, hooks.js}
-│   ├── evyasys-create-subtask/ {SKILL.md, hooks.js}
-│   ├── evyasys-start-dev/      {SKILL.md, hooks.js}   ← saves TechBrainstorm.md
-│   ├── evyasys-finish-dev/     {SKILL.md, hooks.js}
-│   ├── evyasys-start-qa/       {SKILL.md, hooks.js}
-│   └── evyasys-finish-qa/      {SKILL.md, hooks.js}
-├── hooks/
-│   └── evyasys-load-context.js             ← merges plugin + project + user layers
-├── scripts/
-│   ├── login.sh / login.ps1               ← one-time PAT capture (per user)
-│   ├── repo_scan.py
-│   ├── lib/{config.js, dryrun.js, evyasys_config.py}
-│   └── integrations/
-│       ├── azure_devops.{js,py}
-│       └── teams_webhook.{js,py}
-├── .ai/                                    ← plugin defaults (all versioned)
-│   ├── manifest.yaml
-│   ├── commands.yaml
-│   ├── memory/evyaflow.json
-│   ├── rules/
-│   ├── workflows/{create-story, create-subtask, start-dev, finish-dev, start-qa, finish-qa}/
-│   └── ...
-└── project-template/
-    └── .evyasys/
-        ├── project.yaml.example
-        └── README.md
-```
+- **Humans confirm, AI drafts** — no ADO or Teams action without explicit approval
+- **Business stories stay business** — no class names, endpoints, or implementation detail in stories
+- **One question at a time** — never overwhelms with question lists
+- **Evidence before claims** — every gate requires proof, not assertions
+- **Decisions travel with code** — brainstorms, dev summaries, and test plans are committed to git
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE) for details.
