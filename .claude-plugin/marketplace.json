@@ -8,7 +8,7 @@
   },
   "plugins": [
     {
-      "name": "evya-governance",
+      "name": "evyasys",
       "source": "./",
       "description": "Enterprise governance and workflow plugin"
     }
