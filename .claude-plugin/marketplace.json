@@ -9,8 +9,11 @@
   "plugins": [
     {
       "name": "evyasys",
-      "source": "./",
-      "description": "Enterprise governance and workflow plugin"
+      "description": "Enterprise governance and workflow plugin",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git"
+      }
     }
   ]
 }
