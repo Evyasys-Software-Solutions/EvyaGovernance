@@ -21,7 +21,5 @@
     "skills": "skills",
     "hooks": "hooks"
   },
-  "hooks": {
-    "session-start": "hooks/evyasys-load-context.js"
-  }
+  "keywords": ["evyasys", "evya", "azure-devops", "teams", "user-story", "agile", "delivery-pipeline"]
 }
