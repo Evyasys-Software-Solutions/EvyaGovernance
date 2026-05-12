@@ -1,28 +1,20 @@
 {
   "name": "evyasys",
-  "id": "evyasys",
+  "description": "AI-assisted delivery pipeline for teams — story, brainstorm, dev, QA, release — driven by /Evya* commands.",
   "version": "0.2.0",
-  "description": "Evyasys: AI-assisted delivery pipeline — story, brainstorm, dev, QA, release — driven by /Evya* commands.",
   "author": {
     "name": "Evyasys Software Solutions",
-    "url": "https://github.com/Evyasys-Software-Solutions",
     "email": "business@evyasys.com"
   },
-  "license": "MIT",
   "homepage": "https://github.com/Evyasys-Software-Solutions/EvyaGovernance",
   "repository": "https://github.com/Evyasys-Software-Solutions/EvyaGovernance",
+  "license": "MIT",
   "keywords": [
     "evyasys",
     "evya",
     "azure-devops",
     "teams",
-    "user-story",
     "agile",
     "delivery-pipeline"
-  ],
-  "directories": {
-    "commands": "commands",
-    "skills": "skills",
-    "hooks": "hooks"
-  }
+  ]
 }
