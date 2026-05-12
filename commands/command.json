@@ -1,38 +1,26 @@
 [
   {
     "name": "EvyaCreateStory",
-    "description": "Draft a complete user story from project context and (on approval) push it to Azure DevOps + Teams.",
-    "skill": "evyasys-create-story",
-    "args": []
+    "description": "Draft a complete user story from project context and (on approval) push it to Azure DevOps + notify Teams."
   },
   {
     "name": "EvyaCreateSubtask",
-    "description": "Break a story into developer-ready subtasks. Requires StoryID.",
-    "skill": "evyasys-create-subtask",
-    "args": [{ "name": "storyId", "required": true }]
+    "description": "Break a story into developer-ready subtasks. Pass StoryID as argument e.g. EVYA-1042."
   },
   {
     "name": "EvyaStartDev",
-    "description": "Kick off development — technical brainstorm (3+ approaches) then branch/PR/DoR gates, set ADO to In Progress.",
-    "skill": "evyasys-start-dev",
-    "args": [{ "name": "storyId", "required": true }]
+    "description": "Kick off development — runs a technical brainstorm (3+ approaches, team approval) then branch/PR/DoR gates. Pass StoryID."
   },
   {
     "name": "EvyaFinishDev",
-    "description": "Wrap development: AC coverage audit, diff check, Dev Summary, transition to Ready for QA.",
-    "skill": "evyasys-finish-dev",
-    "args": [{ "name": "storyId", "required": true }]
+    "description": "Wrap development — AC coverage audit, diff check, Dev Summary, transition to Ready for QA. Pass StoryID."
   },
   {
     "name": "EvyaStartQa",
-    "description": "Generate comprehensive test plan and transition the story to In QA.",
-    "skill": "evyasys-start-qa",
-    "args": [{ "name": "storyId", "required": true }]
+    "description": "Generate a comprehensive test plan and transition the story to In QA. Pass StoryID."
   },
   {
     "name": "EvyaFinishQa",
-    "description": "Validate QA pass, draft release notes, transition the story to Done.",
-    "skill": "evyasys-finish-qa",
-    "args": [{ "name": "storyId", "required": true }]
+    "description": "Validate QA pass, draft release notes, transition the story to Done. Pass StoryID."
   }
 ]
