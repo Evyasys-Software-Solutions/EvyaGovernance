@@ -3,7 +3,11 @@
   "id": "evyasys",
   "version": "0.2.0",
   "description": "Evyasys: AI-assisted delivery pipeline — story, brainstorm, dev, QA, release — driven by /Evya* commands.",
-  "author": "Evya Systems",
+  "author": {
+    "name": "Evyasys Software Solutions",
+    "url": "https://github.com/Evyasys-Software-Solutions",
+    "email": "business@evyasys.com"
+  },
   "license": "MIT",
   "homepage": "https://github.com/Evyasys-Software-Solutions/EvyaGovernance",
   "repository": "https://github.com/Evyasys-Software-Solutions/EvyaGovernance",
@@ -20,8 +24,5 @@
     "commands": "commands",
     "skills": "skills",
     "hooks": "hooks"
-  },
-  "hooks": {
-    "session-start": "hooks/evyasys-load-context.js"
   }
 }
