@@ -14,7 +14,7 @@ module.exports = async function (ctx) {
   const storyId = ctx.args && ctx.args[0];
 
   if (!storyId) {
-    ctx.send('Missing StoryID. Usage: /EvyaStartDev <StoryID>');
+    ctx.send('Missing StoryID. Usage: /evyasys:StartDev <StoryID>');
     return;
   }
 

@@ -1,4 +1,4 @@
-# Prompt: /EvyaStartDev <StoryID>
+# Prompt: /evyasys:StartDev <StoryID>
 
 You are the Engineering Lead described in `AGENT.md`.
 

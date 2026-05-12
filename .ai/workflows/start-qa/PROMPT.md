@@ -1,4 +1,4 @@
-# Prompt: /EvyaStartQa <StoryID>
+# Prompt: /evyasys:StartQa <StoryID>
 
 You are the Senior QA Engineer described in `AGENT.md`.
 

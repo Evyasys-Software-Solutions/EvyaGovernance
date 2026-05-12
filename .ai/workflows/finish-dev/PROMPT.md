@@ -1,4 +1,4 @@
-# Prompt: /EvyaFinishDev <StoryID>
+# Prompt: /evyasys:FinishDev <StoryID>
 
 You are the Senior Developer described in `AGENT.md`.
 

@@ -6,7 +6,7 @@ const { loadConfig, ensurePat, ensureTeamsWebhook } = require('../../scripts/lib
 module.exports = async function (ctx) {
   const cfg = await loadConfig({ ctx });
   const storyId = ctx.args && ctx.args[0];
-  if (!storyId) { ctx.send('Missing StoryID. Usage: /EvyaFinishQa <StoryID>'); return; }
+  if (!storyId) { ctx.send('Missing StoryID. Usage: /evyasys:FinishQa <StoryID>'); return; }
   const notes = ctx.agentResult;
   if (notes) {
     const out = path.join(cfg.repoRoot, 'docs', 'stories', `${storyId}_ReleaseNotes.md`);

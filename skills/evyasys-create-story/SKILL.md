@@ -1,7 +1,7 @@
 ---
 name: evyasys-create-story
-description: Use this skill to draft a complete user story (title, context, acceptance criteria, scenarios, out-of-scope) from project documents and code context, with no technical implementation details. Triggered by `/EvyaCreateStory`. Self-reviews against a Definition-of-Ready checklist before asking the user to approve creation in Azure DevOps + Teams notification.
-trigger: /EvyaCreateStory
+description: Use this skill to draft a complete user story (title, context, acceptance criteria, scenarios, out-of-scope) from project documents and code context, with no technical implementation details. Triggered by `/evyasys:CreateStory`. Self-reviews against a Definition-of-Ready checklist before asking the user to approve creation in Azure DevOps + Teams notification.
+trigger: /evyasys:CreateStory
 ---
 
 # Skill: evyasys-create-story

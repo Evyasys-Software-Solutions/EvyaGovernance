@@ -1,7 +1,7 @@
 ---
 name: evyasys-start-dev
-description: Use this skill to start development on a story. It runs a two-phase workflow — first a structured technical brainstorm (minimum 3 approaches, explicit recommendation, team approval) then standard start-dev gates (branch naming, draft PR, Definition of Ready, dependencies). On GO approval it transitions Azure DevOps state to In Progress and posts a Teams kickoff card. Triggered by `/EvyaStartDev <StoryID>`.
-trigger: /EvyaStartDev
+description: Use this skill to start development on a story. It runs a two-phase workflow — first a structured technical brainstorm (minimum 3 approaches, explicit recommendation, team approval) then standard start-dev gates (branch naming, draft PR, Definition of Ready, dependencies). On GO approval it transitions Azure DevOps state to In Progress and posts a Teams kickoff card. Triggered by `/evyasys:StartDev <StoryID>`.
+trigger: /evyasys:StartDev
 ---
 
 # Skill: evyasys-start-dev

@@ -1,26 +1,30 @@
 [
   {
-    "name": "EvyaCreateStory",
-    "description": "Draft a complete user story from project context and (on approval) push it to Azure DevOps + notify Teams."
+    "name": "CreateStory",
+    "description": "Draft a complete business story from project context — asks clarifying questions one at a time, handles Epic filing, pushes to Azure DevOps and notifies Teams on approval."
   },
   {
-    "name": "EvyaCreateSubtask",
-    "description": "Break a story into developer-ready subtasks. Pass StoryID as argument e.g. EVYA-1042."
+    "name": "CreateSubtask",
+    "description": "Decompose a story into developer-ready tasks — presents 2-3 breakdown strategies for team approval, then writes 3-8 tasks each ≤ 1 day. Pass StoryID e.g. EVYA-1042."
   },
   {
-    "name": "EvyaStartDev",
-    "description": "Kick off development — runs a technical brainstorm (3+ approaches, team approval) then branch/PR/DoR gates. Pass StoryID."
+    "name": "StartDev",
+    "description": "Kick off development — structured technical brainstorm (3+ approaches, team approval) then branch/PR/DoR/dependency gates. Transitions ADO to In Progress. Pass StoryID."
   },
   {
-    "name": "EvyaFinishDev",
-    "description": "Wrap development — AC coverage audit, diff check, Dev Summary, transition to Ready for QA. Pass StoryID."
+    "name": "ReviewDev",
+    "description": "Independent code review — AC coverage, correctness, security, YAGNI, test quality. Evidence-based findings with file+line citations. Critical issues block FinishDev. Pass StoryID."
   },
   {
-    "name": "EvyaStartQa",
-    "description": "Generate a comprehensive test plan and transition the story to In QA. Pass StoryID."
+    "name": "FinishDev",
+    "description": "Wrap development — AC audit, DoD checklist, diff scope check, Dev Summary. Transitions ADO to Ready for QA. Pass StoryID."
   },
   {
-    "name": "EvyaFinishQa",
-    "description": "Validate QA pass, draft release notes, transition the story to Done. Pass StoryID."
+    "name": "StartQa",
+    "description": "Generate a comprehensive test plan — confirms environment and data first, then writes AC-driven positive/negative/edge/regression/non-functional cases. Transitions ADO to In QA. Pass StoryID."
+  },
+  {
+    "name": "FinishQa",
+    "description": "Release sign-off — validates all TC outcomes recorded, no P0/P1 defects open, drafts plain-language release notes. Transitions ADO to Done. Pass StoryID."
   }
 ]

@@ -6,7 +6,7 @@ const { loadConfig, ensurePat } = require('../../scripts/lib/config');
 module.exports = async function (ctx) {
   const cfg = await loadConfig({ ctx });
   const storyId = ctx.args && ctx.args[0];
-  if (!storyId) { ctx.send('Missing StoryID. Usage: /EvyaCreateSubtask <StoryID>'); return; }
+  if (!storyId) { ctx.send('Missing StoryID. Usage: /evyasys:CreateSubtask <StoryID>'); return; }
   const tasks = ctx.agentResult;
   if (!tasks) { ctx.send('No task list in context — aborting.'); return; }
   if (!(await ctx.confirm(`Create ${storyId} subtasks in Azure DevOps?`))) {

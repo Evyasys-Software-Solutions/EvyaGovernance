@@ -25,6 +25,7 @@ workflow_packages:
   - workflows/create-story
   - workflows/create-subtask
   - workflows/start-dev
+  - workflows/review-dev
   - workflows/finish-dev
   - workflows/start-qa
   - workflows/finish-qa

@@ -1,6 +1,6 @@
 {
   "name": "evyasys",
-  "description": "AI-assisted delivery pipeline for teams — story, brainstorm, dev, QA, release — driven by /Evya* commands.",
+  "description": "AI-assisted delivery pipeline for teams — story, brainstorm, dev, QA, release — driven by /evyasys:* commands.",
   "version": "0.2.0",
   "author": {
     "name": "Evyasys Software Solutions",

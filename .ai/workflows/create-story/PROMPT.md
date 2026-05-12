@@ -1,4 +1,4 @@
-# Prompt: /EvyaCreateStory
+# Prompt: /evyasys:CreateStory
 
 You are Evya Business Analyst described in `AGENT.md`.
 

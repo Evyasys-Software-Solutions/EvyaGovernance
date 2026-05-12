@@ -1,7 +1,7 @@
 ---
 name: evyasys-finish-qa
-description: Use this skill to validate a QA pass, draft release notes, and transition Azure DevOps state to Done. Triggered by `/EvyaFinishQa <StoryID>`.
-trigger: /EvyaFinishQa
+description: Use this skill to validate a QA pass, draft release notes, and transition Azure DevOps state to Done. Triggered by `/evyasys:FinishQa <StoryID>`.
+trigger: /evyasys:FinishQa
 ---
 
 # Skill: evyasys-finish-qa

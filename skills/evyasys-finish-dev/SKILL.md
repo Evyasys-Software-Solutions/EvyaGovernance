@@ -1,7 +1,7 @@
 ---
 name: evyasys-finish-dev
-description: Use this skill to wrap development on a story — verify TDD/code-review gates, confirm acceptance criteria coverage, write a dev summary, and transition Azure DevOps state to Ready for QA. Triggered by `/EvyaFinishDev <StoryID>`.
-trigger: /EvyaFinishDev
+description: Use this skill to wrap development on a story — verify TDD/code-review gates, confirm acceptance criteria coverage, write a dev summary, and transition Azure DevOps state to Ready for QA. Triggered by `/evyasys:FinishDev <StoryID>`.
+trigger: /evyasys:FinishDev
 ---
 
 # Skill: evyasys-finish-dev

@@ -1,7 +1,7 @@
 ---
 name: evyasys-create-subtask
-description: Use this skill to break a user story into 3–8 developer-ready subtasks with technical scope, ACs, estimates and dependencies. Triggered by `/EvyaCreateSubtask <StoryID>`. Creates child Tasks in Azure DevOps on approval.
-trigger: /EvyaCreateSubtask
+description: Use this skill to break a user story into 3–8 developer-ready subtasks with technical scope, ACs, estimates and dependencies. Triggered by `/evyasys:CreateSubtask <StoryID>`. Creates child Tasks in Azure DevOps on approval.
+trigger: /evyasys:CreateSubtask
 ---
 
 # Skill: evyasys-create-subtask

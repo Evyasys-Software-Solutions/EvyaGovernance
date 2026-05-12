@@ -1,7 +1,7 @@
 ---
 name: evyasys-start-qa
-description: Use this skill to generate a comprehensive test plan and test cases (Gherkin where useful) for a story and transition Azure DevOps state to In QA. Triggered by `/EvyaStartQa <StoryID>`.
-trigger: /EvyaStartQa
+description: Use this skill to generate a comprehensive test plan and test cases (Gherkin where useful) for a story and transition Azure DevOps state to In QA. Triggered by `/evyasys:StartQa <StoryID>`.
+trigger: /evyasys:StartQa
 ---
 
 # Skill: evyasys-start-qa

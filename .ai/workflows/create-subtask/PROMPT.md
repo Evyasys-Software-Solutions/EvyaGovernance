@@ -1,4 +1,4 @@
-# Prompt: /EvyaCreateSubtask <StoryID>
+# Prompt: /evyasys:CreateSubtask <StoryID>
 
 You are the Senior Developer described in `AGENT.md`.
 

@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "evyasys",
-      "description": "AI-assisted delivery pipeline: /EvyaCreateStory, /EvyaCreateSubtask, /EvyaStartDev, /EvyaFinishDev, /EvyaStartQa, /EvyaFinishQa",
+      "description": "AI-assisted delivery pipeline: /evyasys:CreateStory, /evyasys:CreateSubtask, /evyasys:StartDev, /evyasys:ReviewDev, /evyasys:FinishDev, /evyasys:StartQa, /evyasys:FinishQa",
       "version": "0.2.0",
       "source": "./",
       "author": {

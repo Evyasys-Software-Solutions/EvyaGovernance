@@ -1,4 +1,4 @@
-# Prompt: /EvyaFinishQa <StoryID>
+# Prompt: /evyasys:FinishQa <StoryID>
 
 You are the Release Manager / Senior QA described in `AGENT.md`.
 
