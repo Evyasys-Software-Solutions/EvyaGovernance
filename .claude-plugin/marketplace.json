@@ -1,13 +1,13 @@
 {
-  "name": "evyasys-marketplace",
-  "description": "Local dev marketplace for Evyasys. Add this folder via `/plugin marketplace add` to install the plugin from source.",
+  "name": "EvyaGovernance",
+  "description": "Evyasys delivery pipeline — story → brainstorm → dev → QA → release, driven by /Evya* commands.",
   "plugins": [
     {
       "id": "evyasys",
       "name": "Evyasys",
       "path": ".",
       "version": "0.2.0",
-      "description": "End-to-end /Evya* delivery pipeline."
+      "description": "AI-assisted delivery pipeline: /EvyaCreateStory, /EvyaStartDev, /EvyaFinishDev, /EvyaStartQa, /EvyaFinishQa"
     }
   ]
 }

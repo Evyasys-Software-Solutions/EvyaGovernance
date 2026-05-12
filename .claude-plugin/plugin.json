@@ -2,13 +2,11 @@
   "name": "evyasys",
   "id": "evyasys",
   "version": "0.2.0",
-  "description": "Evyasys: tool-agnostic delivery pipeline (story → dev → QA → release) driven by /Evya* commands. Plain markdown + Node + Python — no vendor lock-in.",
+  "description": "Evyasys: AI-assisted delivery pipeline — story, brainstorm, dev, QA, release — driven by /Evya* commands.",
   "author": "Evya Systems",
   "license": "MIT",
-  "main": "hooks/evyasys-load-context.js",
-  "engines": {
-    "claude-code": ">=1.0.0"
-  },
+  "homepage": "https://github.com/Evyasys-Software-Solutions/EvyaGovernance",
+  "repository": "https://github.com/Evyasys-Software-Solutions/EvyaGovernance",
   "keywords": [
     "evyasys",
     "evya",
