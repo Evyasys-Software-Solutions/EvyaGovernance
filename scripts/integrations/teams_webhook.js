@@ -1,14 +1,15 @@
 /**
  * Microsoft Teams incoming-webhook integration (Node.js).
- * Reads the channel webhook from .evyasys/project.yaml (per-project) or env.
  * Default mode is LIVE; set EVYASYS_DRY_RUN=1 to preview without HTTP.
  *
  * CLI:
- *   node teams_webhook.js story-created --file <path>          [--id <EVYA-id>]
- *   node teams_webhook.js dev-kickoff   --id <EVYA-id>
- *   node teams_webhook.js dev-finished  --id <EVYA-id>
- *   node teams_webhook.js qa-started    --id <EVYA-id>
- *   node teams_webhook.js qa-finished   --id <EVYA-id>
+ *   node teams_webhook.js story-created    --file <path>  [--id <id>]
+ *   node teams_webhook.js subtasks-created --id <id>      [--count <N>]
+ *   node teams_webhook.js dev-kickoff      --id <id>
+ *   node teams_webhook.js review-passed    --id <id>
+ *   node teams_webhook.js dev-finished     --id <id>
+ *   node teams_webhook.js qa-started       --id <id>
+ *   node teams_webhook.js qa-finished      --id <id>
  */
 const fs = require('fs');
 const { loadConfig } = require('../lib/config');
@@ -22,18 +23,24 @@ function buildCard({ title, summary, sections, link }) {
       summary, title, sections,
     },
   };
-  if (link) card.content.potentialAction = [{ '@type': 'OpenUri', name: 'Open in Azure DevOps', targets: [{ os: 'default', uri: link }] }];
+  if (link) {
+    card.content.potentialAction = [{
+      '@type': 'OpenUri',
+      name: 'Open in Azure DevOps',
+      targets: [{ os: 'default', uri: link }],
+    }];
+  }
   return card;
 }
 
 async function post(card) {
   const cfg = await loadConfig();
   if (cfg.dryRun) {
-    console.log(`[evyasys:dry-run] Teams card payload:\n${JSON.stringify(card, null, 2)}`);
+    console.log('[evyasys:dry-run] Teams card:\n' + JSON.stringify(card, null, 2));
     return { dryRun: true };
   }
   if (!cfg.teams.webhook) {
-    throw new Error('No Teams webhook configured for this project. Add it to .evyasys/project.yaml under teams.webhook.');
+    throw new Error('No Teams webhook configured. Add teams.webhook to .evyasys/project.yaml or set TEAMS_WEBHOOK env var.');
   }
   const fetchFn = typeof fetch !== 'undefined' ? fetch : require('node-fetch');
   const res = await fetchFn(cfg.teams.webhook, {
@@ -41,42 +48,104 @@ async function post(card) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(card),
   });
-  if (!res.ok) throw new Error(`Teams POST failed: ${res.status} ${await res.text()}`);
+  if (!res.ok) throw new Error('Teams POST failed: ' + res.status + ' ' + (await res.text()));
   return { ok: true };
 }
 
-const snippet = (t, max = 600) => !t ? '' : (t.length > max ? t.slice(0, max) + '…' : t);
+const snippet = (t, max) => {
+  if (!t) return '';
+  max = max || 600;
+  return t.length > max ? t.slice(0, max) + '...' : t;
+};
 
 async function storyCreated({ storyId, file }) {
   const md = file ? fs.readFileSync(file, 'utf8') : '';
   return post(buildCard({
-    title: `New Story Created: ${storyId}`,
-    summary: `New Story ${storyId}`,
-    sections: [{ title: 'Draft', text: snippet(md) }],
+    title:    '📋 New Story Ready: ' + storyId,
+    summary:  'Story ' + storyId + ' created and pushed to the board.',
+    sections: [{ title: 'Preview', text: snippet(md) }],
   }));
 }
-async function devKickoff({ storyId })  { return post(buildCard({ title: `Dev kicked off: ${storyId}`,            summary: `Dev started ${storyId}`,  sections: [{ title: 'Status', text: 'In Progress' }] })); }
-async function devFinished({ storyId }) { return post(buildCard({ title: `Dev complete → Ready for QA: ${storyId}`, summary: `Dev complete ${storyId}`, sections: [{ title: 'Status', text: 'Ready for QA' }] })); }
-async function qaStarted({ storyId })   { return post(buildCard({ title: `QA started: ${storyId}`,                  summary: `QA started ${storyId}`,   sections: [{ title: 'Status', text: 'In QA' }] })); }
-async function qaFinished({ storyId })  { return post(buildCard({ title: `Released: ${storyId}`,                    summary: `Released ${storyId}`,     sections: [{ title: 'Status', text: 'Done' }] })); }
+
+async function subtasksCreated({ storyId, count }) {
+  const countStr = count ? count + ' task' + (count !== 1 ? 's' : '') : 'tasks';
+  return post(buildCard({
+    title:    '🗂️ Subtasks Ready: ' + storyId,
+    summary:  storyId + ' broken into ' + countStr + ' — ready for development.',
+    sections: [{ title: 'Status', text: countStr + ' created in Azure DevOps' }],
+  }));
+}
+
+async function devKickoff({ storyId }) {
+  return post(buildCard({
+    title:    '🚀 Dev Started: ' + storyId,
+    summary:  'Development kicked off for ' + storyId + '.',
+    sections: [{ title: 'Status', text: 'In Progress — technical approach agreed' }],
+  }));
+}
+
+async function reviewPassed({ storyId }) {
+  return post(buildCard({
+    title:    '✅ Code Review Passed: ' + storyId,
+    summary:  storyId + ' passed independent code review.',
+    sections: [{ title: 'Status', text: 'Review passed — no Critical issues remaining' }],
+  }));
+}
+
+async function devFinished({ storyId }) {
+  return post(buildCard({
+    title:    '🔀 Ready for QA: ' + storyId,
+    summary:  'Development complete for ' + storyId + ' — handed off to QA.',
+    sections: [{ title: 'Status', text: 'Ready for QA — Dev Summary committed to repo' }],
+  }));
+}
+
+async function qaStarted({ storyId }) {
+  return post(buildCard({
+    title:    '🧪 QA Started: ' + storyId,
+    summary:  'QA test plan ready for ' + storyId + '.',
+    sections: [{ title: 'Status', text: 'In QA — test plan committed to repo' }],
+  }));
+}
+
+async function qaFinished({ storyId }) {
+  return post(buildCard({
+    title:    '🚢 Released: ' + storyId,
+    summary:  storyId + ' has passed QA and is marked Done.',
+    sections: [{ title: 'Status', text: 'Done — release notes committed to repo' }],
+  }));
+}
 
 function parseArgs(argv) {
   const out = { _: [] };
-  for (let i = 0; i < argv.length; i++) { const a = argv[i]; if (a.startsWith('--')) out[a.slice(2)] = argv[++i]; else out._.push(a); }
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a.startsWith('--')) { out[a.slice(2)] = argv[++i]; }
+    else { out._.push(a); }
+  }
   return out;
 }
+
 if (require.main === module) {
-  const [sub, ...rest] = process.argv.slice(2);
-  const args = parseArgs(rest);
-  const map = {
-    'story-created': () => storyCreated({ storyId: args.id, file: args.file }),
-    'dev-kickoff':   () => devKickoff({ storyId: args.id }),
-    'dev-finished':  () => devFinished({ storyId: args.id }),
-    'qa-started':    () => qaStarted({ storyId: args.id }),
-    'qa-finished':   () => qaFinished({ storyId: args.id }),
+  const sub  = process.argv[2];
+  const args = parseArgs(process.argv.slice(3));
+  const map  = {
+    'story-created':    function() { return storyCreated({ storyId: args.id, file: args.file }); },
+    'subtasks-created': function() { return subtasksCreated({ storyId: args.id, count: args.count ? Number(args.count) : undefined }); },
+    'dev-kickoff':      function() { return devKickoff({ storyId: args.id }); },
+    'review-passed':    function() { return reviewPassed({ storyId: args.id }); },
+    'dev-finished':     function() { return devFinished({ storyId: args.id }); },
+    'qa-started':       function() { return qaStarted({ storyId: args.id }); },
+    'qa-finished':      function() { return qaFinished({ storyId: args.id }); },
   };
-  if (!map[sub]) { console.error(`Unknown subcommand: ${sub}`); process.exit(2); }
-  map[sub]().then((r) => console.log(JSON.stringify(r, null, 2))).catch((e) => { console.error(e); process.exit(1); });
+  if (!map[sub]) {
+    console.error('Unknown subcommand: ' + sub);
+    console.error('Valid: ' + Object.keys(map).join(', '));
+    process.exit(2);
+  }
+  map[sub]()
+    .then(function(r) { console.log(JSON.stringify(r, null, 2)); })
+    .catch(function(e) { console.error(e); process.exit(1); });
 }
 
-module.exports = { storyCreated, devKickoff, devFinished, qaStarted, qaFinished };
+module.exports = { storyCreated, subtasksCreated, devKickoff, reviewPassed, devFinished, qaStarted, qaFinished };

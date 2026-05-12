@@ -325,6 +325,39 @@ plan (or "N/A — feature flag off by default").
 
 ---
 
+## Microsoft Teams notifications
+
+Every command posts a card to your Teams channel at the moment it completes — after
+your approval, never before. The webhook is stored in `.evyasys/project.yaml` so
+the whole team shares the same channel. Evyasys prompts for it automatically the
+first time and writes it back so teammates pick it up via `git pull`.
+
+| Command | Teams card sent |
+|---|---|
+| `CreateStory` | 📋 **New Story Ready** — story ID, preview of business context |
+| `CreateSubtask` | 🗂️ **Subtasks Ready** — story ID, number of tasks created |
+| `StartDev` | 🚀 **Dev Started** — story ID, confirms technical approach agreed |
+| `ReviewDev` | ✅ **Code Review Passed** — story ID, confirms no Critical issues |
+| `FinishDev` | 🔀 **Ready for QA** — story ID, Dev Summary committed to repo |
+| `StartQa` | 🧪 **QA Started** — story ID, test plan committed to repo |
+| `FinishQa` | 🚢 **Released** — story ID, release notes committed to repo |
+
+> **Note:** `ReviewDev` only sends the notification on a **GO verdict**. A NO-GO stops
+> the workflow silently (no Teams noise) and returns the developer to fix Critical issues.
+
+To configure the webhook, add it to your project's `.evyasys/project.yaml`:
+```yaml
+teams:
+  webhook: "https://your-org.webhook.office.com/webhookb2/..."
+```
+
+Or set it via environment variable (useful for CI):
+```bash
+export TEAMS_WEBHOOK="https://your-org.webhook.office.com/webhookb2/..."
+```
+
+---
+
 ## Complete artefact map
 
 Every artefact is committed to git and travels with the code through PRs.
