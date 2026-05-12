@@ -1,19 +1,20 @@
 {
   "name": "EvyaGovernance",
-  "version": "0.2.0",
-  "description": "Evyasys delivery pipeline — story → brainstorm → dev → QA → release, driven by /Evya* commands.",
+  "description": "Evyasys delivery pipeline marketplace — story, brainstorm, dev, QA, release.",
   "owner": {
     "name": "Evyasys Software Solutions",
-    "url": "https://github.com/Evyasys-Software-Solutions",
     "email": "business@evyasys.com"
   },
   "plugins": [
     {
-      "id": "evyasys",
-      "name": "Evyasys",
-      "path": ".",
+      "name": "evyasys",
+      "description": "AI-assisted delivery pipeline: /EvyaCreateStory, /EvyaCreateSubtask, /EvyaStartDev, /EvyaFinishDev, /EvyaStartQa, /EvyaFinishQa",
       "version": "0.2.0",
-      "description": "AI-assisted delivery pipeline: /EvyaCreateStory, /EvyaCreateSubtask, /EvyaStartDev, /EvyaFinishDev, /EvyaStartQa, /EvyaFinishQa"
+      "source": "./",
+      "author": {
+        "name": "Evyasys Software Solutions",
+        "email": "business@evyasys.com"
+      }
     }
   ]
 }
