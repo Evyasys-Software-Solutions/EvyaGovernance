@@ -13,115 +13,175 @@ touches Azure DevOps or Teams.
 
 ## Installation
 
-### First-time install (once per machine)
+Three levels of setup: **Claude Code** (the AI agent), **machine-level** (once per
+developer), and **project-level** (once per repo — teammates get it via `git pull`).
 
-**Step 1 — Add the Evyasys marketplace:**
+---
+
+### Step 0 — Install Claude Code (prerequisite)
+
+Evyasys runs as a plugin inside **Claude Code** — Anthropic's AI coding agent.
+Install it first if you haven't already.
+
+**macOS / Linux**
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+**Windows (PowerShell)**
+```powershell
+npm install -g @anthropic-ai/claude-code
+```
+
+Verify:
+```bash
+claude --version
+```
+
+Launch from inside your project:
+```bash
+# macOS / Linux
+cd your-project && claude
+
+# Windows
+cd your-project; claude
+```
+
+> Requires **Node.js 18+** — download from [nodejs.org](https://nodejs.org/) if needed.  
+> Full Claude Code docs: [docs.anthropic.com/claude-code](https://docs.anthropic.com/en/docs/claude-code/getting-started)
+
+---
+
+### Step 1 — Install Evyasys plugin (once per machine)
+
+**Inside Claude Code**, run these three commands:
+
 ```
 /plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git
-```
-
-**Step 2 — Install the plugin:**
-```
 /plugin install evyasys@EvyaGovernance
-```
-
-**Step 3 — Activate:**
-```
 /reload-plugins
 ```
 
-**Step 4 — Save your Azure DevOps PAT** (required for ADO integration):
+Type `/evya` — you should see 7 commands in autocomplete.
+
+---
+
+### Step 2 — Save your Azure DevOps PAT (once per machine)
 
 Generate a token at `https://dev.azure.com/<your-org>/_usersSettings/tokens`  
 Scope needed: **Work Items (Read & write)**
 
+**macOS / Linux**
 ```bash
-# macOS / Linux
 bash ~/.claude/plugins/evyasys/scripts/login.sh
+```
 
-# Windows
+**Windows (PowerShell)**
+```powershell
 powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.claude\plugins\evyasys\scripts\login.ps1"
 ```
 
-Stored securely at `~/.evyasys/credentials` — never committed to any repo.
+Stored at `~/.evyasys/credentials` — never committed to any repo.
+
+---
+
+### Step 3 — Configure your project (once per repo)
+
+**macOS / Linux**
+```bash
+cp -r ~/.claude/plugins/evyasys/project-template/.evyasys ./.evyasys
+```
+
+**Windows (PowerShell)**
+```powershell
+Copy-Item -Recurse "$env:USERPROFILE\.claude\plugins\evyasys\project-template\.evyasys" ".\.evyasys"
+```
+
+Edit `.evyasys/project.yaml` with all three settings:
+
+```yaml
+# Display name shown in Teams cards
+name: "Customer Portal"
+
+# Azure DevOps — where stories and tasks are created
+azure_devops:
+  org: "YourAzureOrg"
+  project: "YourAzureProject"
+
+# Microsoft Teams — channel that receives pipeline notifications
+# Get webhook from: Teams channel → ··· → Connectors → Incoming Webhook → copy URL
+teams:
+  webhook: "https://your-org.webhook.office.com/webhookb2/..."
+```
+
+> **Teams webhook:** leave blank and Evyasys will prompt for it on first use and
+> save it automatically. Either way it ends up in `project.yaml` for the whole team.
+
+Commit so every teammate gets the same config:
+
+```bash
+git add .evyasys/project.yaml
+git commit -m "Add Evyasys config (ADO + Teams)"
+git push
+```
+
+Teammates just `git pull` — no individual config needed beyond saving their own PAT.
+
+**Teams notifications your channel receives:**
+
+| Event | Card |
+|---|---|
+| Story pushed to board | 📋 New Story Ready |
+| Subtasks created in ADO | 🗂️ Subtasks Ready |
+| Dev started | 🚀 Dev Started |
+| Code review passed | ✅ Code Review Passed |
+| Dev handed to QA | 🔀 Ready for QA |
+| QA test plan ready | 🧪 QA Started |
+| Story released | 🚢 Released |
+
+All notifications fire **after your approval**. A `ReviewDev` NO-GO posts nothing.
 
 ---
 
 ### Updating to the latest version
 
-When a new version is pushed to GitHub, run these commands to get the update:
-
-```powershell
-# Windows — clear cache and reinstall fresh
-Remove-Item -Recurse -Force "$env:USERPROFILE\.claude\plugins\marketplaces" -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force "$env:USERPROFILE\.claude\plugins\evyasys" -ErrorAction SilentlyContinue
-```
-
+**macOS / Linux**
 ```bash
-# macOS / Linux
 rm -rf ~/.claude/plugins/marketplaces
 rm -rf ~/.claude/plugins/evyasys
 ```
 
-Then reinstall:
+**Windows (PowerShell)**
+```powershell
+Remove-Item -Recurse -Force "$env:USERPROFILE\.claude\plugins\marketplaces" -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force "$env:USERPROFILE\.claude\plugins\evyasys" -ErrorAction SilentlyContinue
 ```
-/plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git
-/plugin install evyasys@EvyaGovernance
-/reload-plugins
-```
+
+Then reinstall (Step 1 above).
 
 ---
 
 ### Troubleshooting a broken install
 
-If the plugin shows errors, fails to load, or commands don't appear:
+Run the same cache-clear steps above, **fully close and reopen** Claude Code, then
+run Step 1 again.
 
-```powershell
-# Windows — full reset
-Remove-Item -Recurse -Force "$env:USERPROFILE\.claude\plugins\marketplaces" -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force "$env:USERPROFILE\.claude\plugins\evyasys" -ErrorAction SilentlyContinue
-```
-
-Close and **reopen** Claude Code completely, then run the install steps above again.
-
----
-
-### Per-project setup (once per repo)
-
-Drop the Evyasys config into your project and commit it:
-
-```bash
-# macOS / Linux
-cp -r ~/.claude/plugins/evyasys/project-template/.evyasys ./.evyasys
-
-# Windows
-Copy-Item -Recurse "$env:USERPROFILE\.claude\plugins\evyasys\project-template\.evyasys" ".\.evyasys"
-```
-
-Edit `.evyasys/project.yaml`:
-```yaml
-name: "Your Project Name"
-azure_devops:
-  org: "YourAzureOrg"
-  project: "YourAzureProject"
-```
-
-Commit it:
-```bash
-git add .evyasys/project.yaml && git commit -m "Add Evyasys config" && git push
-```
-
-Teammates just `git pull` — they're set. The Teams webhook is saved here too and gets
-configured automatically on first use.
+| Symptom | Fix |
+|---|---|
+| `claude` command not found | Install Node.js 18+ then `npm install -g @anthropic-ai/claude-code` |
+| Commands don't appear | Clear cache (see above) and reinstall |
+| PAT not found | Run `scripts/login.sh` (macOS/Linux) or `scripts/login.ps1` (Windows) |
+| Teams webhook missing | Run any command — it will prompt and save automatically |
+| ADO 401 error | PAT expired — re-run the login script |
+| Missing ADO org/project | Edit `.evyasys/project.yaml` |
+| Wrong project loaded | Open Claude Code from inside the correct project folder |
 
 ---
 
 ## The 7 Commands
 
-Type `/evya` in Claude Code to see all commands in autocomplete. Every command is
-in the `/evyasys:` namespace.
+Type `/evya` in Claude Code to see all commands in autocomplete.
 
-**Full delivery flow:**
 ```
 CreateStory → CreateSubtask → StartDev → ReviewDev → FinishDev → StartQa → FinishQa
 ```
@@ -133,243 +193,113 @@ Nothing touches Azure DevOps or Teams until you **explicitly approve**.
 ### `/evyasys:CreateStory`
 **Who:** BA / Product Owner — **When:** Start of every story
 
-**What it does:**
-Scans your repository for context, then asks clarifying questions **one at a time**
-(scope ambiguity, role clarity, AC ambiguity — never an overwhelming list) before
-drafting anything. Produces a board-ready business story in pure business language —
-zero class names, endpoints, or implementation detail.
+Scans the repository for context, asks clarifying questions **one at a time** (never
+an overwhelming list), and drafts a board-ready business story in pure business
+language — zero class names, endpoints, or implementation detail. Self-reviews against
+the Definition-of-Ready checklist and rewrites automatically if anything fails.
 
-After drafting it runs a self-review against the Definition-of-Ready checklist and
-rewrites automatically if anything fails. Then presents the draft with a clear
-statement of where the file will be saved and what ADO + Teams actions will happen.
+If the story belongs to an Epic, files a reference copy under `docs/epics/<epic-id>/`
+and links the ADO work item to the parent Epic.
 
-If the story belongs to an Epic, it files a reference copy under `docs/epics/<epic-id>/`
-and links the ADO work item to the parent Epic in Azure DevOps.
-
-**Produces:**
-- `docs/stories/<id>_UserStory.md`
-- `docs/epics/<epic-id>/<id>_UserStory.md` (reference copy, if Epic set)
-- Azure DevOps User Story (linked to Epic if applicable)
-- Teams channel notification
+**Produces:** `<id>_UserStory.md` · ADO User Story (linked to Epic if set) · 📋 Teams
 
 ---
 
 ### `/evyasys:CreateSubtask EVYA-1042`
-**Who:** Tech Lead — **When:** After story is approved, before any development
+**Who:** Tech Lead — **When:** After story approved, before any development
 
-**What it does:**
-Reads the story in full and maps every Acceptance Criterion. Runs a repo scan to
-identify which modules will be touched. Asks one clarifying question at a time
-(scope, technical constraints, test strategy, merge ordering) if anything is unclear.
+Reads the full story and maps every AC. Presents **2–3 decomposition strategies**
+(vertical slices / horizontal layers / spike-first) with trade-offs and waits for
+team approval before writing a single task. Each task is ≤ 1 day, linked to specific
+ACs, names exact modules/files, and has a clear acceptance statement a reviewer can
+verify without asking the author.
 
-Before writing a single task, presents **2–3 decomposition strategies** with trade-offs:
-- *Vertical slices* — each task delivers one end-to-end AC
-- *Horizontal layers* — data layer first, then service, then UI
-- *Spike-first* — one investigation task to de-risk unknowns, then implementation
-
-Waits for the team to choose a strategy, then writes 3–8 developer tasks — each
-≤ 1 day of work, linked to specific ACs, naming exact modules/files, independently
-mergeable (or with merge order documented), and with a clear acceptance statement
-a reviewer can verify without asking the author.
-
-**Produces:**
-- `docs/stories/<id>_Subtasks.md`
-- Azure DevOps child Tasks
+**Produces:** `<id>_Subtasks.md` · ADO child Tasks · 🗂️ Teams
 
 ---
 
 ### `/evyasys:StartDev EVYA-1042`
-**Who:** Engineering Lead — **When:** Sprint start, before a developer writes a line of code
+**Who:** Engineering Lead — **When:** Sprint start, before any code is written
 
-**What it does — Phase 1, Brainstorm:**
-Reads the story, subtasks, and repo scan completely before forming any opinion.
-Generates **minimum 3 meaningfully distinct implementation approaches** — not
-variations of the same idea, but fundamentally different architectural strategies
-(e.g. event-driven vs direct call, feature-flag incremental vs big-bang, cache-first
-vs DB-first). Each approach gets specific pros, specific cons, and an effort delta
-(S/M/L). Then recommends one with a clear deciding reason and names the top risk.
+**Phase 1 — Brainstorm:** Generates minimum 3 meaningfully distinct implementation
+approaches with specific pros, cons, and effort delta (S/M/L). Recommends one with
+a clear deciding reason and top risk. Waits for team agreement before proceeding —
+the agreed approach is saved to the repo so the architectural decision travels with the PR.
 
-Waits for the team to agree on an approach (or choose a different one) before
-doing anything else. The agreed approach is saved to the repo so the architectural
-decision travels with the PR.
+**Phase 2 — Gates:** Branch naming, draft PR, Definition of Ready line-by-line,
+dependencies. Produces a GO / NO-GO gate table.
 
-**What it does — Phase 2, Gates:**
-Only after brainstorm is agreed: checks branch naming convention, confirms a draft
-PR exists, re-runs Definition of Ready line by line against the current story, and
-confirms dependencies are cleared. Produces a GO / NO-GO gate table.
-
-**Produces:**
-- `docs/stories/<id>_TechBrainstorm.md`
-- Azure DevOps state → **In Progress**
-- Teams kickoff notification
+**Produces:** `<id>_TechBrainstorm.md` · ADO → **In Progress** · 🚀 Teams
 
 ---
 
 ### `/evyasys:ReviewDev EVYA-1042`
-**Who:** Senior Developer (independent reviewer role) — **When:** Implementation complete, before FinishDev
+**Who:** Senior Developer (acting as independent reviewer) — **When:** Implementation complete
 
-**What it does:**
-Acts as an **independent code reviewer** — a different perspective from the developer
-who wrote the code. Reads the full diff against main AND the complete content of every
-changed file (not just the diff chunks) to understand full context.
+Acts as an **independent reviewer** — reads the full diff AND complete content of
+every changed file. Checks every AC has a passing test (no test = **Critical**).
+Reviews for correctness, security, YAGNI (runs `grep` before flagging unused code),
+test quality, and diff scope. Every finding cites file path + line number. No
+performative language — findings only.
 
-Checks every AC has a passing test. Identifies the test file and test name for each.
-Any AC without a test is immediately flagged **Critical**.
+The developer can push back with technical evidence. The reviewer updates the
+assessment if the argument is correct.
 
-Reviews each changed file for:
-- **Correctness** — logic errors, null dereferences, race conditions, error handling
-- **Security** — input validation, auth/authz at every entry point, no secrets in code
-- **YAGNI** — runs `grep` before flagging anything as unused; only flags code confirmed
-  to be called nowhere in the codebase
-- **Test quality** — tests verify real behaviour, not mock implementations; edge cases covered
-- **Diff scope** — files changed outside story scope flagged and clarified
-
-Every finding cites a specific file path and line number. No "great implementation!"
-or performative language — findings only.
-
-The developer can **push back with technical evidence**. If the argument is valid,
-the reviewer updates the assessment: *"Verified — your point stands."* If not:
-*"Here's why the original finding holds: [evidence]."*
-
-**Severity model:**
-| Level | Meaning | Effect |
+| Severity | Meaning | Effect |
 |---|---|---|
-| **Critical** | Untested AC, broken logic, security hole, data loss | Blocks `/evyasys:FinishDev` |
+| **Critical** | Untested AC, broken logic, security hole | Blocks FinishDev |
 | **Important** | Test gap, performance risk, unclear code | Should fix before QA |
-| **Minor** | Style, naming, small improvement | Note for later |
+| **Minor** | Style, naming | Note for later |
 
-**Produces:**
-- `docs/stories/<id>_CodeReview.md` (saved on GO verdict)
-- No ADO state change — FinishDev handles that after review passes
+**Produces:** `<id>_CodeReview.md` (on GO) · ✅ Teams (GO only — silent on NO-GO)
 
 ---
 
 ### `/evyasys:FinishDev EVYA-1042`
 **Who:** Developer — **When:** After ReviewDev passes
 
-**What it does:**
-This is the developer sign-off gate before QA. Reads the story, subtasks, brainstorm,
-and code review. Runs the actual diff and repo scan.
+Developer sign-off gate. Finds the specific test for every AC. Asks one clarifying
+question at a time for any uncovered AC — will not proceed with any unresolved ❌.
+Runs the Definition-of-Done checklist, scans the diff for scope anomalies, and
+produces a Dev Summary that becomes the QA team's starting document.
 
-For every AC, identifies the specific test (file + test name, unit/integration/E2E,
-added or pre-existing). For any AC without a verified test, asks **one clarifying
-question at a time** (automated test that can't be found? manual-only? deliberately
-deferred?) and will not proceed with any unresolved ❌.
-
-Runs the Definition-of-Done checklist: linters, code review approved, no open
-TODOs for this story, documentation updated, feature flag state confirmed, rollback
-plan present.
-
-Scans the diff for files outside expected scope, debug statements, missing migrations,
-and accidentally committed secrets — asking one question at a time for any anomaly.
-
-Produces a Dev Summary that becomes the QA team's starting document: files touched,
-tests added with AC mapping, diff scope risks, and explicit hints for what QA should
-probe first.
-
-**Produces:**
-- `docs/stories/<id>_DevSummary.md`
-- Azure DevOps state → **Ready for QA**
-- Teams handoff notification
+**Produces:** `<id>_DevSummary.md` · ADO → **Ready for QA** · 🔀 Teams
 
 ---
 
 ### `/evyasys:StartQa EVYA-1042`
 **Who:** QA Engineer — **When:** Story is Ready for QA
 
-**What it does:**
-Before writing a single test case, asks clarifying questions one at a time:
-- **Test environment** (required — can't write a test plan without knowing where it runs)
-- **Test data** (required if the story involves stateful or user-specific data)
-- **Known flaky areas** in the affected modules
-- **Browser/device matrix** (only if the story affects UI)
+Asks clarifying questions first (environment required, test data if stateful, flaky
+areas, browser matrix for UI) before writing a single test case. Writes AC-driven
+positive/negative/edge/regression/non-functional cases. Uses Gherkin for multi-step
+scenarios.
 
-Only after environment and data are confirmed does it write the test plan. The plan
-covers every AC with at minimum one positive case (happy path) and one negative case
-(boundary, invalid input, unauthorised access). Adds edge cases, regression checks
-for every file listed in the Dev Summary's "files touched", and a non-functional
-section covering performance, security, and accessibility (or marks items N/A with
-a specific reason).
-
-Uses Gherkin (Given / When / Then) for any multi-step workflow scenario.
-Self-reviews the plan against a checklist before showing it.
-
-**Produces:**
-- `docs/stories/<id>_TestPlan.md`
-- Azure DevOps state → **In QA**
-- Teams notification
+**Produces:** `<id>_TestPlan.md` · ADO → **In QA** · 🧪 Teams
 
 ---
 
 ### `/evyasys:FinishQa EVYA-1042`
-**Who:** QA / Release Manager — **When:** All test cases executed and outcomes recorded
+**Who:** QA / Release Manager — **When:** All test cases executed
 
-**What it does:**
-First checks that every test case in the plan has a recorded outcome (pass / fail /
-blocked). If any TC has no outcome, it stops and asks the QA team to fill it in
-first — it will not proceed until all TCs are accounted for.
+Checks every TC has a recorded outcome. Stops if any P0/P1 defects remain open.
+Drafts plain-language release notes — one paragraph, no jargon, bullet changelog,
+known limitations, rollback plan.
 
-Verifies no P0 or P1 defects remain open against this story. If any are open, lists
-them and stops — the gate cannot proceed until they are resolved or formally accepted
-with documented justification.
-
-Drafts release notes in plain user-facing language: one short paragraph explaining
-what changed (no jargon, no class names, as if writing for a non-technical
-stakeholder), a bullet changelog of what shipped, known limitations, and a rollback
-plan (or "N/A — feature flag off by default").
-
-**Produces:**
-- `docs/stories/<id>_ReleaseNotes.md`
-- Azure DevOps state → **Done**
-- Teams release notification
-
----
-
-## Microsoft Teams notifications
-
-Every command posts a card to your Teams channel at the moment it completes — after
-your approval, never before. The webhook is stored in `.evyasys/project.yaml` so
-the whole team shares the same channel. Evyasys prompts for it automatically the
-first time and writes it back so teammates pick it up via `git pull`.
-
-| Command | Teams card sent |
-|---|---|
-| `CreateStory` | 📋 **New Story Ready** — story ID, preview of business context |
-| `CreateSubtask` | 🗂️ **Subtasks Ready** — story ID, number of tasks created |
-| `StartDev` | 🚀 **Dev Started** — story ID, confirms technical approach agreed |
-| `ReviewDev` | ✅ **Code Review Passed** — story ID, confirms no Critical issues |
-| `FinishDev` | 🔀 **Ready for QA** — story ID, Dev Summary committed to repo |
-| `StartQa` | 🧪 **QA Started** — story ID, test plan committed to repo |
-| `FinishQa` | 🚢 **Released** — story ID, release notes committed to repo |
-
-> **Note:** `ReviewDev` only sends the notification on a **GO verdict**. A NO-GO stops
-> the workflow silently (no Teams noise) and returns the developer to fix Critical issues.
-
-To configure the webhook, add it to your project's `.evyasys/project.yaml`:
-```yaml
-teams:
-  webhook: "https://your-org.webhook.office.com/webhookb2/..."
-```
-
-Or set it via environment variable (useful for CI):
-```bash
-export TEAMS_WEBHOOK="https://your-org.webhook.office.com/webhookb2/..."
-```
+**Produces:** `<id>_ReleaseNotes.md` · ADO → **Done** · 🚢 Teams
 
 ---
 
 ## Complete artefact map
-
-Every artefact is committed to git and travels with the code through PRs.
 
 ```
 docs/
   stories/
     EVYA-1042_UserStory.md        ← CreateStory
     EVYA-1042_Subtasks.md         ← CreateSubtask
-    EVYA-1042_TechBrainstorm.md   ← StartDev   (agreed technical approach)
-    EVYA-1042_CodeReview.md       ← ReviewDev  (saved on GO verdict)
-    EVYA-1042_DevSummary.md       ← FinishDev  (QA starting document)
+    EVYA-1042_TechBrainstorm.md   ← StartDev
+    EVYA-1042_CodeReview.md       ← ReviewDev  (GO only)
+    EVYA-1042_DevSummary.md       ← FinishDev
     EVYA-1042_TestPlan.md         ← StartQa
     EVYA-1042_ReleaseNotes.md     ← FinishQa
   epics/
@@ -377,17 +307,19 @@ docs/
       EVYA-1042_UserStory.md      ← reference copy when Epic is set
 ```
 
+All artefacts committed to git — they travel with the code through PRs.
+
 ---
 
 ## Dry-run mode — preview without side effects
 
-Test any command without touching Azure DevOps or Teams:
-
+**macOS / Linux**
 ```bash
-# macOS / Linux
 EVYASYS_DRY_RUN=1 /evyasys:CreateStory
+```
 
-# Windows PowerShell
+**Windows (PowerShell)**
+```powershell
 $env:EVYASYS_DRY_RUN = "1"
 /evyasys:StartDev EVYA-1042
 ```
@@ -401,11 +333,10 @@ Logs exactly what would be sent to ADO and Teams without executing anything.
 Override any plugin default by placing a same-named file under `.evyasys/` in your
 project repo. Project files always win over plugin defaults.
 
-| To customise | Add this file in your project |
+| To customise | File in your project |
 |---|---|
 | Story naming rules | `.evyasys/rules/naming.md` |
 | Definition of Ready | `.evyasys/rules/definition-of-ready.md` |
-| No-tech-in-story rule | `.evyasys/rules/no-tech-in-story.md` |
 | Any workflow prompt | `.evyasys/workflows/<name>/PROMPT.md` |
 | BA role definition | `.evyasys/workflows/create-story/AGENT.md` |
 | Dev Lead role | `.evyasys/workflows/start-dev/AGENT.md` |
@@ -419,15 +350,14 @@ project repo. Project files always win over plugin defaults.
 
 ## About the two command forms
 
-Typing `/evya` shows both:
+Typing `/evya` shows two forms for each command:
 
-| Form | Example | When to use |
+| Form | Example | Use |
 |---|---|---|
-| `/evyasys:StartDev` | namespaced command | ✅ Use this for manual invocation |
+| `/evyasys:StartDev` | namespaced command | ✅ Manual invocation |
 | `/evyasys-start-dev` | skill trigger | Auto-invokes in agentic context |
 
-Both run the same workflow. Use `/evyasys:*` when you want to trigger a command
-explicitly.
+Both run the same workflow. Use `/evyasys:*` when triggering explicitly.
 
 ---
 
