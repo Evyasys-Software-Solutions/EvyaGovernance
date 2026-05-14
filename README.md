@@ -66,22 +66,40 @@ Type `/evya` — you should see 7 commands in autocomplete.
 
 ---
 
-### Step 2 — Save your Azure DevOps PAT (once per machine)
+### Step 2 — Machine setup (once per machine)
 
-Generate a token at `https://dev.azure.com/<your-org>/_usersSettings/tokens`  
-Scope needed: **Work Items (Read & write)**
-
-**macOS / Linux**
+**macOS / Linux** — saves PAT only:
 ```bash
 bash ~/.claude/plugins/evyasys/scripts/login.sh
 ```
 
-**Windows (PowerShell)**
+**Windows (PowerShell)** — saves PAT, ADO organisation, ADO project, and optional Teams webhook:
 ```powershell
-powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.claude\plugins\evyasys\scripts\login.ps1"
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.claude\plugins\evyasys\scripts\setup.ps1"
 ```
 
-Stored at `~/.evyasys/credentials` — never committed to any repo.
+The script walks you through four steps in order:
+
+1. **PAT** — Paste your Azure DevOps Personal Access Token (input is hidden).  
+   The script validates it immediately against Azure DevOps and confirms your account name.  
+   If the token is invalid or expired it aborts — nothing else is asked.
+2. **Organisation** — Your Azure DevOps organisation name (e.g. `contoso`).
+3. **Project** — Your Azure DevOps project name (e.g. `MyApp`).
+4. **Teams webhook** — Optional. Press Enter to skip; Evyasys will prompt on first command use if you skip here.
+
+All values are saved to `~/.evyasys/credentials` — never committed to any repo.
+
+Generate a PAT at `https://dev.azure.com/<your-org>/_usersSettings/tokens`  
+Scope needed: **Work Items (Read & write)**
+
+You can also pass any or all values as parameters — only the missing ones will be prompted interactively:
+```powershell
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.claude\plugins\evyasys\scripts\setup.ps1" `
+    -Pat "your-pat" `
+    -Org "your-ado-org" `
+    -Project "your-ado-project" `
+    -TeamsWebhook "https://your-org.webhook.office.com/webhookb2/..."
+```
 
 ---
 
@@ -97,13 +115,15 @@ cp -r ~/.claude/plugins/evyasys/project-template/.evyasys ./.evyasys
 Copy-Item -Recurse "$env:USERPROFILE\.claude\plugins\evyasys\project-template\.evyasys" ".\.evyasys"
 ```
 
-Edit `.evyasys/project.yaml` with all three settings:
+Edit `.evyasys/project.yaml` with your project settings:
 
 ```yaml
-# Display name shown in Teams cards
+# Display name shown in Teams cards — required
 name: "Customer Portal"
 
-# Azure DevOps — where stories and tasks are created
+# Azure DevOps — shared with teammates via git
+# Windows users who ran setup.ps1 already have these saved at machine level.
+# Set them here so the whole team picks them up via git pull.
 azure_devops:
   org: "YourAzureOrg"
   project: "YourAzureProject"
@@ -117,6 +137,10 @@ teams:
 > **Teams webhook:** leave blank and Evyasys will prompt for it on first use and
 > save it automatically. Either way it ends up in `project.yaml` for the whole team.
 
+> **Windows users:** `setup.ps1` already saved your ADO org and project to
+> `~/.evyasys/credentials`. The `azure_devops` block above is still recommended
+> so teammates get those settings automatically via `git pull`.
+
 Commit so every teammate gets the same config:
 
 ```bash
@@ -125,7 +149,7 @@ git commit -m "Add Evyasys config (ADO + Teams)"
 git push
 ```
 
-Teammates just `git pull` — no individual config needed beyond saving their own PAT.
+Teammates just `git pull` — no individual config needed beyond each person running `setup.ps1` (Windows) or `login.sh` (macOS/Linux) once for their own PAT.
 
 **Teams notifications your channel receives:**
 
@@ -170,10 +194,10 @@ run Step 1 again.
 |---|---|
 | `claude` command not found | Install Node.js 18+ then `npm install -g @anthropic-ai/claude-code` |
 | Commands don't appear | Clear cache (see above) and reinstall |
-| PAT not found | Run `scripts/login.sh` (macOS/Linux) or `scripts/login.ps1` (Windows) |
+| PAT not found | Re-run `setup.ps1` (Windows) or `login.sh` (macOS/Linux) |
 | Teams webhook missing | Run any command — it will prompt and save automatically |
-| ADO 401 error | PAT expired — re-run the login script |
-| Missing ADO org/project | Edit `.evyasys/project.yaml` |
+| ADO 401 error | PAT expired — re-run `setup.ps1` (Windows) or `login.sh` (macOS/Linux) |
+| Missing ADO org/project | Re-run `setup.ps1` (Windows) or edit `.evyasys/project.yaml` |
 | Wrong project loaded | Open Claude Code from inside the correct project folder |
 
 ---

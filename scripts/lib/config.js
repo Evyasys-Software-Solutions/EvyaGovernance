@@ -110,8 +110,8 @@ async function loadConfig({ ctx } = {}) {
     : dryRunRaw === '1';
 
   const azure = {
-    org: process.env.AZURE_ORG || (project.azure_devops && project.azure_devops.org) || '',
-    project: process.env.AZURE_PROJECT || (project.azure_devops && project.azure_devops.project) || '',
+    org: process.env.AZURE_ORG || userCreds.AZURE_ORG || (project.azure_devops && project.azure_devops.org) || '',
+    project: process.env.AZURE_PROJECT || userCreds.AZURE_PROJECT || (project.azure_devops && project.azure_devops.project) || '',
     pat: process.env.AZURE_PAT || userCreds.AZURE_PAT || '',
   };
 
