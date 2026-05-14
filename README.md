@@ -181,6 +181,11 @@ Remove-Item -Recurse -Force "$env:USERPROFILE\.claude\plugins\marketplaces" -Err
 Remove-Item -Recurse -Force "$env:USERPROFILE\.claude\plugins\evyasys" -ErrorAction SilentlyContinue
 ```
 
+Then **inside Claude Code**, run:
+```
+/plugin marketplace remove EvyaGovernance
+```
+
 Then reinstall (Step 1 above).
 
 ---
