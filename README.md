@@ -70,12 +70,14 @@ Type `/evya` — you should see 7 commands in autocomplete.
 
 **macOS / Linux** — saves PAT only:
 ```bash
-bash ~/.claude/plugins/evyasys/scripts/login.sh
+evyasys=$(ls -td ~/.claude/plugins/cache/EvyaGovernance/evyasys/*/ | head -1)
+bash "${evyasys}scripts/login.sh"
 ```
 
 **Windows (PowerShell)** — saves PAT, ADO organisation, ADO project, and optional Teams webhook:
 ```powershell
-powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.claude\plugins\evyasys\scripts\setup.ps1"
+$evyasys = (Get-Item "$env:USERPROFILE\.claude\plugins\cache\EvyaGovernance\evyasys\*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+powershell -ExecutionPolicy Bypass -File "$evyasys\scripts\setup.ps1"
 ```
 
 The script walks you through four steps in order:
@@ -94,7 +96,8 @@ Scope needed: **Work Items (Read & write)**
 
 You can also pass any or all values as parameters — only the missing ones will be prompted interactively:
 ```powershell
-powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.claude\plugins\evyasys\scripts\setup.ps1" `
+$evyasys = (Get-Item "$env:USERPROFILE\.claude\plugins\cache\EvyaGovernance\evyasys\*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+powershell -ExecutionPolicy Bypass -File "$evyasys\scripts\setup.ps1" `
     -Pat "your-pat" `
     -Org "your-ado-org" `
     -Project "your-ado-project" `
@@ -105,14 +108,27 @@ powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.claude\plugins\evyas
 
 ### Step 3 — Configure your project (once per repo)
 
+> **Run these commands from your project's root folder.** The template is copied
+> to wherever your terminal is currently open. Confirm your location first, then copy.
+
 **macOS / Linux**
 ```bash
-cp -r ~/.claude/plugins/evyasys/project-template/.evyasys ./.evyasys
+# Confirm you are in your project root
+pwd
+
+# Copy the template (only proceed if the path above is correct)
+evyasys=$(ls -td ~/.claude/plugins/cache/EvyaGovernance/evyasys/*/ | head -1)
+cp -r "${evyasys}project-template/.evyasys" ./.evyasys
 ```
 
 **Windows (PowerShell)**
 ```powershell
-Copy-Item -Recurse "$env:USERPROFILE\.claude\plugins\evyasys\project-template\.evyasys" ".\.evyasys"
+# Confirm you are in your project root
+Get-Location
+
+# Copy the template (only proceed if the path above is correct)
+$evyasys = (Get-Item "$env:USERPROFILE\.claude\plugins\cache\EvyaGovernance\evyasys\*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+Copy-Item -Recurse "$evyasys\project-template\.evyasys" ".\.evyasys"
 ```
 
 Edit `.evyasys/project.yaml` with your project settings:
@@ -199,10 +215,10 @@ run Step 1 again.
 |---|---|
 | `claude` command not found | Install Node.js 18+ then `npm install -g @anthropic-ai/claude-code` |
 | Commands don't appear | Clear cache (see above) and reinstall |
-| PAT not found | Re-run `setup.ps1` (Windows) or `login.sh` (macOS/Linux) |
+| PAT not found | Re-run Step 2 above (Windows: `setup.ps1`, macOS/Linux: `login.sh`) |
 | Teams webhook missing | Run any command — it will prompt and save automatically |
-| ADO 401 error | PAT expired — re-run `setup.ps1` (Windows) or `login.sh` (macOS/Linux) |
-| Missing ADO org/project | Re-run `setup.ps1` (Windows) or edit `.evyasys/project.yaml` |
+| ADO 401 error | PAT expired — re-run Step 2 above |
+| Missing ADO org/project | Re-run Step 2 above (Windows) or edit `.evyasys/project.yaml` |
 | Wrong project loaded | Open Claude Code from inside the correct project folder |
 
 ---
