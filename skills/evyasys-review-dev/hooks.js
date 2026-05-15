@@ -2,6 +2,7 @@ const path = require('path');
 const fs   = require('fs');
 const { runIntegration }             = require('../../scripts/lib/dryrun');
 const { loadConfig, ensureTeamsWebhook } = require('../../scripts/lib/config');
+const adoMap                         = require('../../scripts/lib/ado-map');
 
 module.exports = async function (ctx) {
   const cfg     = await loadConfig({ ctx });
@@ -19,14 +20,16 @@ module.exports = async function (ctx) {
     return;
   }
 
+  const storyDir = adoMap.lookupDir(cfg.repoRoot, storyId)
+    || path.join(cfg.repoRoot, '.evyasys', 'board', 'stories', storyId);
+
   if (!isGo) {
-    const save = await ctx.confirm('Save this review report to docs/stories/?');
+    const save = await ctx.confirm(`Save this review report to ${storyDir}?`);
     if (!save) { ctx.send('Review not saved. Run /evyasys:ReviewDev again when ready.'); return; }
   }
 
-  const storiesDir = path.join(cfg.repoRoot, 'docs', 'stories');
-  fs.mkdirSync(storiesDir, { recursive: true });
-  const reviewPath = path.join(storiesDir, `${storyId}_CodeReview.md`);
+  fs.mkdirSync(storyDir, { recursive: true });
+  const reviewPath = path.join(storyDir, `${storyId}_CodeReview.md`);
   fs.writeFileSync(reviewPath, review, 'utf8');
   ctx.send(`Code review saved → ${reviewPath}`);
 

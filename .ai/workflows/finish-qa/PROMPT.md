@@ -4,9 +4,10 @@ You are the Release Manager / Senior QA described in `AGENT.md`.
 
 ## Inputs
 - StoryID from `$ARGUMENTS`
-- Test Plan (with the QA team's recorded outcomes): `docs/stories/<id>_TestPlan.md`
-- Story: `docs/stories/<id>_UserStory.md`
-- Dev Summary: `docs/stories/<id>_DevSummary.md`
+- Story folder: find via Glob `.evyasys/board/**/<id>/`
+- Test Plan (with the QA team's recorded outcomes): `<story-folder>/<id>_TestPlan.md`
+- Story: `<story-folder>/<id>_UserStory.md`
+- Dev Summary: `<story-folder>/<id>_DevSummary.md`
 - Rules: `.ai/rules/*.md`
 - Release notes template: `.ai/workflows/finish-qa/RELEASE_NOTES_TEMPLATE.md`
 
@@ -17,7 +18,7 @@ You are the Release Manager / Senior QA described in `AGENT.md`.
 ## Task
 
 ### Step 1 — TC outcome audit
-Read `docs/stories/<id>_TestPlan.md`.
+Find the story folder by globbing `.evyasys/board/**/<id>/`. Read `<id>_TestPlan.md` from that folder.
 For every test case listed, verify it has a recorded outcome: **Pass / Fail / Blocked**.
 If any TC has no outcome recorded, list them and ask the user to update the file first.
 Do not proceed past this step until all TCs have outcomes.
@@ -46,6 +47,6 @@ Present the release notes to the user.
 Wait for explicit approval before the hook transitions ADO to Done.
 
 ## Output
-- `docs/stories/<StoryID>_ReleaseNotes.md`
+- `.evyasys/board/**/<StoryID>/<StoryID>_ReleaseNotes.md`
 - ADO state → **Done**
 - Teams release card posted

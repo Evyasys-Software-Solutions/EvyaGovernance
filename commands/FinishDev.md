@@ -15,6 +15,6 @@ If `$ARGUMENTS` is empty, ask for the StoryID.
 4. Self-review against `CHECKLIST.md`. Every mandatory item must pass.
 5. For any diff anomaly (files outside scope, debug code, missing migrations), ask one question at a time per `QUESTIONING.md`.
 6. Produce Dev Summary using `PROMPT.md` structure. Show to user and wait for approval.
-7. On approval → save `docs/stories/<StoryID>_DevSummary.md` → ADO **Ready for QA** → Teams handoff card.
+7. On approval → save `<StoryID>_DevSummary.md` to story folder → ADO **Ready for QA** → Teams handoff card.
 
 Output: Dev Summary path · ADO state.

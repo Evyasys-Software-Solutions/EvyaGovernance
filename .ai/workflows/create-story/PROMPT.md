@@ -9,10 +9,10 @@ You are Evya Business Analyst described in `AGENT.md`.
 Ask this single question before loading any context or drafting anything:
 
 > "Where should I save this story file?
-> (a) `docs/stories/` — standard location (recommended)
+> (a) `.evyasys/board/` — auto-organized under epics (recommended)
 > (b) A different folder — paste the relative path from your project root"
 
-Wait for the answer. Store it as `SAVE_FOLDER`. Default to `docs/stories/` if the user picks (a) or presses Enter.
+Wait for the answer. Store it as `SAVE_FOLDER`. Default to `.evyasys/board/` (option a) if the user picks (a) or presses Enter — the hook places it at `board/epics/<epic-id>/stories/<id>/` or `board/stories/<id>/` automatically.
 
 ---
 
@@ -50,8 +50,7 @@ Run `CHECKLIST.md` and `VALIDATION.md`. Rewrite silently once if any item fails.
 ## Step 5 — Show and confirm
 Present the complete story draft to the user.
 State clearly:
-- Where the file will be saved: `<SAVE_FOLDER>/<EVYA-id>_UserStory.md`
-- If an epic is set: "A reference copy will also be saved to `docs/epics/<epic-id>/`"
+- Where the file will be saved: `.evyasys/board/epics/<epic-id>/stories/<EVYA-id>/` (or `.evyasys/board/stories/<EVYA-id>/` if no epic)
 - ADO + Teams actions that will happen on approval
 
 Wait for explicit approval before the hook runs.
@@ -59,17 +58,17 @@ Wait for explicit approval before the hook runs.
 ---
 
 ## On approval — hook actions
-1. Save story to `<SAVE_FOLDER>/<EVYA-id>_UserStory.md`
-2. If `Epic:` field is set: save reference copy to `docs/epics/<epic-id>/<EVYA-id>_UserStory.md`
-3. Create ADO User Story work item — link to epic if epic ID present
-4. Post Teams notification
-5. Prompt for PAT if not in `~/.evyasys/credentials`
-6. Prompt for Teams webhook if not in `.evyasys/project.yaml`
+1. Save story to `.evyasys/board/epics/<epic-id>/stories/<EVYA-id>/` (or `.evyasys/board/stories/<EVYA-id>/` if no epic)
+2. Create or locate Epic in ADO (check local map → WIQL search → create if not found)
+3. Create ADO User Story work item — link to Epic if present; back-write ADO ID into the file
+4. Save Evyasys ID → ADO ID + folder path to `.evyasys/.ado-map.json`
+5. Post Teams notification
+6. Prompt for PAT if not in `~/.evyasys/credentials`
+7. Prompt for Teams webhook if not in `.evyasys/project.yaml`
 
 ---
 
 ## Output
-- `<SAVE_FOLDER>/<StoryID>_UserStory.md`
-- `docs/epics/<EpicID>/<StoryID>_UserStory.md` (reference copy, if epic set)
+- `.evyasys/board/epics/<EpicID>/stories/<StoryID>/<StoryID>_UserStory.md` (or `board/stories/<StoryID>/` if no epic)
 - ADO work item URL (linked to epic if applicable)
 - Teams card status

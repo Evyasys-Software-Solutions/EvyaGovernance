@@ -4,8 +4,8 @@
  * Default mode is LIVE; set EVYASYS_DRY_RUN=1 to preview without HTTP.
  *
  * CLI:
- *   node azure_devops.js create-story    --file <path>           [--id <EVYA-id>]
- *   node azure_devops.js create-subtasks --story <EVYA-id> --file <path>
+ *   node azure_devops.js create-stories  --file <path> [--id <EVYA-id>]
+ *   node azure_devops.js create-subtasks --story <EVYA-id> --file <path> [--story-ado-id <num>]
  *   node azure_devops.js set-state       --id <EVYA-id> --state <State>
  *   node azure_devops.js get-work-item   --id <EVYA-id>
  */
@@ -19,6 +19,10 @@ function adoUrl(cfg, suffix) {
   return `https://dev.azure.com/${encodeURIComponent(cfg.azure.org)}/${encodeURIComponent(cfg.azure.project)}/_apis/wit/${suffix}`;
 }
 
+function witTypeUrl(type) {
+  return `workitems/$${encodeURIComponent(type)}?api-version=7.1`;
+}
+
 async function adoFetch(cfg, suffix, { method = 'GET', body } = {}) {
   const url = adoUrl(cfg, suffix);
   if (cfg.dryRun) {
@@ -30,7 +34,7 @@ async function adoFetch(cfg, suffix, { method = 'GET', body } = {}) {
     throw new Error('AZURE_ORG / AZURE_PROJECT not set (check .evyasys/project.yaml or env).');
   }
   if (!cfg.azure.pat) {
-    throw new Error('No PAT available. Run scripts/login.sh (or login.ps1) once.');
+    throw new Error('No PAT available. Run scripts/login.sh (macOS/Linux) or scripts/setup.ps1 (Windows) once.');
   }
   const fetchFn = typeof fetch !== 'undefined' ? fetch : require('node-fetch');
   const res = await fetchFn(url, {
@@ -58,29 +62,73 @@ function parseStoryMarkdown(file) {
 }
 
 /**
- * Link a newly-created User Story to its parent Epic using the ADO hierarchy relation.
- * epicId may be a numeric ADO ID or an EVYA-style prefix (we strip non-digits).
+ * Set a parent–child hierarchy link in ADO.
+ * Used for: Story → Epic  and  Task → Story.
+ * parentAdoId must be the numeric ADO work item ID.
  */
-async function linkToEpic(cfg, storyNumericId, epicId) {
-  const epicNumericId = String(epicId).replace(/[^0-9]/g, '');
-  if (!epicNumericId) {
-    console.warn(`[evyasys] Could not extract numeric ADO ID from epicId="${epicId}" — skipping link.`);
+async function linkToParent(cfg, childAdoId, parentAdoId) {
+  const numericParent = String(parentAdoId).replace(/[^0-9]/g, '');
+  if (!numericParent) {
+    console.warn(`[evyasys] Invalid parent ADO ID "${parentAdoId}" — skipping hierarchy link.`);
     return;
   }
-  const epicUrl = adoUrl(cfg, `workitems/${epicNumericId}`);
+  const parentUrl = adoUrl(cfg, `workitems/${numericParent}`);
   const patch = [{
     op: 'add',
     path: '/relations/-',
     value: {
       rel: 'System.LinkTypes.Hierarchy-Reverse',
-      url: epicUrl,
-      attributes: { comment: 'Linked by Evyasys /EvyaCreateStory' },
+      url: parentUrl,
+      attributes: { comment: 'Linked by Evyasys' },
     },
   }];
-  return adoFetch(cfg, `workitems/${storyNumericId}?api-version=7.1`, { method: 'PATCH', body: patch });
+  return adoFetch(cfg, `workitems/${childAdoId}?api-version=7.1`, { method: 'PATCH', body: patch });
 }
 
-async function createStory({ storyId, file, epicId: explicitEpicId }) {
+/**
+ * Search ADO for an existing Epic whose title matches epicId.
+ * Returns the numeric ADO work item ID, or null if not found.
+ * Uses WIQL so the lookup works regardless of the local map state.
+ */
+async function findEpic({ epicId }) {
+  const cfg = await loadConfig();
+  if (cfg.dryRun) return null;
+  const safeEpicId  = epicId.replace(/'/g, "''");
+  const safeProject = cfg.azure.project.replace(/'/g, "''");
+  const safeType    = cfg.workItemTypes.epic.replace(/'/g, "''");
+  const wiql = {
+    query: `SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = '${safeType}' AND [System.Title] = '${safeEpicId}' AND [System.TeamProject] = '${safeProject}'`,
+  };
+  try {
+    const result = await adoFetch(cfg, 'wiql?api-version=7.1', { method: 'POST', body: wiql });
+    if (result && result.workItems && result.workItems.length > 0) {
+      return result.workItems[0].id;
+    }
+  } catch (e) {
+    console.warn(`[evyasys] Epic search failed (will attempt creation): ${e.message}`);
+  }
+  return null;
+}
+
+/**
+ * Create an Epic work item.
+ * Called internally by the create-story hook when no existing Epic is found.
+ */
+async function createEpic({ epicId, title }) {
+  const cfg = await loadConfig();
+  const patch = [
+    { op: 'add', path: '/fields/System.Title',       value: title || epicId },
+    { op: 'add', path: '/fields/System.Description', value: `Epic: ${epicId}` },
+  ];
+  return adoFetch(cfg, witTypeUrl(cfg.workItemTypes.epic), { method: 'POST', body: patch });
+}
+
+/**
+ * Create a User Story work item and link it to its parent Epic.
+ * If epicId is a non-numeric Evyasys-style ID (e.g. "EP-001"), the Epic is
+ * created automatically first and the numeric ADO ID is used for linking.
+ */
+async function createStories({ storyId, file, epicId: explicitEpicId }) {
   const cfg = await loadConfig();
   const { title, description, epicId: parsedEpicId } = parseStoryMarkdown(file);
   const epicId = explicitEpicId || parsedEpicId;
@@ -89,12 +137,11 @@ async function createStory({ storyId, file, epicId: explicitEpicId }) {
     { op: 'add', path: '/fields/System.Title',       value: storyId ? `${storyId}: ${title}` : title },
     { op: 'add', path: '/fields/System.Description', value: description },
   ];
-  const created = await adoFetch(cfg, 'workitems/$User%20Story?api-version=7.1', { method: 'POST', body: patch });
+  const created = await adoFetch(cfg, witTypeUrl(cfg.workItemTypes.story), { method: 'POST', body: patch });
 
-  // Link to epic if we have both ADO IDs
   if (epicId && created && created.id && !cfg.dryRun) {
     try {
-      await linkToEpic(cfg, created.id, epicId);
+      await linkToParent(cfg, created.id, epicId);
       console.log(`[evyasys] Linked story ${created.id} → epic ${epicId}`);
     } catch (e) {
       console.warn(`[evyasys] Epic link failed (story still created): ${e.message}`);
@@ -104,7 +151,12 @@ async function createStory({ storyId, file, epicId: explicitEpicId }) {
   return created;
 }
 
-async function createSubtasks({ storyId, file }) {
+/**
+ * Create Task work items for each section in the subtasks file.
+ * If storyAdoId is supplied, each task is linked to the parent User Story
+ * using the ADO hierarchy relation.
+ */
+async function createSubtasks({ storyId, file, storyAdoId }) {
   const cfg = await loadConfig();
   const md = fs.readFileSync(file, 'utf8');
   const sections = md.split(/\n##\s+Task\s+\d+/i).slice(1);
@@ -112,10 +164,19 @@ async function createSubtasks({ storyId, file }) {
   for (const section of sections) {
     const titleLine = section.split('\n')[0].replace(/^[-—\s:]+/, '').trim() || 'Untitled task';
     const patch = [
-      { op: 'add', path: '/fields/System.Title', value: `${storyId}: ${titleLine}` },
+      { op: 'add', path: '/fields/System.Title',       value: `${storyId}: ${titleLine}` },
       { op: 'add', path: '/fields/System.Description', value: section.trim() },
     ];
-    results.push(await adoFetch(cfg, 'workitems/$Task?api-version=7.1', { method: 'POST', body: patch }));
+    const created = await adoFetch(cfg, witTypeUrl(cfg.workItemTypes.task), { method: 'POST', body: patch });
+    if (storyAdoId && created && created.id && !cfg.dryRun) {
+      try {
+        await linkToParent(cfg, created.id, storyAdoId);
+        console.log(`[evyasys] Linked task ${created.id} → story ${storyAdoId}`);
+      } catch (e) {
+        console.warn(`[evyasys] Story link failed (task still created): ${e.message}`);
+      }
+    }
+    results.push(created);
   }
   return results;
 }
@@ -147,8 +208,8 @@ if (require.main === module) {
   const [sub, ...rest] = process.argv.slice(2);
   const args = parseArgs(rest);
   const map = {
-    'create-story':    () => createStory({ storyId: args.id, file: args.file }),
-    'create-subtasks': () => createSubtasks({ storyId: args.story, file: args.file }),
+    'create-stories':  () => createStories({ storyId: args.id, file: args.file }),
+    'create-subtasks': () => createSubtasks({ storyId: args.story, file: args.file, storyAdoId: args['story-ado-id'] }),
     'set-state':       () => setState({ storyId: args.id, state: args.state }),
     'get-work-item':   () => getWorkItem({ storyId: args.id }),
   };
@@ -157,4 +218,4 @@ if (require.main === module) {
             .catch((e) => { console.error(e); process.exit(1); });
 }
 
-module.exports = { createStory, createSubtasks, setState, getWorkItem };
+module.exports = { findEpic, createEpic, createStories, createSubtasks, setState, getWorkItem };

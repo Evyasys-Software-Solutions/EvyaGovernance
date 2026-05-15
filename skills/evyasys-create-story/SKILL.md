@@ -24,6 +24,6 @@ Drives the **Create Story** phase of Evyasys.
 6. On approval, run `hooks.js` → save markdown, push to Azure DevOps, notify Teams.
 
 ## Output
-- `docs/stories/<StoryID>_UserStory.md`
-- ADO work item URL
+- `.evyasys/board/epics/<EpicID>/stories/<StoryID>/<StoryID>_UserStory.md` (or `board/stories/<StoryID>/` if no epic)
+- ADO work item URL (ID back-written into file)
 - Teams card status

@@ -8,6 +8,7 @@ const path = require('path');
 const fs   = require('fs');
 const { runIntegration }                    = require('../../scripts/lib/dryrun');
 const { loadConfig, ensurePat, ensureTeamsWebhook } = require('../../scripts/lib/config');
+const adoMap                                = require('../../scripts/lib/ado-map');
 
 module.exports = async function (ctx) {
   const cfg     = await loadConfig({ ctx });
@@ -18,12 +19,14 @@ module.exports = async function (ctx) {
     return;
   }
 
-  // Save brainstorm document if the agent produced one
+  // Save brainstorm document if the agent produced one.
+  // Resolves the story folder from the map; falls back to board/stories/{id}/.
   const brainstorm = ctx.brainstorm || ctx.agentResult;
   if (brainstorm) {
-    const storiesDir = path.join(cfg.repoRoot, 'docs', 'stories');
-    fs.mkdirSync(storiesDir, { recursive: true });
-    const brainstormPath = path.join(storiesDir, `${storyId}_TechBrainstorm.md`);
+    const storyDir = adoMap.lookupDir(cfg.repoRoot, storyId)
+      || path.join(cfg.repoRoot, '.evyasys', 'board', 'stories', storyId);
+    fs.mkdirSync(storyDir, { recursive: true });
+    const brainstormPath = path.join(storyDir, `${storyId}_TechBrainstorm.md`);
     fs.writeFileSync(brainstormPath, brainstorm, 'utf8');
     ctx.send(`Saved tech brainstorm → ${brainstormPath}`);
   }

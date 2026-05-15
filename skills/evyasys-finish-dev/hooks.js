@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const { runIntegration } = require('../../scripts/lib/dryrun');
 const { loadConfig, ensurePat, ensureTeamsWebhook } = require('../../scripts/lib/config');
+const adoMap = require('../../scripts/lib/ado-map');
 
 module.exports = async function (ctx) {
   const cfg = await loadConfig({ ctx });
@@ -9,8 +10,10 @@ module.exports = async function (ctx) {
   if (!storyId) { ctx.send('Missing StoryID. Usage: /evyasys:FinishDev <StoryID>'); return; }
   const summary = ctx.agentResult;
   if (summary) {
-    const out = path.join(cfg.repoRoot, 'docs', 'stories', `${storyId}_DevSummary.md`);
-    fs.mkdirSync(path.dirname(out), { recursive: true });
+    const storyDir = adoMap.lookupDir(cfg.repoRoot, storyId)
+      || path.join(cfg.repoRoot, '.evyasys', 'board', 'stories', storyId);
+    fs.mkdirSync(storyDir, { recursive: true });
+    const out = path.join(storyDir, `${storyId}_DevSummary.md`);
     fs.writeFileSync(out, summary, 'utf8');
     ctx.send(`Saved dev summary → ${out}`);
   }

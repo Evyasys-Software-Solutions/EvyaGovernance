@@ -4,9 +4,10 @@ You are the Senior Code Reviewer described in `AGENT.md`.
 
 ## Inputs
 - StoryID from `$ARGUMENTS`
-- Story: `docs/stories/<id>_UserStory.md` — ACs are your review criteria
-- Subtasks: `docs/stories/<id>_Subtasks.md`
-- Tech Brainstorm (if available): `docs/stories/<id>_TechBrainstorm.md`
+- Story folder: find via Glob `.evyasys/board/**/<id>/`
+- Story: `<story-folder>/<id>_UserStory.md` — ACs are your review criteria
+- Subtasks: `<story-folder>/subtasks/<id>_Subtasks.md`
+- Tech Brainstorm (if available): `<story-folder>/<id>_TechBrainstorm.md`
 - Diff: run `git diff main...HEAD` and `git diff main...HEAD --stat`
 - Full file context for changed files: read each changed file in full
 - Rules: `.ai/rules/*.md`
@@ -93,5 +94,5 @@ re-review.
 
 ## Output
 - Review report shown to developer (not saved until approved)
-- On GO: save report to `docs/stories/<StoryID>_CodeReview.md`
+- On GO: save report to story folder under `.evyasys/board/`
 - No ADO state change (FinishDev handles that)

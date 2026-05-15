@@ -18,4 +18,4 @@
 - [ ] All Critical items either fixed (with evidence) or formally waived by the user
 - [ ] Important items addressed or deferred with documented justification
 - [ ] Re-diff run after fixes to confirm changes are actually there
-- [ ] Report saved to `docs/stories/<id>_CodeReview.md`
+- [ ] Report saved to story folder under `.evyasys/board/`

@@ -95,5 +95,5 @@ No class names, endpoints, or implementation detail.>
 
 ---
 
-*This document is saved to `docs/stories/<id>_TechBrainstorm.md` and committed
-with the PR so the decision travels with the code.*
+*This document is saved to `.evyasys/board/**/<id>/<id>_TechBrainstorm.md` and
+committed with the PR so the decision travels with the code.*

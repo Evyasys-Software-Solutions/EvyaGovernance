@@ -123,6 +123,7 @@ async function loadConfig({ ctx } = {}) {
           || '',
   };
 
+  const wit = project.work_item_types || {};
   return {
     pluginRoot,
     repoRoot,
@@ -135,6 +136,11 @@ async function loadConfig({ ctx } = {}) {
     },
     azure,
     teams,
+    workItemTypes: {
+      epic:  process.env.ADO_TYPE_EPIC  || wit.epic  || 'Epic',
+      story: process.env.ADO_TYPE_STORY || wit.story || 'User Story',
+      task:  process.env.ADO_TYPE_TASK  || wit.task  || 'Task',
+    },
     userCreds: { file: userCredsPath() },
     _ctx: ctx,
   };

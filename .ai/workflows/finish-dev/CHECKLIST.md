@@ -7,4 +7,4 @@
 - [ ] Documentation (README / ADR / API docs) updated where applicable.
 - [ ] Feature flag default state confirmed (off for risky changes).
 - [ ] Rollback plan documented in the PR description (or "N/A — purely additive").
-- [ ] Dev Summary saved to `docs/stories/<id>_DevSummary.md`.
+- [ ] Dev Summary saved to story folder under `.evyasys/board/`.

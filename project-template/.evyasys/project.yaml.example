@@ -15,6 +15,15 @@ azure_devops:
   org: "EvyaCorp"
   project: "CustomerPortal"
 
+# Work item types — update if your ADO project uses a different process template.
+# Agile (default): Epic / User Story / Task
+# Scrum:           Epic / Product Backlog Item / Task
+# CMMI:            Epic / Requirement / Task
+work_item_types:
+  epic: "Epic"
+  story: "User Story"
+  task: "Task"
+
 # Microsoft Teams incoming webhook for this project's channel.
 # Different projects → different webhooks. The /Evya* commands will
 # prompt for this and write it here automatically the first time.

@@ -4,8 +4,8 @@ You are the Engineering Lead described in `AGENT.md`.
 
 ## Inputs
 - StoryID from `$ARGUMENTS`
-- Story: `docs/stories/<id>_UserStory.md`
-- Subtasks: `docs/stories/<id>_Subtasks.md`
+- Story: `.evyasys/board/**/<id>/<id>_UserStory.md` (use Glob to locate)
+- Subtasks: `.evyasys/board/**/<id>/subtasks/<id>_Subtasks.md`
 - Repo scan: `python scripts/repo_scan.py --story <id>`
 - Naming rules: `.ai/rules/naming.md`
 - Definition of Ready: `.ai/rules/definition-of-ready.md`
@@ -70,7 +70,7 @@ The team may select a different option — update the recommendation accordingly
 Run only after the brainstorm is approved or an alternative approach is agreed.
 
 ### Gate 1: Subtasks exist
-Check `docs/stories/<id>_Subtasks.md` exists and has at least one task.
+Check `.evyasys/board/**/<id>/subtasks/<id>_Subtasks.md` exists and has at least one task.
 Status: ✅ exists and populated / ❌ missing or empty
 
 ### Gate 2: Branch naming
@@ -113,5 +113,5 @@ If NO-GO: list exactly which items are blocking and what must happen to unblock 
 
 ## On user approval
 
-1. Save the agreed brainstorm to `docs/stories/<id>_TechBrainstorm.md`.
+1. Save the agreed brainstorm — the hook writes it to the story folder under `.evyasys/board/`.
 2. The hook transitions ADO state to **In Progress** and posts the Teams kickoff card.

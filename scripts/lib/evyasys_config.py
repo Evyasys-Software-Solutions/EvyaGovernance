@@ -88,12 +88,13 @@ def load_config() -> dict:
         dry_run = dry_raw == "1"
 
     azure = {
-        "org": os.environ.get("AZURE_ORG", "") or (project.get("azure_devops") or {}).get("org", ""),
-        "project": os.environ.get("AZURE_PROJECT", "") or (project.get("azure_devops") or {}).get("project", ""),
+        "org": os.environ.get("AZURE_ORG", "") or user_creds.get("AZURE_ORG", "") or (project.get("azure_devops") or {}).get("org", ""),
+        "project": os.environ.get("AZURE_PROJECT", "") or user_creds.get("AZURE_PROJECT", "") or (project.get("azure_devops") or {}).get("project", ""),
         "pat": os.environ.get("AZURE_PAT", "") or user_creds.get("AZURE_PAT", ""),
     }
     teams = {"webhook": os.environ.get("TEAMS_WEBHOOK", "") or (project.get("teams") or {}).get("webhook", "")}
 
+    wit = project.get("work_item_types") or {}
     return {
         "plugin_root": str(plugin_root),
         "repo_root": str(repo_root),
@@ -106,5 +107,10 @@ def load_config() -> dict:
         },
         "azure": azure,
         "teams": teams,
+        "work_item_types": {
+            "epic":  os.environ.get("ADO_TYPE_EPIC")  or wit.get("epic")  or "Epic",
+            "story": os.environ.get("ADO_TYPE_STORY") or wit.get("story") or "User Story",
+            "task":  os.environ.get("ADO_TYPE_TASK")  or wit.get("task")  or "Task",
+        },
         "user_creds_file": str(user_creds_path()),
     }

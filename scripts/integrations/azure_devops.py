@@ -4,8 +4,8 @@ Reads layered config: env > ~/.evyasys/credentials > .evyasys/project.yaml.
 Default mode is LIVE. Set EVYASYS_DRY_RUN=1 to preview.
 
 Usage:
-    python azure_devops.py create-story    --file PATH [--id EVYA-id]
-    python azure_devops.py create-subtasks --story EVYA-id --file PATH
+    python azure_devops.py create-stories  --file PATH [--id EVYA-id]
+    python azure_devops.py create-subtasks --story EVYA-id --file PATH [--story-ado-id NUM]
     python azure_devops.py set-state       --id EVYA-id --state STATE
     python azure_devops.py get-work-item   --id EVYA-id
 """
@@ -30,6 +30,10 @@ def _ado_url(cfg: dict, suffix: str) -> str:
     return f"https://dev.azure.com/{org}/{project}/_apis/wit/{suffix}"
 
 
+def _wit_type_url(type_name: str) -> str:
+    return f"workitems/${urllib.parse.quote(type_name, safe='')}?api-version=7.1"
+
+
 def _request(cfg: dict, suffix: str, *, method: str = "GET", body: Any = None) -> Any:
     url = _ado_url(cfg, suffix)
     if cfg["dry_run"]:
@@ -40,7 +44,7 @@ def _request(cfg: dict, suffix: str, *, method: str = "GET", body: Any = None) -
     if not cfg["azure"]["org"] or not cfg["azure"]["project"]:
         raise RuntimeError("AZURE_ORG/AZURE_PROJECT not set (.evyasys/project.yaml or env).")
     if not cfg["azure"]["pat"]:
-        raise RuntimeError("No PAT available. Run scripts/login.sh (or login.ps1).")
+        raise RuntimeError("No PAT available. Run scripts/login.sh (macOS/Linux) or scripts/setup.ps1 (Windows).")
 
     try:
         import requests  # type: ignore
@@ -68,7 +72,64 @@ def _parse_story(file: Path) -> dict:
     return {"title": title, "description": md}
 
 
-def create_story(*, story_id: str | None, file: str) -> Any:
+def _link_to_parent(cfg: dict, child_ado_id: int, parent_ado_id: int) -> Any:
+    """Set a parent–child hierarchy link. Used for Story→Epic and Task→Story."""
+    numeric_parent = "".join(ch for ch in str(parent_ado_id) if ch.isdigit())
+    if not numeric_parent:
+        print(f"[evyasys] Invalid parent ADO ID '{parent_ado_id}' — skipping hierarchy link.")
+        return None
+    parent_url = _ado_url(cfg, f"workitems/{numeric_parent}")
+    patch = [{
+        "op": "add",
+        "path": "/relations/-",
+        "value": {
+            "rel": "System.LinkTypes.Hierarchy-Reverse",
+            "url": parent_url,
+            "attributes": {"comment": "Linked by Evyasys"},
+        },
+    }]
+    return _request(cfg, f"workitems/{child_ado_id}?api-version=7.1", method="PATCH", body=patch)
+
+
+def find_epic(*, epic_id: str) -> int | None:
+    """Search ADO for an existing Epic whose title matches epic_id.
+    Returns the numeric ADO work item ID, or None if not found.
+    Uses WIQL so the lookup works regardless of local map state."""
+    cfg = load_config()
+    if cfg["dry_run"]:
+        return None
+    safe_epic_id  = epic_id.replace("'", "''")
+    safe_project  = cfg["azure"]["project"].replace("'", "''")
+    safe_type     = cfg["work_item_types"]["epic"].replace("'", "''")
+    wiql = {
+        "query": (
+            f"SELECT [System.Id] FROM WorkItems "
+            f"WHERE [System.WorkItemType] = '{safe_type}' "
+            f"AND [System.Title] = '{safe_epic_id}' "
+            f"AND [System.TeamProject] = '{safe_project}'"
+        ),
+    }
+    try:
+        result = _request(cfg, "wiql?api-version=7.1", method="POST", body=wiql)
+        if result and result.get("workItems"):
+            return result["workItems"][0]["id"]
+    except Exception as e:
+        print(f"[evyasys] Epic search failed (will attempt creation): {e}")
+    return None
+
+
+def create_epic(*, epic_id: str, title: str | None = None) -> Any:
+    """Create an Epic work item. Called internally by create_stories."""
+    cfg = load_config()
+    patch = [
+        {"op": "add", "path": "/fields/System.Title", "value": title or epic_id},
+        {"op": "add", "path": "/fields/System.Description", "value": f"Epic: {epic_id}"},
+    ]
+    return _request(cfg, _wit_type_url(cfg["work_item_types"]["epic"]), method="POST", body=patch)
+
+
+def create_stories(*, story_id: str | None, file: str, epic_id: str | None = None) -> Any:
+    """Create a User Story work item and link it to its parent Epic."""
     cfg = load_config()
     parsed = _parse_story(Path(file))
     title = f"{story_id}: {parsed['title']}" if story_id else parsed["title"]
@@ -76,10 +137,19 @@ def create_story(*, story_id: str | None, file: str) -> Any:
         {"op": "add", "path": "/fields/System.Title", "value": title},
         {"op": "add", "path": "/fields/System.Description", "value": parsed["description"]},
     ]
-    return _request(cfg, "workitems/$User%20Story?api-version=7.1", method="POST", body=patch)
+    created = _request(cfg, _wit_type_url(cfg["work_item_types"]["story"]), method="POST", body=patch)
+    if epic_id and created and created.get("id") and not cfg["dry_run"]:
+        try:
+            _link_to_parent(cfg, created["id"], epic_id)
+            print(f"[evyasys] Linked story {created['id']} → epic {epic_id}")
+        except Exception as e:
+            print(f"[evyasys] Epic link failed (story still created): {e}")
+    return created
 
 
-def create_subtasks(*, story_id: str, file: str) -> Any:
+def create_subtasks(*, story_id: str, file: str, story_ado_id: int | None = None) -> Any:
+    """Create Task work items. If story_ado_id is supplied, each task is linked
+    to the parent User Story using the ADO hierarchy relation."""
     cfg = load_config()
     md = Path(file).read_text(encoding="utf-8")
     parts: list[str] = []
@@ -101,7 +171,14 @@ def create_subtasks(*, story_id: str, file: str) -> Any:
             {"op": "add", "path": "/fields/System.Title", "value": f"{story_id}: {title_line}"},
             {"op": "add", "path": "/fields/System.Description", "value": section.strip()},
         ]
-        results.append(_request(cfg, "workitems/$Task?api-version=7.1", method="POST", body=patch))
+        created = _request(cfg, _wit_type_url(cfg["work_item_types"]["task"]), method="POST", body=patch)
+        if story_ado_id and created and created.get("id") and not cfg["dry_run"]:
+            try:
+                _link_to_parent(cfg, created["id"], story_ado_id)
+                print(f"[evyasys] Linked task {created['id']} → story {story_ado_id}")
+            except Exception as e:
+                print(f"[evyasys] Story link failed (task still created): {e}")
+        results.append(created)
     return results
 
 
@@ -121,14 +198,14 @@ def get_work_item(*, story_id: str) -> Any:
 def main() -> None:
     p = argparse.ArgumentParser(prog="azure_devops.py")
     sub = p.add_subparsers(dest="cmd", required=True)
-    cs = sub.add_parser("create-story"); cs.add_argument("--file", required=True); cs.add_argument("--id", default=None)
-    csub = sub.add_parser("create-subtasks"); csub.add_argument("--story", required=True); csub.add_argument("--file", required=True)
+    cs = sub.add_parser("create-stories"); cs.add_argument("--file", required=True); cs.add_argument("--id", default=None)
+    csub = sub.add_parser("create-subtasks"); csub.add_argument("--story", required=True); csub.add_argument("--file", required=True); csub.add_argument("--story-ado-id", type=int, default=None)
     ss = sub.add_parser("set-state"); ss.add_argument("--id", required=True); ss.add_argument("--state", required=True)
     gw = sub.add_parser("get-work-item"); gw.add_argument("--id", required=True)
     args = p.parse_args()
 
-    if args.cmd == "create-story":      out = create_story(story_id=args.id, file=args.file)
-    elif args.cmd == "create-subtasks": out = create_subtasks(story_id=args.story, file=args.file)
+    if args.cmd == "create-stories":    out = create_stories(story_id=args.id, file=args.file)
+    elif args.cmd == "create-subtasks": out = create_subtasks(story_id=args.story, file=args.file, story_ado_id=args.story_ado_id)
     elif args.cmd == "set-state":       out = set_state(story_id=args.id, state=args.state)
     elif args.cmd == "get-work-item":   out = get_work_item(story_id=args.id)
     else:

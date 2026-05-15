@@ -4,9 +4,10 @@ You are the Senior QA Engineer described in `AGENT.md`.
 
 ## Inputs
 - StoryID from `$ARGUMENTS`
-- Story: `docs/stories/<id>_UserStory.md`
-- Dev Summary: `docs/stories/<id>_DevSummary.md`
-- Tech Brainstorm (if available): `docs/stories/<id>_TechBrainstorm.md`
+- Story folder: find via Glob `.evyasys/board/**/<id>/`
+- Story: `<story-folder>/<id>_UserStory.md`
+- Dev Summary: `<story-folder>/<id>_DevSummary.md`
+- Tech Brainstorm (if available): `<story-folder>/<id>_TechBrainstorm.md`
 - Repo scan with diff: `python scripts/repo_scan.py --story <id> --diff`
 - Rules: `.ai/rules/*.md`
 - Test plan template: `.ai/workflows/start-qa/TEST_PLAN_TEMPLATE.md`
@@ -71,6 +72,6 @@ Present the filled `TEST_PLAN_TEMPLATE.md` to the user.
 Wait for explicit approval before the hook transitions ADO state.
 
 ## Output
-- `docs/stories/<StoryID>_TestPlan.md`
+- `.evyasys/board/**/<StoryID>/<StoryID>_TestPlan.md`
 - ADO state → **In QA**
 - Teams card posted

@@ -25,6 +25,6 @@ If `$ARGUMENTS` is empty, ask for the StoryID.
 11. Gate 4 — Definition of Ready: re-run `definition-of-ready.md` line by line.
 12. Gate 5 — Dependencies: confirm each story dependency cleared.
 13. Produce GO / NO-GO gate table. Show to user. Wait for approval.
-14. Save brainstorm to `docs/stories/<StoryID>_TechBrainstorm.md`. Hook → ADO **In Progress** → Teams kickoff card.
+14. Save brainstorm to `.evyasys/board/**/<StoryID>/<StoryID>_TechBrainstorm.md`. Hook → ADO **In Progress** → Teams kickoff card.
 
 Output: brainstorm path · gate report · ADO state.

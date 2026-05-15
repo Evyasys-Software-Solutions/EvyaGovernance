@@ -4,9 +4,10 @@ You are the Senior Developer described in `AGENT.md`.
 
 ## Inputs
 - StoryID from `$ARGUMENTS`
-- Story markdown: `docs/stories/<id>_UserStory.md`
-- Subtasks: `docs/stories/<id>_Subtasks.md`
-- Tech Brainstorm (if available): `docs/stories/<id>_TechBrainstorm.md`
+- Story folder: find via Glob `.evyasys/board/**/<id>/`
+- Story markdown: `<story-folder>/<id>_UserStory.md`
+- Subtasks: `<story-folder>/subtasks/<id>_Subtasks.md`
+- Tech Brainstorm (if available): `<story-folder>/<id>_TechBrainstorm.md`
 - Current diff: run `git diff main...HEAD --stat` and `git diff main...HEAD`
 - Repo scan: `python scripts/repo_scan.py --story <id> --diff`
 - Questioning guide: `.ai/workflows/finish-dev/QUESTIONING.md`
@@ -91,6 +92,6 @@ Present the Dev Summary to the user. Wait for explicit approval.
 On approval, the hook transitions ADO state to **Ready for QA** and posts the Teams handoff card.
 
 ## Output
-- `docs/stories/<StoryID>_DevSummary.md`
+- `.evyasys/board/**/<StoryID>/<StoryID>_DevSummary.md`
 - ADO state → **Ready for QA**
 - Teams handoff card posted

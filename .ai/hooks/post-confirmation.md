@@ -6,5 +6,5 @@ Actions:
 - create or link epic
 - create story in board
 - set priority / tags
-- save generated artifact to docs/stories
+- save generated artifact to .evyasys/board/
 - mark workflow complete

@@ -16,4 +16,4 @@
 ## References
 - Story: <link>
 - PR: <link>
-- Test plan: `docs/stories/<EVYA-id>_TestPlan.md`
+- Test plan: `.evyasys/board/**/<EVYA-id>/<EVYA-id>_TestPlan.md`

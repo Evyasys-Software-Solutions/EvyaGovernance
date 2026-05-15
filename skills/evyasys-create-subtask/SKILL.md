@@ -9,5 +9,5 @@ trigger: /evyasys:CreateSubtask
 Loads `.ai/workflows/create-subtask/*` (with `.evyasys/workflows/create-subtask/*` overrides), runs as Senior Developer, decomposes the story into 3–8 tasks via `TASK_TEMPLATE.md`, and on approval creates child Tasks in ADO.
 
 ## Output
-- `docs/stories/<StoryID>_Subtasks.md`
-- ADO Task IDs
+- `.evyasys/board/**/<StoryID>/subtasks/<StoryID>_Subtasks.md`
+- ADO Task IDs (back-written into each ## Task header)

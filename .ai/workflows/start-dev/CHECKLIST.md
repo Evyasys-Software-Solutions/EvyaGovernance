@@ -26,5 +26,5 @@
 
 ## Post-approval
 
-- [ ] Brainstorm saved to `docs/stories/<id>_TechBrainstorm.md`
+- [ ] Brainstorm saved to story folder under `.evyasys/board/`
 - [ ] User explicitly approved GO before any ADO state transition

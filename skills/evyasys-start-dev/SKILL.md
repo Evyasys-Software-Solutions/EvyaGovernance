@@ -12,14 +12,14 @@ Loads the story and subtasks. Runs a repo scan. Generates at least 3 distinct
 implementation approaches (each with pros, cons, estimate delta). Recommends one
 with a clear deciding reason. Waits for team to agree before proceeding.
 
-The brainstorm is saved to `docs/stories/<id>_TechBrainstorm.md` — it travels
+The brainstorm is saved to the story folder under `.evyasys/board/` — it travels
 with the PR so the architectural decision is on record.
 
 ## Phase 2 — Start-Dev Gates
 
 | Gate | Check |
 |---|---|
-| Subtasks | `docs/stories/<id>_Subtasks.md` exists and is non-empty |
+| Subtasks | `.evyasys/board/**/<id>/subtasks/<id>_Subtasks.md` exists and is non-empty |
 | Branch | matches `feature/<id>-<kebab>` naming convention |
 | Draft PR | confirmed open (via `gh` or user confirmation) |
 | Definition of Ready | re-checked line by line against current story |
@@ -28,6 +28,6 @@ with the PR so the architectural decision is on record.
 Produces a gate table with GO / NO-GO verdict.
 
 ## Output
-- `docs/stories/<StoryID>_TechBrainstorm.md` — agreed technical plan
+- `.evyasys/board/**/<StoryID>/<StoryID>_TechBrainstorm.md` — agreed technical plan
 - ADO state → **In Progress**
 - Teams kickoff card posted

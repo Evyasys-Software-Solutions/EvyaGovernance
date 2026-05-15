@@ -13,7 +13,9 @@ You are running **/evyasys:CreateStory**.
    - Config: `.evyasys/project.yaml` · Memory: `.evyasys/memory/*.json` then `.ai/memory/evyaflow.json`
 
 2. **Ask for local save folder first** (one question before anything else):
-   > "Where should I save this story? (a) `docs/stories/` — default  (b) Another folder"
+   > "Where should I save this story?
+   > (a) `.evyasys/board/` — auto-organized by Epic (recommended)
+   > (b) A different folder — paste the relative path from your project root"
 
 3. Ask clarifying questions one at a time per `QUESTIONING.md`. Do not draft until all blocking questions are answered.
 
@@ -23,6 +25,6 @@ You are running **/evyasys:CreateStory**.
 
 6. Show draft to user. State save path and Epic reference path (if applicable). Wait for approval.
 
-7. On approval: save file → if Epic set, save reference copy to `docs/epics/<epic-id>/` → push ADO User Story (link to Epic if set) → notify Teams.
+7. On approval: save file under `.evyasys/board/epics/<epic-id>/stories/<id>/` (or `.evyasys/board/stories/<id>/` if no epic) → push ADO User Story (link to Epic if set) → back-write ADO ID into file → notify Teams.
 
 Output: story ID · file path · Epic reference (if applicable) · ADO URL · Teams status.

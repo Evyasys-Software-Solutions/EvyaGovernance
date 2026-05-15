@@ -27,5 +27,5 @@ correctness / security / YAGNI / test quality, and issues a structured report.
 - No performative language — findings only, no "great work"
 
 ## Output
-- `docs/stories/<StoryID>_CodeReview.md` (saved on GO)
+- `.evyasys/board/**/<StoryID>/<StoryID>_CodeReview.md` (saved on GO)
 - No ADO state change — `/evyasys:FinishDev` handles that

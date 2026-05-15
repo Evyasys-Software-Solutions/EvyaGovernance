@@ -4,7 +4,7 @@ You are the Senior Developer described in `AGENT.md`.
 
 ## Inputs
 - StoryID from `$ARGUMENTS`
-- Story: `docs/stories/<id>_UserStory.md`
+- Story: `.evyasys/board/**/<id>/<id>_UserStory.md` (use Glob to locate)
 - Repo scan: `python scripts/repo_scan.py --story <id>`
 - Rules: `.ai/rules/*.md`
 - Task template: `.ai/workflows/create-subtask/TASK_TEMPLATE.md`
@@ -20,7 +20,7 @@ blocking questions. Tasks written before understanding the scope will be wrong.
 ---
 
 ## Step 1 — Read the story in full
-Read `docs/stories/<id>_UserStory.md` completely.
+Find the story folder by globbing `.evyasys/board/**/<id>/`. Read `<id>_UserStory.md` completely.
 List every Acceptance Criterion. You will link at least one task to each AC.
 
 ## Step 2 — Probe the codebase
@@ -72,5 +72,5 @@ Present the filled task list to the user. Wait for explicit approval.
 On approval, the hook saves the file and creates ADO child Tasks.
 
 ## Output
-- `docs/stories/<StoryID>_Subtasks.md`
-- ADO child Task IDs
+- `.evyasys/board/**/<StoryID>/subtasks/<StoryID>_Subtasks.md`
+- ADO child Task IDs (back-written into each ## Task header)

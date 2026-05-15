@@ -6,4 +6,4 @@ trigger: /evyasys:StartQa
 
 # Skill: evyasys-start-qa
 
-Loads `.ai/workflows/start-qa/*` (+ overrides). Drafts a test plan covering positive/negative/edge/regression/non-functional, saves it to `docs/stories/<id>_TestPlan.md`, and on approval moves ADO state to "In QA".
+Loads `.ai/workflows/start-qa/*` (+ overrides). Drafts a test plan covering positive/negative/edge/regression/non-functional, saves it to the story folder under `.evyasys/board/`, and on approval moves ADO state to "In QA".
