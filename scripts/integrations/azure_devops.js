@@ -12,6 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const { loadConfig } = require('../lib/config');
+const { markdownToHtml } = require('../lib/markdown-to-html');
 
 function authHeader(pat) { return 'Basic ' + Buffer.from(':' + pat).toString('base64'); }
 
@@ -50,13 +51,32 @@ async function adoFetch(cfg, suffix, { method = 'GET', body } = {}) {
   return res.json();
 }
 
+/**
+ * Remove workflow-artifact content before posting to ADO.
+ * Strips:
+ *   1. Metadata header lines (Key: Value pairs before the first ## section) —
+ *      Status, Epic, Priority, Module, Owner, and any future fields.
+ *   2. The ## Confirmation section and everything after it.
+ * The local .md file is never modified — stripping happens only at ADO post time.
+ */
+function stripWorkflowMeta(md) {
+  const lines = md.split('\n');
+  const firstSection = lines.findIndex(l => /^##\s/.test(l));
+  const cleaned = lines.map((line, i) =>
+    (i < firstSection && /^[A-Za-z][A-Za-z ]*:\s*.+/.test(line)) ? '' : line
+  );
+  return cleaned.join('\n')
+    .replace(/^##\s+Confirmation\b[\s\S]*/im, '')
+    .trim();
+}
+
 function parseStoryMarkdown(file) {
   const md = fs.readFileSync(file, 'utf8');
   const titleMatch = md.match(/^#\s+(.+)$/m);
   const epicMatch  = md.match(/^Epic:\s*([^\s]+)/m);
   return {
     title:       titleMatch ? titleMatch[1].trim() : path.basename(file, '.md'),
-    description: md,
+    description: stripWorkflowMeta(md),
     epicId:      epicMatch  ? epicMatch[1].trim()  : null,
   };
 }
@@ -118,7 +138,7 @@ async function createEpic({ epicId, title }) {
   const cfg = await loadConfig();
   const patch = [
     { op: 'add', path: '/fields/System.Title',       value: title || epicId },
-    { op: 'add', path: '/fields/System.Description', value: `Epic: ${epicId}` },
+    { op: 'add', path: '/fields/System.Description', value: markdownToHtml(`# ${title || epicId}\n\n**Epic ID:** ${epicId}`) },
   ];
   return adoFetch(cfg, witTypeUrl(cfg.workItemTypes.epic), { method: 'POST', body: patch });
 }
@@ -135,7 +155,7 @@ async function createStories({ storyId, file, epicId: explicitEpicId }) {
 
   const patch = [
     { op: 'add', path: '/fields/System.Title',       value: storyId ? `${storyId}: ${title}` : title },
-    { op: 'add', path: '/fields/System.Description', value: description },
+    { op: 'add', path: '/fields/System.Description', value: markdownToHtml(description) },
   ];
   const created = await adoFetch(cfg, witTypeUrl(cfg.workItemTypes.story), { method: 'POST', body: patch });
 
@@ -163,9 +183,11 @@ async function createSubtasks({ storyId, file, storyAdoId }) {
   const results = [];
   for (const section of sections) {
     const titleLine = section.split('\n')[0].replace(/^[-—\s:]+/, '').trim() || 'Untitled task';
+    const contentBody = section.split('\n').slice(1).join('\n').trim();
+    const fullMd = `## ${titleLine}\n\n${contentBody}`;
     const patch = [
       { op: 'add', path: '/fields/System.Title',       value: `${storyId}: ${titleLine}` },
-      { op: 'add', path: '/fields/System.Description', value: section.trim() },
+      { op: 'add', path: '/fields/System.Description', value: markdownToHtml(fullMd) },
     ];
     const created = await adoFetch(cfg, witTypeUrl(cfg.workItemTypes.task), { method: 'POST', body: patch });
     if (storyAdoId && created && created.id && !cfg.dryRun) {

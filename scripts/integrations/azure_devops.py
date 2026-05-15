@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import re
 import sys
 import urllib.parse
 from pathlib import Path
@@ -22,6 +23,7 @@ from typing import Any
 # Local import (this file lives in scripts/integrations/, lib/ is a sibling)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from lib.evyasys_config import load_config  # noqa: E402
+from lib.markdown_to_html import markdown_to_html  # noqa: E402
 
 
 def _ado_url(cfg: dict, suffix: str) -> str:
@@ -62,6 +64,24 @@ def _request(cfg: dict, suffix: str, *, method: str = "GET", body: Any = None) -
     return resp.json()
 
 
+def _strip_workflow_meta(md: str) -> str:
+    """Remove workflow-artifact content before posting to ADO.
+
+    Strips metadata header lines (Key: Value pairs before the first ## section —
+    Status, Epic, Priority, Module, Owner, and any future fields) and the
+    ## Confirmation section. The local .md file is never modified.
+    """
+    lines = md.splitlines()
+    first_section = next((i for i, l in enumerate(lines) if re.match(r"^##\s", l)), len(lines))
+    cleaned = [
+        "" if i < first_section and re.match(r"^[A-Za-z][A-Za-z ]*:\s*.+", line) else line
+        for i, line in enumerate(lines)
+    ]
+    result = "\n".join(cleaned)
+    result = re.sub(r"^##\s+Confirmation\b[\s\S]*", "", result, flags=re.IGNORECASE | re.MULTILINE)
+    return result.strip()
+
+
 def _parse_story(file: Path) -> dict:
     md = file.read_text(encoding="utf-8")
     title = "Untitled"
@@ -69,7 +89,7 @@ def _parse_story(file: Path) -> dict:
         if line.startswith("# "):
             title = line[2:].strip()
             break
-    return {"title": title, "description": md}
+    return {"title": title, "description": _strip_workflow_meta(md)}
 
 
 def _link_to_parent(cfg: dict, child_ado_id: int, parent_ado_id: int) -> Any:
@@ -121,9 +141,11 @@ def find_epic(*, epic_id: str) -> int | None:
 def create_epic(*, epic_id: str, title: str | None = None) -> Any:
     """Create an Epic work item. Called internally by create_stories."""
     cfg = load_config()
+    display = title or epic_id
+    description_html = markdown_to_html(f"# {display}\n\n**Epic ID:** {epic_id}")
     patch = [
-        {"op": "add", "path": "/fields/System.Title", "value": title or epic_id},
-        {"op": "add", "path": "/fields/System.Description", "value": f"Epic: {epic_id}"},
+        {"op": "add", "path": "/fields/System.Title", "value": display},
+        {"op": "add", "path": "/fields/System.Description", "value": description_html},
     ]
     return _request(cfg, _wit_type_url(cfg["work_item_types"]["epic"]), method="POST", body=patch)
 
@@ -135,7 +157,7 @@ def create_stories(*, story_id: str | None, file: str, epic_id: str | None = Non
     title = f"{story_id}: {parsed['title']}" if story_id else parsed["title"]
     patch = [
         {"op": "add", "path": "/fields/System.Title", "value": title},
-        {"op": "add", "path": "/fields/System.Description", "value": parsed["description"]},
+        {"op": "add", "path": "/fields/System.Description", "value": markdown_to_html(parsed["description"])},
     ]
     created = _request(cfg, _wit_type_url(cfg["work_item_types"]["story"]), method="POST", body=patch)
     if epic_id and created and created.get("id") and not cfg["dry_run"]:
@@ -167,9 +189,11 @@ def create_subtasks(*, story_id: str, file: str, story_ado_id: int | None = None
     for section in parts:
         first = next((l for l in section.splitlines() if l.strip()), "Untitled task")
         title_line = first.split("—", 1)[-1].strip() if "—" in first else first.lstrip("# ").strip()
+        content_body = "\n".join(section.splitlines()[1:]).strip()
+        full_md = f"## {title_line}\n\n{content_body}"
         patch = [
             {"op": "add", "path": "/fields/System.Title", "value": f"{story_id}: {title_line}"},
-            {"op": "add", "path": "/fields/System.Description", "value": section.strip()},
+            {"op": "add", "path": "/fields/System.Description", "value": markdown_to_html(full_md)},
         ]
         created = _request(cfg, _wit_type_url(cfg["work_item_types"]["task"]), method="POST", body=patch)
         if story_ado_id and created and created.get("id") and not cfg["dry_run"]:

@@ -110,6 +110,18 @@ module.exports = async function (ctx) {
     }
   }
 
+  // Back-write the Epic's ADO number into the story file so the local doc
+  // references the DevOps work item ID alongside the Evyasys ID.
+  // Only runs when epicAdoId is a real numeric ID (i.e. it changed from the
+  // Evyasys string like "EP-1001" to a number like 5678).
+  if (epicId && epicAdoId && String(epicAdoId) !== String(epicId)) {
+    let content = fs.readFileSync(storyPath, 'utf8');
+    if (!content.match(new RegExp(`^Epic:\\s*${epicId}\\s*·`, 'm'))) {
+      content = content.replace(/^(Epic:\s*\S+).*$/m, `$1 · ADO #${epicAdoId}`);
+      fs.writeFileSync(storyPath, content, 'utf8');
+    }
+  }
+
   // Step 2 — create User Story and link it to the Epic.
   const storyResult = await runIntegration({
     name: 'azure-devops:create-stories',
