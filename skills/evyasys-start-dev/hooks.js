@@ -31,19 +31,28 @@ module.exports = async function (ctx) {
     ctx.send(`Saved tech brainstorm → ${brainstormPath}`);
   }
 
-  // Confirm before any ADO / Teams action
+  // Confirm before any ADO / Teams action.
   if (!(await ctx.confirm(`Set ${storyId} to "In Progress" in Azure DevOps and notify Teams?`))) {
     ctx.send('Cancelled — ADO state and Teams notification not sent.');
     return;
   }
 
+  // Resolve ADO numeric ID from the local map.
+  // The Evyasys ID (e.g. EVYA-1042) must be converted to the ADO work item number
+  // (e.g. 5678) — setState requires the numeric ADO ID, not the Evyasys ID.
+  const adoStoryId = adoMap.lookup(cfg.repoRoot, storyId);
+  if (!adoStoryId && !cfg.dryRun) {
+    ctx.send(`Warning: ADO work item ID for ${storyId} not found in map — state change may target the wrong item. Run /evyasys:CreateStory first to ensure the mapping exists.`);
+  }
+  const idForAdo = adoStoryId || storyId;
+
   await ensurePat(cfg, ctx);
   await runIntegration({
-    name: 'azure-devops:set-state(In Progress)',
+    name: `azure-devops:set-state(In Progress) [ADO #${idForAdo}]`,
     cfg,
-    args: { storyId, state: 'In Progress' },
+    args: { storyId: idForAdo, state: 'In Progress' },
     live: async () =>
-      require('../../scripts/integrations/azure_devops').setState({ storyId, state: 'In Progress' }),
+      require('../../scripts/integrations/azure_devops').setState({ storyId: idForAdo, state: 'In Progress' }),
   });
 
   await ensureTeamsWebhook(cfg, ctx);
@@ -55,5 +64,5 @@ module.exports = async function (ctx) {
       require('../../scripts/integrations/teams_webhook').devKickoff({ storyId }),
   });
 
-  ctx.send(`${storyId} is now In Progress. Kickoff card sent to Teams.`);
+  ctx.send(`${storyId} is now In Progress (ADO #${idForAdo}). Kickoff card sent to Teams.`);
 };
