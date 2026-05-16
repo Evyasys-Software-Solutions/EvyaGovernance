@@ -1,8 +1,8 @@
 # Evyasys
 
-Evyasys is a complete AI-assisted delivery pipeline for software teams — business
-story, task breakdown, technical brainstorm, code review, dev sign-off, QA, and
-release — driven by seven slash commands inside your AI coding agent.
+Evyasys is a complete AI-assisted delivery pipeline for software teams — project quality
+docs, business story, task breakdown, technical brainstorm, code review, dev sign-off,
+QA, and release — driven by eight slash commands inside your AI coding agent.
 
 Built on the same methodology as [SuperPower](https://github.com/obra/superpowers):
 structured brainstorming before any code is written, independent evidence-based code
@@ -62,7 +62,7 @@ cd your-project; claude
 /reload-plugins
 ```
 
-Type `/evya` — you should see 7 commands in autocomplete.
+Type `/evya` — you should see 8 commands in autocomplete.
 
 ---
 
@@ -175,11 +175,12 @@ Teammates just `git pull` — no individual config needed beyond each person run
 | Subtasks created in ADO | 🗂️ Subtasks Ready |
 | Dev started | 🚀 Dev Started |
 | Code review passed | ✅ Code Review Passed |
+| Code review NO-GO | ❌ Code Review NO-GO |
 | Dev handed to QA | 🔀 Ready for QA |
 | QA test plan ready | 🧪 QA Started |
 | Story released | 🚢 Released |
 
-All notifications fire **after your approval**. A `ReviewDev` NO-GO posts nothing.
+All notifications fire **after your approval**. Both GO and NO-GO reviews notify the team.
 
 ---
 
@@ -223,15 +224,52 @@ run Step 1 again.
 
 ---
 
-## The 7 Commands
+## The 8 Commands
 
 Type `/evya` in Claude Code to see all commands in autocomplete.
 
 ```
+CreateDocs (once per project)
+   ↓
 CreateStory → CreateSubtask → StartDev → ReviewDev → FinishDev → StartQa → FinishQa
 ```
 
 Nothing touches Azure DevOps or Teams until you **explicitly approve**.
+
+---
+
+### `/evyasys:CreateDocs`
+**Who:** Tech Lead — **When:** First time on a new project, then `--retrain` after major changes
+
+Scans the entire codebase — tech stack, source structure, architecture layers, CI/CD,
+tooling config, code sampling — and generates **19 quality-gate documents** into
+`.evyasys/docs/`. These documents are automatically loaded by every downstream command
+before forming any technical opinion: StartDev loads them before brainstorming,
+ReviewDev checks the diff against them, FinishDev verifies compliance before sign-off,
+StartQA uses them to set pass/fail criteria.
+
+**Arguments:**
+- _(no args)_ — Full scan and generate all 19 documents
+- `--update` — Regenerate all documents (re-scan full codebase)
+- `--update FILENAME.md` — Regenerate a single document
+- `--retrain` — Detect which files changed since last run (via `git log`) and regenerate only affected documents
+
+| Document | Purpose |
+|---|---|
+| `ARCHITECTURE.md` | System layers, component map, data flow, anti-patterns |
+| `RULES.md` | Non-negotiable coding rules — violations block merge |
+| `STANDARDS.md` | Naming, formatting, file organisation |
+| `PATTERNS.md` | Approved design patterns with canonical examples |
+| `SECURITY.md` | Auth model, input validation, secrets, OWASP requirements |
+| `TESTING.md` | Test strategy, coverage requirements, naming, mocking |
+| `PERFORMANCE.md` | Response time budgets, hot paths, caching, anti-patterns |
+| `DB_STANDARDS.md` | Schema conventions, migrations, query patterns, indexes |
+| `API_STANDARDS.md` | Endpoint conventions, request/response format, error codes |
+| `FRONTEND.md` | Component structure, state, routing, accessibility |
+| `DESIGN_SYSTEM.md` | UI tokens, component library, typography, colour, breakpoints |
+| + 8 more | STACK, BACKEND, WORKFLOWS, DEPLOYMENT, ERROR_HANDLING, DECISIONS, ONBOARDING, GLOSSARY |
+
+**Produces:** 19 `.md` files + `INDEX.md` → `.evyasys/docs/`
 
 ---
 
@@ -240,11 +278,14 @@ Nothing touches Azure DevOps or Teams until you **explicitly approve**.
 
 Scans the repository for context, asks clarifying questions **one at a time** (never
 an overwhelming list), and drafts a board-ready business story in pure business
-language — zero class names, endpoints, or implementation detail. Self-reviews against
-the Definition-of-Ready checklist and rewrites automatically if anything fails.
+language — zero class names, endpoints, or implementation detail. Sets **Impacted Areas
+domain flags** (Security / DB / Frontend / API / Performance) so every downstream
+command knows which quality-gate documents to load. Self-reviews against the
+Definition-of-Ready checklist and rewrites automatically if anything fails.
 
-If the story belongs to an Epic, files a reference copy under `docs/epics/<epic-id>/`
-and links the ADO work item to the parent Epic.
+If the story belongs to an Epic, files the story under
+`.evyasys/board/epics/<epic-id>/stories/<id>/` and links the ADO work item to the
+parent Epic.
 
 **Produces:** `<id>_UserStory.md` · ADO User Story (linked to Epic if set) · 📋 Teams
 
@@ -253,11 +294,18 @@ and links the ADO work item to the parent Epic.
 ### `/evyasys:CreateSubtask EVYA-1042`
 **Who:** Tech Lead — **When:** After story approved, before any development
 
-Reads the full story and maps every AC. Presents **2–3 decomposition strategies**
-(vertical slices / horizontal layers / spike-first) with trade-offs and waits for
-team approval before writing a single task. Each task is ≤ 1 day, linked to specific
-ACs, names exact modules/files, and has a clear acceptance statement a reviewer can
-verify without asking the author.
+Reads the full story and maps every AC. Presents **all 3 decomposition strategies**
+with trade-offs and waits for team approval before writing a single task:
+
+| Strategy | Description |
+|---|---|
+| **A — Backend-first + Frontend in logical groupings** *(recommended)* | Data/service/API layer first; UI grouped by feature area after |
+| **B — Vertical slices** | Each task delivers one complete AC end-to-end |
+| **C — Layer by layer** | All data → all service → all UI |
+
+Each task has a functional headline readable by non-developers, plus a full Technical
+Analysis (exact file paths, method signatures, DB changes, API contract, edge cases,
+security, performance). The final task is always a dedicated QA task with Playwright spec.
 
 **Produces:** `<id>_Subtasks.md` · ADO child Tasks · 🗂️ Teams
 
@@ -265,6 +313,11 @@ verify without asking the author.
 
 ### `/evyasys:StartDev EVYA-1042`
 **Who:** Engineering Lead — **When:** Sprint start, before any code is written
+
+Loads the story's Impacted Areas flags and reads the relevant quality-gate documents
+from `.evyasys/docs/` before forming any opinion. If any story AC conflicts with a
+loaded standard, presents a compliance report and waits for a decision before
+brainstorming begins.
 
 **Phase 1 — Brainstorm:** Generates minimum 3 meaningfully distinct implementation
 approaches with specific pros, cons, and effort delta (S/M/L). Recommends one with
@@ -283,20 +336,25 @@ dependencies. Produces a GO / NO-GO gate table.
 
 Acts as an **independent reviewer** — reads the full diff AND complete content of
 every changed file. Checks every AC has a passing test (no test = **Critical**).
-Reviews for correctness, security, YAGNI (runs `grep` before flagging unused code),
-test quality, and diff scope. Every finding cites file path + line number. No
-performative language — findings only.
+Verifies the diff against the project's quality-gate docs (`ARCHITECTURE.md`,
+`RULES.md`, domain docs based on Impacted Areas flags). Reviews for correctness,
+security, YAGNI (runs `grep` before flagging unused code), test quality, and diff scope.
+Every finding cites file path + line number. No performative language — findings only.
 
 The developer can push back with technical evidence. The reviewer updates the
 assessment if the argument is correct.
 
 | Severity | Meaning | Effect |
 |---|---|---|
-| **Critical** | Untested AC, broken logic, security hole | Blocks FinishDev |
-| **Important** | Test gap, performance risk, unclear code | Should fix before QA |
+| **Critical** | Untested AC, broken logic, security hole, architecture violation | Blocks FinishDev |
+| **Important** | Test gap, performance risk, unclear code, standard violation | Should fix before QA |
 | **Minor** | Style, naming | Note for later |
 
-**Produces:** `<id>_CodeReview.md` (on GO) · ✅ Teams (GO only — silent on NO-GO)
+**The review report is always saved** — on both GO and NO-GO — so the developer always
+has findings on disk. The architect gate table in the review tracks which project docs
+need updating after this PR.
+
+**Produces:** `<id>_CodeReview.md` (GO and NO-GO) · ✅ Teams on pass · ❌ Teams on fail
 
 ---
 
@@ -305,8 +363,10 @@ assessment if the argument is correct.
 
 Developer sign-off gate. Finds the specific test for every AC. Asks one clarifying
 question at a time for any uncovered AC — will not proceed with any unresolved ❌.
-Runs the Definition-of-Done checklist, scans the diff for scope anomalies, and
-produces a Dev Summary that becomes the QA team's starting document.
+Runs the Definition-of-Done checklist (architecture compliance, code quality,
+domain-specific rules), scans the diff for scope anomalies, and produces a Dev Summary
+that becomes the QA team's starting document. Includes a "Docs to update" table so the
+architect gate tracks which `.evyasys/docs/` files need updating after the PR merges.
 
 **Produces:** `<id>_DevSummary.md` · ADO → **Ready for QA** · 🔀 Teams
 
@@ -315,10 +375,14 @@ produces a Dev Summary that becomes the QA team's starting document.
 ### `/evyasys:StartQa EVYA-1042`
 **Who:** QA Engineer — **When:** Story is Ready for QA
 
+Loads the story's Impacted Areas flags and the matching quality-gate documents to set
+concrete pass/fail criteria (PERFORMANCE.md response time budgets, SECURITY.md auth
+checklist, DESIGN_SYSTEM.md accessibility standards, DB_STANDARDS.md integrity rules).
+
 Asks clarifying questions first (environment required, test data if stateful, flaky
 areas, browser matrix for UI) before writing a single test case. Writes AC-driven
-positive/negative/edge/regression/non-functional cases. Uses Gherkin for multi-step
-scenarios.
+positive/negative/edge/regression cases. Uses Gherkin for multi-step scenarios.
+Non-functional sections are filled per domain or marked N/A with a reason.
 
 **Produces:** `<id>_TestPlan.md` · ADO → **In QA** · 🧪 Teams
 
@@ -328,6 +392,15 @@ scenarios.
 **Who:** QA / Release Manager — **When:** All test cases executed
 
 Checks every TC has a recorded outcome. Stops if any P0/P1 defects remain open.
+Runs domain-specific exit gates based on Impacted Areas flags:
+
+| Gate | Applies when |
+|---|---|
+| Security — auth, input validation, PII exposure | Security flag set |
+| Performance — response time vs. PERFORMANCE.md budget | Performance flag set |
+| Accessibility — keyboard nav, ARIA, colour contrast | Frontend flag set |
+| Data integrity — migration up/down, FK constraints | DB flag set |
+
 Drafts plain-language release notes — one paragraph, no jargon, bullet changelog,
 known limitations, rollback plan.
 
@@ -338,18 +411,29 @@ known limitations, rollback plan.
 ## Complete artefact map
 
 ```
-docs/
-  stories/
-    EVYA-1042_UserStory.md        ← CreateStory
-    EVYA-1042_Subtasks.md         ← CreateSubtask
-    EVYA-1042_TechBrainstorm.md   ← StartDev
-    EVYA-1042_CodeReview.md       ← ReviewDev  (GO only)
-    EVYA-1042_DevSummary.md       ← FinishDev
-    EVYA-1042_TestPlan.md         ← StartQa
-    EVYA-1042_ReleaseNotes.md     ← FinishQa
-  epics/
-    EP-001/
-      EVYA-1042_UserStory.md      ← reference copy when Epic is set
+.evyasys/
+├── docs/                              ← CreateDocs (quality-gate documents)
+│   ├── INDEX.md
+│   ├── ARCHITECTURE.md
+│   ├── RULES.md
+│   └── ... (19 documents total)
+│
+└── board/
+    ├── epics/
+    │   └── EP-001/
+    │       └── stories/
+    │           └── EVYA-1042/
+    │               ├── EVYA-1042_UserStory.md        ← CreateStory
+    │               ├── EVYA-1042_TechBrainstorm.md   ← StartDev
+    │               ├── EVYA-1042_CodeReview.md       ← ReviewDev (GO + NO-GO)
+    │               ├── EVYA-1042_DevSummary.md       ← FinishDev
+    │               ├── EVYA-1042_TestPlan.md         ← StartQa
+    │               ├── EVYA-1042_ReleaseNotes.md     ← FinishQa
+    │               └── subtasks/
+    │                   └── EVYA-1042_Subtasks.md     ← CreateSubtask
+    └── stories/
+        └── EVYA-1043/                 ← stories without an Epic
+            └── ...
 ```
 
 All artefacts committed to git — they travel with the code through PRs.
@@ -380,6 +464,7 @@ project repo. Project files always win over plugin defaults.
 
 | To customise | File in your project |
 |---|---|
+| **Quality-gate documents** | Run `/evyasys:CreateDocs` — generates all 19 docs into `.evyasys/docs/` |
 | Story naming rules | `.evyasys/rules/naming.md` |
 | Definition of Ready | `.evyasys/rules/definition-of-ready.md` |
 | Any workflow prompt | `.evyasys/workflows/<name>/PROMPT.md` |
@@ -390,6 +475,11 @@ project repo. Project files always win over plugin defaults.
 | Past decisions log | `.evyasys/memory/decisions.md` |
 | Module knowledge | `.evyasys/memory/modules.md` |
 | Input documents | `.evyasys/inputs/<any-file>` |
+
+**Quality-gate documents** (`.evyasys/docs/`) are project-specific — they are generated
+by scanning your actual codebase and must be regenerated when your architecture changes.
+Run `/evyasys:CreateDocs --retrain` after any PR that introduces new patterns, changes
+the API contract, updates the security model, or changes a hot path.
 
 ---
 

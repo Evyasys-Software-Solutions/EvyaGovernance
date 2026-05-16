@@ -45,7 +45,7 @@ claude
 /reload-plugins
 ```
 
-Type `/evya` — you should see 7 commands in autocomplete.
+Type `/evya` — you should see 8 commands in autocomplete.
 
 ---
 
@@ -55,10 +55,14 @@ Generate at `https://dev.azure.com/<your-org>/_usersSettings/tokens` — scope: 
 
 ```bash
 # macOS / Linux
-bash ~/.claude/plugins/evyasys/scripts/login.sh
+evyasys=$(ls -td ~/.claude/plugins/cache/EvyaGovernance/evyasys/*/ | head -1)
+bash "${evyasys}scripts/login.sh"
+```
 
+```powershell
 # Windows
-powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.claude\plugins\evyasys\scripts\login.ps1"
+$evyasys = (Get-Item "$env:USERPROFILE\.claude\plugins\cache\EvyaGovernance\evyasys\*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+powershell -ExecutionPolicy Bypass -File "$evyasys\scripts\setup.ps1"
 ```
 
 Stored at `~/.evyasys/credentials` — never committed to any repo.
@@ -69,10 +73,14 @@ Stored at `~/.evyasys/credentials` — never committed to any repo.
 
 ```bash
 # macOS / Linux
-cp -r ~/.claude/plugins/evyasys/project-template/.evyasys ./.evyasys
+evyasys=$(ls -td ~/.claude/plugins/cache/EvyaGovernance/evyasys/*/ | head -1)
+cp -r "${evyasys}project-template/.evyasys" ./.evyasys
+```
 
+```powershell
 # Windows
-Copy-Item -Recurse "$env:USERPROFILE\.claude\plugins\evyasys\project-template\.evyasys" ".\.evyasys"
+$evyasys = (Get-Item "$env:USERPROFILE\.claude\plugins\cache\EvyaGovernance\evyasys\*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+Copy-Item -Recurse "$evyasys\project-template\.evyasys" ".\.evyasys"
 ```
 
 Edit `.evyasys/project.yaml` with all three settings:
@@ -103,19 +111,32 @@ Teammates just `git pull` — no additional setup needed.
 
 ---
 
-## The 7 commands — full delivery pipeline
+## Step 4 — Generate project quality-gate docs (once per project)
+
+```
+/evyasys:CreateDocs
+```
+
+Scans your codebase and writes 19 quality-gate documents to `.evyasys/docs/`.
+Every downstream command loads these docs before forming any technical opinion.
+Re-run with `--retrain` after major architecture changes.
+
+---
+
+## The 8 commands — full delivery pipeline
 
 Open Claude Code from **inside your project folder**, then:
 
 | Command | Who | What happens |
 |---|---|---|
+| `/evyasys:CreateDocs` | Tech Lead | Scan codebase → 19 quality-gate docs → `.evyasys/docs/` |
 | `/evyasys:CreateStory` | BA / PO | Questions one at a time → business story → ADO User Story → 📋 Teams |
-| `/evyasys:CreateSubtask EVYA-1042` | Tech Lead | 2–3 strategies → team approval → 3–8 dev tasks → ADO child Tasks → 🗂️ Teams |
-| `/evyasys:StartDev EVYA-1042` | Eng Lead | **Brainstorm** (3+ approaches, approval) → gates → ADO **In Progress** → 🚀 Teams |
-| `/evyasys:ReviewDev EVYA-1042` | Senior Dev | Independent code review → Critical blocks FinishDev → ✅ Teams (GO only) |
-| `/evyasys:FinishDev EVYA-1042` | Dev | AC audit → diff check → Dev Summary → ADO **Ready for QA** → 🔀 Teams |
-| `/evyasys:StartQa EVYA-1042` | QA | Environment questions → test plan → ADO **In QA** → 🧪 Teams |
-| `/evyasys:FinishQa EVYA-1042` | QA / Release | TC outcomes + release notes → ADO **Done** → 🚢 Teams |
+| `/evyasys:CreateSubtask EVYA-1042` | Tech Lead | 3 strategies (A/B/C, team approval) → dev tasks + QA task → ADO child Tasks → 🗂️ Teams |
+| `/evyasys:StartDev EVYA-1042` | Eng Lead | Load quality-gate docs → **Brainstorm** (3+ approaches, approval) → gates → ADO **In Progress** → 🚀 Teams |
+| `/evyasys:ReviewDev EVYA-1042` | Senior Dev | Independent review (AC coverage, arch, security, standards) → report saved on GO + NO-GO → ✅/❌ Teams |
+| `/evyasys:FinishDev EVYA-1042` | Dev | AC audit → diff check → Dev Summary + architect gate → ADO **Ready for QA** → 🔀 Teams |
+| `/evyasys:StartQa EVYA-1042` | QA | Environment questions → test plan with domain gates → ADO **In QA** → 🧪 Teams |
+| `/evyasys:FinishQa EVYA-1042` | QA / Release | TC outcomes + domain gates + release notes → ADO **Done** → 🚢 Teams |
 
 **Nothing touches ADO or Teams until you explicitly approve.**
 
@@ -124,19 +145,27 @@ Open Claude Code from **inside your project folder**, then:
 ## Output files (all in your project repo)
 
 ```
-docs/
-  stories/
-    EVYA-1042_UserStory.md        ← CreateStory
-    EVYA-1042_Subtasks.md         ← CreateSubtask
-    EVYA-1042_TechBrainstorm.md   ← StartDev
-    EVYA-1042_CodeReview.md       ← ReviewDev
-    EVYA-1042_DevSummary.md       ← FinishDev
-    EVYA-1042_TestPlan.md         ← StartQa
-    EVYA-1042_ReleaseNotes.md     ← FinishQa
-  epics/
-    EP-001/
-      EVYA-1042_UserStory.md      ← reference copy when Epic is set
+.evyasys/
+├── docs/                                    ← CreateDocs (quality-gate documents)
+│   ├── INDEX.md
+│   ├── ARCHITECTURE.md
+│   └── ... (19 documents)
+└── board/
+    └── epics/
+        └── EP-001/
+            └── stories/
+                └── EVYA-1042/
+                    ├── EVYA-1042_UserStory.md        ← CreateStory
+                    ├── EVYA-1042_TechBrainstorm.md   ← StartDev
+                    ├── EVYA-1042_CodeReview.md       ← ReviewDev (GO + NO-GO)
+                    ├── EVYA-1042_DevSummary.md       ← FinishDev
+                    ├── EVYA-1042_TestPlan.md         ← StartQa
+                    ├── EVYA-1042_ReleaseNotes.md     ← FinishQa
+                    └── subtasks/
+                        └── EVYA-1042_Subtasks.md     ← CreateSubtask
 ```
+
+Stories without an Epic are saved at `.evyasys/board/stories/<id>/`.
 
 ---
 
@@ -145,7 +174,9 @@ docs/
 ```bash
 # macOS / Linux
 EVYASYS_DRY_RUN=1 /evyasys:CreateStory
+```
 
+```powershell
 # Windows PowerShell
 $env:EVYASYS_DRY_RUN = "1"
 /evyasys:StartDev EVYA-1042
@@ -176,9 +207,9 @@ Then repeat Step 1 (install the plugin again).
 |---|---|
 | `claude` command not found | Install Node.js 18+ then `npm install -g @anthropic-ai/claude-code` |
 | Commands don't appear after `/reload-plugins` | Clear cache (see Update section above) and reinstall |
-| PAT not found | Run `scripts/login.sh` (or `login.ps1`) |
+| PAT not found | Re-run Step 2 (`setup.ps1` on Windows, `login.sh` on macOS/Linux) |
 | Teams webhook missing | Run any command — it prompts and saves to `project.yaml` automatically |
-| ADO 401 error | PAT expired — re-run `login.sh` |
+| ADO 401 error | PAT expired — re-run Step 2 |
 | Missing ADO org/project | Edit `.evyasys/project.yaml` in your project root |
 | Wrong project loaded | Open Claude Code from inside the correct project folder |
 
@@ -188,7 +219,8 @@ Then repeat Step 1 (install the plugin again).
 
 | Location | What | In git? |
 |---|---|---|
-| `~/.claude/plugins/evyasys/` | Plugin (auto-installed) | ✅ EvyaGovernance repo |
+| `~/.claude/plugins/cache/EvyaGovernance/` | Plugin (auto-installed) | ✅ EvyaGovernance repo |
 | `<project>/.evyasys/project.yaml` | ADO config + Teams webhook | ✅ project repo |
-| `<project>/docs/stories/` | All generated artefacts | ✅ project repo |
+| `<project>/.evyasys/docs/` | Quality-gate documents (19 files) | ✅ project repo |
+| `<project>/.evyasys/board/` | All story artefacts | ✅ project repo |
 | `~/.evyasys/credentials` | Your Azure DevOps PAT | ❌ never committed |
