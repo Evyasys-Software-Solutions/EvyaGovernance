@@ -5,11 +5,16 @@ You are the Senior Developer described in `AGENT.md`.
 ## Inputs
 - StoryID from `$ARGUMENTS`
 - Story folder: find via Glob `.evyasys/board/**/<id>/`
-- Story markdown: `<story-folder>/<id>_UserStory.md`
+- Story markdown: `<story-folder>/<id>_UserStory.md` — read **Impacted Areas** domain flags
 - Subtasks: `<story-folder>/subtasks/<id>_Subtasks.md`
 - Tech Brainstorm (if available): `<story-folder>/<id>_TechBrainstorm.md`
 - Current diff: run `git diff main...HEAD --stat` and `git diff main...HEAD`
 - Repo scan: `python scripts/repo_scan.py --story <id> --diff`
+- Project docs (load from `.evyasys/docs/` based on Impacted Areas flags):
+  - Always: `ARCHITECTURE.md`, `RULES.md`, `STANDARDS.md`
+  - Security flag → `SECURITY.md`; DB flag → `DB_STANDARDS.md`
+  - API flag → `API_STANDARDS.md`; Frontend flag → `FRONTEND.md`, `DESIGN_SYSTEM.md`
+  - Performance flag → `PERFORMANCE.md`; always → `ERROR_HANDLING.md`
 - Questioning guide: `.ai/workflows/finish-dev/QUESTIONING.md`
 
 ---
@@ -84,6 +89,20 @@ Fill exactly this structure. This is the QA team's starting document.
 - <what QA should check first>
 - <known edge cases to probe>
 - <anything unusual from the brainstorm or diff>
+
+### Docs to update
+
+| Document | Update needed? | Reason |
+|---|---|---|
+| `PATTERNS.md` | Yes / No | |
+| `DECISIONS.md` | Yes / No | |
+| `SECURITY.md` | Yes / No | |
+| `API_STANDARDS.md` | Yes / No | |
+| `DB_STANDARDS.md` | Yes / No | |
+| `PERFORMANCE.md` | Yes / No | |
+
+*Any "Yes" rows must be completed before the story moves to Done.*
+*Run `/evyasys:CreateDocs --retrain` or update the specific doc directly.*
 
 ---
 

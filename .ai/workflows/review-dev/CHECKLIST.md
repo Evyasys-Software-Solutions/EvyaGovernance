@@ -7,6 +7,8 @@
 - [ ] `.evyasys/rules/*.md` read in full — project overrides applied (win over plugin rules)
 - [ ] `.evyasys/project.yaml` read — naming conventions and work-item types noted
 - [ ] `.evyasys/workflows/review-dev/*.md` checked — project-specific review instructions applied if present
+- [ ] `.evyasys/docs/ARCHITECTURE.md`, `RULES.md`, `STANDARDS.md`, `PATTERNS.md` loaded (if directory exists)
+- [ ] Story's **Impacted Areas** domain flags read → additional docs loaded: SECURITY.md / DB_STANDARDS.md / API_STANDARDS.md / FRONTEND.md / DESIGN_SYSTEM.md / PERFORMANCE.md / ERROR_HANDLING.md as flagged
 - [ ] `<id>_TechBrainstorm.md` read — agreed approach identified and recorded in report
 - [ ] Prior `<id>_CodeReview*.md` checked — previously flagged items re-verified
 
@@ -51,6 +53,19 @@
 - [ ] No dead or commented-out code
 - [ ] No misleading names
 
+### Domain docs compliance (check each that applies to this diff)
+- [ ] **Security** (SECURITY.md) — auth, authorisation, input validation, secrets, error message exposure
+- [ ] **API** (API_STANDARDS.md) — response shape, error envelope, HTTP status codes, auth mechanism
+- [ ] **Database** (DB_STANDARDS.md) — naming, migration structure, N+1, indexes
+- [ ] **Frontend/UX** (FRONTEND.md + DESIGN_SYSTEM.md) — component structure, design tokens, state pattern, accessibility
+- [ ] **Performance** (PERFORMANCE.md) — hot paths, response budget, caching
+- [ ] **Error Handling** (ERROR_HANDLING.md) — error taxonomy, log format, user-facing message rules
+
+### Architect gate
+- [ ] "Architect gate — docs to update" table in report is fully filled (every row has Yes / No)
+- [ ] If any row is "Yes": user confirmed that the doc will be updated before or alongside PR merge
+- [ ] New canonical patterns noted for PATTERNS.md; architectural decisions noted for DECISIONS.md
+
 ### General
 - [ ] YAGNI check done — unused code searched with grep before flagging as missing
 - [ ] Diff scope checked — files outside expected scope identified
@@ -62,6 +77,8 @@
 
 - [ ] All Critical items either fixed (with evidence) or formally waived by the user
 - [ ] Important items addressed or deferred with documented justification
-- [ ] Architecture & Code Health table is fully filled in (no blank Status cells)
-- [ ] Re-diff run after fixes to confirm changes are actually there
+- [ ] Architecture & Code Health table fully filled (no blank Status cells)
+- [ ] All domain-specific compliance tables filled (no blank rows for applicable domains)
+- [ ] Architect gate table filled — pending doc updates acknowledged by the user
+- [ ] Re-diff run after fixes to confirm changes are actually in the code
 - [ ] Report saved to story folder under `.evyasys/board/`

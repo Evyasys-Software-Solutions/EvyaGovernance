@@ -7,6 +7,7 @@
  *   node teams_webhook.js subtasks-created --id <id>      [--count <N>]
  *   node teams_webhook.js dev-kickoff      --id <id>
  *   node teams_webhook.js review-passed    --id <id>
+ *   node teams_webhook.js review-no-go     --id <id>
  *   node teams_webhook.js dev-finished     --id <id>
  *   node teams_webhook.js qa-started       --id <id>
  *   node teams_webhook.js qa-finished      --id <id>
@@ -92,6 +93,14 @@ async function reviewPassed({ storyId }) {
   }));
 }
 
+async function reviewNoGo({ storyId }) {
+  return post(buildCard({
+    title:    '❌ Code Review NO-GO: ' + storyId,
+    summary:  storyId + ' did not pass code review — Critical items require fixes.',
+    sections: [{ title: 'Action Required', text: 'Fix all Critical findings and run /evyasys:ReviewDev again.' }],
+  }));
+}
+
 async function devFinished({ storyId }) {
   return post(buildCard({
     title:    '🔀 Ready for QA: ' + storyId,
@@ -134,6 +143,7 @@ if (require.main === module) {
     'subtasks-created': function() { return subtasksCreated({ storyId: args.id, count: args.count ? Number(args.count) : undefined }); },
     'dev-kickoff':      function() { return devKickoff({ storyId: args.id }); },
     'review-passed':    function() { return reviewPassed({ storyId: args.id }); },
+    'review-no-go':     function() { return reviewNoGo({ storyId: args.id }); },
     'dev-finished':     function() { return devFinished({ storyId: args.id }); },
     'qa-started':       function() { return qaStarted({ storyId: args.id }); },
     'qa-finished':      function() { return qaFinished({ storyId: args.id }); },
@@ -148,4 +158,4 @@ if (require.main === module) {
     .catch(function(e) { console.error(e); process.exit(1); });
 }
 
-module.exports = { storyCreated, subtasksCreated, devKickoff, reviewPassed, devFinished, qaStarted, qaFinished };
+module.exports = { storyCreated, subtasksCreated, devKickoff, reviewPassed, reviewNoGo, devFinished, qaStarted, qaFinished };

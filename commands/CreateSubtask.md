@@ -13,7 +13,7 @@ If `$ARGUMENTS` is empty, ask for the StoryID.
 2. Read `.evyasys/board/**/<StoryID>/<StoryID>_UserStory.md` in full. List every AC — you must link at least one task to each.
 3. Run `python scripts/repo_scan.py --story $ARGUMENTS` — identify affected modules.
 4. Ask clarifying questions one at a time per `QUESTIONING.md` (scope, constraints, test strategy). Wait for each answer.
-5. Present 2–3 decomposition strategies (vertical slices / horizontal layers / spike-first) with trade-offs. Wait for team approval before writing tasks.
+5. Present all 3 decomposition strategies with trade-offs — **A: Backend-first + Frontend in logical groupings** (recommended), **B: Vertical slices**, **C: Layer by layer**. State why A fits this story. Wait for team approval before writing tasks.
 6. Write 3–8 tasks using `TASK_TEMPLATE.md`. Each task: ≤ 1 day, linked to ≥ 1 AC, names specific module(s), independently mergeable or order documented, clear acceptance statement.
 7. Self-review with `CHECKLIST.md`. Show to user and wait for approval.
 8. On approval: save to `.evyasys/board/**/<StoryID>/subtasks/<StoryID>_Subtasks.md` → create ADO child Tasks.

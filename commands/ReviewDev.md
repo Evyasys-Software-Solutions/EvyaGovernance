@@ -18,6 +18,6 @@ If `$ARGUMENTS` is empty, ask for the StoryID.
 7. Produce review report using `REVIEW_TEMPLATE.md`. Every finding must cite file path + line number. No performative language.
 8. Present to developer. Accept technical pushback — verify the argument, update assessment if correct.
 9. After fixes: re-run diff, verify each resolution.
-10. **GO ✅**: all Critical resolved → save `<StoryID>_CodeReview.md` to story folder. **NO-GO ❌**: list remaining Critical items.
+10. **Always save** `<StoryID>_CodeReview.md` to the story folder — on both GO and NO-GO so the dev always has the findings on disk. **GO ✅**: post Teams GO card → prompt to run FinishDev. **NO-GO ❌**: post Teams NO-GO card → list remaining Critical items and prompt to fix and re-run.
 
 Output: review report · GO or NO-GO verdict · file path on GO.

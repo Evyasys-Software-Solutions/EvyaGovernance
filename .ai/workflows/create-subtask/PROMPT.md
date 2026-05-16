@@ -8,6 +8,17 @@ You are the Senior Developer described in `AGENT.md`.
 - Repo scan: `python scripts/repo_scan.py --story <id>`
 - Plugin rules: `.ai/rules/*.md`
 - Project rules: `.evyasys/rules/*.md` (overrides plugin rules)
+- **Project docs: `.evyasys/docs/ARCHITECTURE.md`, `RULES.md`, `STANDARDS.md`, `PATTERNS.md`,
+  `ERROR_HANDLING.md`** (load if directory exists — highest-priority constraints; all tasks must comply)
+- **Domain docs** — loaded after reading the story's **Impacted Areas** flags (Step 1):
+
+  | Flag | Load from `.evyasys/docs/` |
+  |---|---|
+  | Security | `SECURITY.md` |
+  | DB | `DB_STANDARDS.md` |
+  | Frontend | `FRONTEND.md`, `DESIGN_SYSTEM.md` |
+  | API | `API_STANDARDS.md` |
+  | Performance | `PERFORMANCE.md` |
 - Project config: `.evyasys/project.yaml`
 - Task template: `.ai/workflows/create-subtask/TASK_TEMPLATE.md`
 - Questioning guide: `.ai/workflows/create-subtask/QUESTIONING.md`
@@ -26,7 +37,12 @@ will be wrong and will be rejected.
 Find the story folder by globbing `.evyasys/board/**/<id>/`. Read `<id>_UserStory.md` completely.
 List every Acceptance Criterion. You will link at least one task to each AC.
 
-## Step 2 — Probe the codebase
+After reading the story, check the **Impacted Areas** section and load the matching domain docs
+from `.evyasys/docs/` (Security / DB / Frontend / API / Performance — as listed in the Inputs
+table above). These docs constrain the Technical Analysis in Step 5 just as the base docs do.
+
+## Step 2 — Probe the codebase and load project standards
+
 Run `python scripts/repo_scan.py --story <id>`.
 Produce a concrete inventory:
 - Every file and module that will be touched
@@ -34,6 +50,14 @@ Produce a concrete inventory:
 - Existing patterns for similar operations (naming, layering, error handling)
 - Any risky, unfamiliar, or tightly-coupled areas
 - DB tables, API routes, events, or external services involved
+
+Then cross-reference findings against project docs (if `.evyasys/docs/` exists):
+- **ARCHITECTURE.md** — which layers will be touched? Are all changes in the correct layer?
+- **PATTERNS.md** — is there an approved pattern for this feature type? If yes, all tasks must use it.
+- **RULES.md** — do any hard "never do" rules apply to this story's scope?
+- **STANDARDS.md** — what naming conventions apply to the files that will be created or modified?
+
+Note your findings — they constrain every Technical Analysis you write in Step 5.
 
 This inventory directly drives the Technical Analysis sections in Step 5.
 If the scan is insufficient to write specific file paths and method names, read
@@ -135,6 +159,14 @@ Use the QA task format in `TASK_TEMPLATE.md`.
 
 ## Step 6 — Self-review against CHECKLIST.md
 Every item must pass before showing the output. Fix silently if any fail.
+
+Before running the checklist, do one final standards pass:
+- Does any task's Technical Analysis propose code in the wrong architectural layer?
+  (cross-check against `ARCHITECTURE.md` — fix the approach if yes, do not flag and move on)
+- Does any task use a pattern not approved in `PATTERNS.md` when an approved one exists?
+  (replace with the approved pattern — name the approved alternative explicitly)
+- Does any task violate a hard rule from `RULES.md`?
+  (revise the task — violations are not acceptable in the output)
 
 ## Step 7 — Show and confirm
 Present the filled task list to the user. Wait for explicit approval.

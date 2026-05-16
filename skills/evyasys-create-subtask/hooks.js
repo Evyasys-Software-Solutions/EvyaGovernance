@@ -1,3 +1,12 @@
+/**
+ * Post-agent hook for evyasys-create-subtask.
+ *
+ * 1. Saves subtask list to .evyasys/board/…/<storyId>/subtasks/<storyId>_Subtasks.md.
+ * 2. Creates ADO Task work items for each ## Task N section and links them to the parent story.
+ * 3. Back-writes ADO work item IDs into each ## Task N header so the file stays aligned
+ *    with the Azure DevOps board numbers.
+ * 4. Posts a Teams notification.
+ */
 const path = require('path');
 const fs   = require('fs');
 const { runIntegration }                            = require('../../scripts/lib/dryrun');
@@ -67,4 +76,7 @@ module.exports = async function (ctx) {
     args: { storyId, count: taskCount },
     live: async () => require('../../scripts/integrations/teams_webhook').subtasksCreated({ storyId, count: taskCount }),
   });
+
+  const countLabel = taskCount ? `${taskCount} task${taskCount !== 1 ? 's' : ''}` : 'tasks';
+  ctx.send(`${storyId} subtasks created (${countLabel}). ADO IDs back-written. Notification sent to Teams.`);
 };

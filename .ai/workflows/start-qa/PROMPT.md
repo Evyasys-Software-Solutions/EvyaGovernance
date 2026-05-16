@@ -5,11 +5,18 @@ You are the Senior QA Engineer described in `AGENT.md`.
 ## Inputs
 - StoryID from `$ARGUMENTS`
 - Story folder: find via Glob `.evyasys/board/**/<id>/`
-- Story: `<story-folder>/<id>_UserStory.md`
-- Dev Summary: `<story-folder>/<id>_DevSummary.md`
+- Story: `<story-folder>/<id>_UserStory.md` — read **Impacted Areas** domain flags
+- Dev Summary: `<story-folder>/<id>_DevSummary.md` — read "Files touched", "Manual QA hints", "Docs to update"
+- Code Review (if available): `<story-folder>/<id>_CodeReview*.md` — known issues from review
 - Tech Brainstorm (if available): `<story-folder>/<id>_TechBrainstorm.md`
 - Repo scan with diff: `python scripts/repo_scan.py --story <id> --diff`
 - Rules: `.ai/rules/*.md`
+- Project docs (load from `.evyasys/docs/` based on Impacted Areas flags):
+  - Always: `TESTING.md` — test strategy, coverage requirements, naming rules, mocking policy
+  - Security flag → `SECURITY.md` — auth, input validation, and data-handling test requirements
+  - Performance flag → `PERFORMANCE.md` — response time budgets and load scenarios
+  - Frontend flag → `FRONTEND.md`, `DESIGN_SYSTEM.md` — accessibility and UX check requirements
+  - DB flag → `DB_STANDARDS.md` — data integrity scenarios
 - Test plan template: `.ai/workflows/start-qa/TEST_PLAN_TEMPLATE.md`
 - Questioning guide: `.ai/workflows/start-qa/QUESTIONING.md`
 
@@ -59,10 +66,22 @@ regression check confirming the existing behaviour still holds after the change.
 Flag any file the dev summary marked as high-risk with at least 2 regression cases.
 
 ## Step 6 — Non-functional checks
-Fill the non-functional section for what is relevant. Mark others "N/A — <reason>":
-- **Performance** — response time budget + how to measure it in the test environment.
-- **Security** — auth/authz checks, input validation, sensitive data handling.
-- **Accessibility** — keyboard navigation, ARIA labels, colour contrast (UI only).
+Fill the non-functional section for what is relevant. Mark others "N/A — <reason>".
+Reference the loaded project docs for each category:
+
+- **Performance** — use `PERFORMANCE.md` response time budgets as pass/fail criteria.
+  State the target, how to measure it in the test environment, and the acceptable limit.
+- **Security** — use `SECURITY.md` as the checklist:
+  - Auth: every protected endpoint must be tested for unauthorised access (401/403 expected).
+  - Input validation: every user-controlled field must have an invalid input test case.
+  - Sensitive data: confirm PII is not exposed in error messages, logs, or API responses.
+- **Accessibility** (UI only) — use `DESIGN_SYSTEM.md` accessibility requirements:
+  - Keyboard navigation through all interactive elements.
+  - ARIA labels on all interactive controls.
+  - Colour contrast meets the project's documented standard.
+- **Data integrity** (DB changes) — use `DB_STANDARDS.md`:
+  - Foreign key constraints tested (orphan records, cascade behaviour).
+  - Migration runs cleanly up and down in the test environment.
 
 ## Step 7 — Self-review against CHECKLIST.md
 All items must pass before showing the output. Fix silently if any fail.

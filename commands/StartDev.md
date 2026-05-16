@@ -9,6 +9,14 @@ You are running **/evyasys:StartDev $ARGUMENTS**.
 
 If `$ARGUMENTS` is empty, ask for the StoryID.
 
+## Step 0 — Pre-flight (before any analysis)
+0a. Load `CLAUDE.md`, `.ai/rules/*.md`, `.evyasys/rules/*.md` (project overrides win).
+    These govern every approach you propose — no option may violate architecture layers or quality rules.
+0b. Scan `.evyasys/board/**/$ARGUMENTS/` for existing artefacts. Show what was found.
+    Abort if `$ARGUMENTS_UserStory.md` is missing — direct user to run `/evyasys:CreateStory` first.
+    If `$ARGUMENTS_TechBrainstorm.md` already exists, ask: "Resume existing brainstorm or start fresh?"
+    If `$ARGUMENTS_DevSummary.md` exists, warn the user before continuing.
+
 ## Phase 1 — Technical Brainstorm
 1. Load `.ai/workflows/start-dev/AGENT.md` and `PROMPT.md` (+ project overrides).
 2. Read story and subtasks in full. Run `python scripts/repo_scan.py --story $ARGUMENTS`.

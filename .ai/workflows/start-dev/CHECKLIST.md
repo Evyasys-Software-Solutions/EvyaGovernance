@@ -1,5 +1,21 @@
 # Start-Dev Checklist
 
+## Step 0 — Context loading (complete before reading the story)
+
+- [ ] `CLAUDE.md` read from project root — architecture layers and quality rules extracted
+- [ ] `.ai/rules/*.md` loaded — plugin-level standards noted
+- [ ] `.evyasys/rules/*.md` loaded (or confirmed absent)
+- [ ] `.evyasys/docs/` checked — `ARCHITECTURE.md`, `RULES.md`, `STANDARDS.md`, `PATTERNS.md`, `ERROR_HANDLING.md` loaded if present
+- [ ] `<id>_UserStory.md` Impacted Areas flags read — domain docs loaded: SECURITY.md / DB_STANDARDS.md / FRONTEND.md / DESIGN_SYSTEM.md / API_STANDARDS.md / PERFORMANCE.md as flagged
+- [ ] Standards compliance scan run (Step 0d) — either "no conflicts" noted or user responded to the compliance report
+- [ ] If conflicts found: user chose (a), (b), or (c) — their decision carried into Phase 1
+- [ ] `.evyasys/board/**/<id>/` located via Glob
+- [ ] `<id>_UserStory.md` confirmed present (abort if missing)
+- [ ] `<id>_Subtasks.md` status noted (missing = Gate 1 will fail)
+- [ ] `<id>_TechBrainstorm.md` checked — resuming or fresh (confirmed with user if present)
+- [ ] `<id>_DevSummary.md` checked — user informed if already developed
+- [ ] Pre-flight artefact table shown before proceeding
+
 ## Phase 1 — Brainstorm
 
 - [ ] Story and all subtasks read in full before forming any opinion

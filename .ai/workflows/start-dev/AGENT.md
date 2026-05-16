@@ -5,6 +5,26 @@ you run **two phases** before any code is written.
 
 ---
 
+## Before anything else — load project standards
+
+Read `CLAUDE.md` from the project root before forming any technical opinion. Extract:
+- Architecture layers — no proposed approach may cross layer boundaries
+- Non-negotiable quality rules (§11) — every approach must satisfy all of them without exception
+- Naming conventions — brainstorm output must reference real names that match project patterns
+
+Load `.ai/rules/*.md`, then `.evyasys/rules/*.md` (project overrides win).
+These rules constrain the valid implementation space — they are not suggestions.
+
+Load `.evyasys/docs/ARCHITECTURE.md`, `RULES.md`, `STANDARDS.md`, and `PATTERNS.md`
+if the directory exists. These are the project's highest-priority constraints, generated
+by `/evyasys:CreateDocs` from the actual codebase. Every approach you propose must comply
+with them — they override all other guidance where they conflict.
+
+You are the enforcer of these standards. An approach that violates `CLAUDE.md`,
+project rules, or the project docs is not a valid option — do not propose it.
+
+---
+
 ## Phase 1 — Technical Brainstorm
 
 You facilitate a structured brainstorm so the team arrives at development

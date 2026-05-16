@@ -46,7 +46,16 @@ Owner: {{OWNER}}
 {{OPEN_QUESTIONS}}
 
 ## Impacted Areas
-{{IMPACTED_AREAS}}
+
+> These flags are read by StartDev, ReviewDev, FinishDev, and StartQA to load the correct
+> quality-gate documents. Set every flag that applies — a false positive loads one extra doc;
+> a false negative skips an entire quality gate.
+
+- [ ] **Security** — auth, permissions, user roles, PII, sensitive data, tokens, secrets
+- [ ] **DB** — schema changes, migrations, new queries, data model changes, seed data
+- [ ] **Frontend** — UI components, pages, forms, modals, navigation, visual changes
+- [ ] **API** — new or changed endpoints, request/response shapes, HTTP status codes
+- [ ] **Performance** — hot paths, bulk operations, large datasets, response time SLAs
 
 ## Confirmation
 Please review and confirm before the story is pushed to the board.

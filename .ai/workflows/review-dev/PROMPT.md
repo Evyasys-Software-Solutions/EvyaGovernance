@@ -42,9 +42,16 @@ Before touching the diff, load and internalise all inputs above in this order:
 4. Read `.evyasys/workflows/review-dev/*.md` if present — any project-specific review instructions override this prompt.
 5. Read `<story-folder>/<id>_TechBrainstorm.md` — identify the agreed implementation approach. This is the architectural contract for the review.
 6. Read prior `<id>_CodeReview*.md` if it exists — know what was flagged before; re-open anything that was not resolved.
+7. Load `.evyasys/docs/ARCHITECTURE.md`, `RULES.md`, `STANDARDS.md`, and `PATTERNS.md` if the
+   directory exists. These project-specific quality gates are the highest-priority constraints.
+   Note: (a) layer boundary rules from ARCHITECTURE.md, (b) all hard rules from RULES.md,
+   (c) required naming from STANDARDS.md, (d) approved patterns from PATTERNS.md.
+   Any violation of these docs is at least **Important** — violations of ARCHITECTURE.md
+   layer boundaries are **Critical**.
 
 Rules from all sources are **active constraints** throughout the review.
 A violation of any rule from any source is flagged at **Important** minimum.
+Project docs from `.evyasys/docs/` override generic plugin rules where they conflict.
 
 ## Step 1 — Understand the scope
 Read the story ACs completely. These are your acceptance criteria for the review.

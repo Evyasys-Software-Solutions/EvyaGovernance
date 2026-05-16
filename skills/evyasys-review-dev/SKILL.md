@@ -51,5 +51,6 @@ structured review covering correctness, security, architecture, and code health.
 - No performative language — findings only, no "great work"
 
 ## Output
-- `.evyasys/board/**/<StoryID>/<StoryID>_CodeReview.md` (saved on GO)
+- `.evyasys/board/**/<StoryID>/<StoryID>_CodeReview.md` — **saved on both GO and NO-GO** so the developer always has findings on disk
+- Teams GO card on pass; Teams NO-GO card on fail — team is notified of both outcomes
 - No ADO state change — `/evyasys:FinishDev` handles that

@@ -2,6 +2,14 @@
 
 Run every item before showing output. Fix silently if any fail.
 
+## Project standards compliance (check first)
+
+- [ ] `.evyasys/docs/` loaded before decomposition began (if directory exists)
+- [ ] No task's Technical Analysis proposes code in the wrong architectural layer (ARCHITECTURE.md)
+- [ ] Every task uses the approved pattern from PATTERNS.md where one exists for this feature type
+- [ ] No task violates a hard "never do" rule from RULES.md
+- [ ] File paths and identifiers in Technical Analysis follow naming conventions from STANDARDS.md
+
 ## Structure
 
 - [ ] Between 4 and 8 tasks total (3–7 implementation tasks + 1 mandatory QA task).
