@@ -1,16 +1,25 @@
 # .evyasys/project.yaml — checked into your project's git repo.
 # Each project (i.e. each git repo) gets its own copy with its own settings.
-# Secrets (the personal access token) DO NOT live here — they live per-user
-# in ~/.evyasys/credentials. This file is safe to commit.
+# Secrets (personal access tokens, API tokens, auth tokens) DO NOT live here.
+# They live per-user in ~/.evyasys/credentials (encrypted). This file is safe to commit.
 
-# Human-readable project name (shows up in Teams cards).
+# Human-readable project name (shows up in notification cards).
 name: "Customer Portal"
 
 # Story ID prefix (also used in branch and PR names).
+# Velocity is used by CreateStory to estimate story points.
+# point_scale lists the Fibonacci-like values available for estimation.
 story:
   id_prefix: "EVYA"
+  velocity: 20
+  point_scale: "3,5,8,13,21"
 
-# Azure DevOps target for /Evya* commands.
+# ── Project Management Tool ───────────────────────────────────────────────────
+# Options: local | devops | jira | github
+# Run /evyasys:Setup to configure interactively.
+pm_tool: "devops"
+
+# Azure DevOps — required if pm_tool is "devops"
 azure_devops:
   org: "EvyaCorp"
   project: "CustomerPortal"
@@ -24,12 +33,56 @@ work_item_types:
   story: "User Story"
   task: "Task"
 
+# JIRA — required if pm_tool is "jira"
+# jira:
+#   domain: "your-org.atlassian.net"
+#   project_key: "PORTAL"
+
+# GitHub Projects — required if pm_tool is "github"
+# github:
+#   owner: "acme-corp"
+#   repo: "customer-portal"
+#   project_number: "1"
+
+# ── Notification Tool ─────────────────────────────────────────────────────────
+# Options: none | teams | slack | whatsapp | email
+# Run /evyasys:Setup to configure interactively.
+notification_tool: "teams"
+
 # Microsoft Teams incoming webhook for this project's channel.
-# Different projects → different webhooks. The /Evya* commands will
-# prompt for this and write it here automatically the first time.
+# Different projects → different webhooks.
 teams:
   webhook: ""
 
-# Optional: override Definition-of-Ready or naming-conventions for this project
+# Slack incoming webhook — required if notification_tool is "slack"
+# slack:
+#   webhook: "https://hooks.slack.com/services/..."
+
+# WhatsApp via Twilio — required if notification_tool is "whatsapp"
+# Twilio credentials (account_sid, auth_token) are saved encrypted in ~/.evyasys/credentials.
+# whatsapp:
+#   from: "+14155238886"
+#   to: "+1234567890"
+
+# Email via SMTP — required if notification_tool is "email"
+# SMTP username + password are saved encrypted in ~/.evyasys/credentials.
+# Works with Gmail (use App Password), Outlook/Office 365, SendGrid, or any SMTP server.
+# email:
+#   smtp_host: "smtp.gmail.com"
+#   smtp_port: "587"
+#   from: "evyasys@yourcompany.com"
+#   to: "team@yourcompany.com"
+
+# ── Release Notes (PDF generation) ───────────────────────────────────────────
+# Used by /evyasys:GenerateReleaseNote to produce branded PDF release documents.
+# pdfkit is installed automatically on first run — no manual npm install needed.
+# release_notes:
+#   company_name: "Acme Corp"          # appears in PDF header and footer
+#   logo_path: "assets/logo.png"       # relative to project root (PNG/JPEG, optional)
+#   brand_color: "#0078d4"             # hex color for header/cover bands
+#   output_dir: ".evyasys/releases/"   # where PDFs are saved
+#   naming_convention: "v{version}"    # v{version} | Sprint-{N} | {date} | custom
+
+# ── Optional: override Definition-of-Ready or naming-conventions for this project
 # by adding files under `.evyasys/rules/` next to this file. They merge over
 # the plugin defaults.

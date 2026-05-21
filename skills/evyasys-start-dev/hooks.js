@@ -1,14 +1,17 @@
 /**
  * Post-agent hook for evyasys-start-dev.
  *
- * Saves the agreed tech brainstorm, then transitions ADO → In Progress
- * and posts the Teams kickoff card — both only after user approval.
+ * Saves the agreed tech brainstorm, then transitions the story to "In Progress"
+ * in the configured PM tool and posts the kickoff notification — both only after
+ * user approval.
  */
 const path = require('path');
 const fs   = require('fs');
-const { runIntegration }                    = require('../../scripts/lib/dryrun');
-const { loadConfig, ensurePat, ensureTeamsWebhook } = require('../../scripts/lib/config');
-const adoMap                                = require('../../scripts/lib/ado-map');
+const { runIntegration } = require('../../scripts/lib/dryrun');
+const { loadConfig }     = require('../../scripts/lib/config');
+const adoMap             = require('../../scripts/lib/ado-map');
+const pm                 = require('../../scripts/lib/pm-adapter');
+const notify             = require('../../scripts/lib/notify-adapter');
 
 module.exports = async function (ctx) {
   const cfg     = await loadConfig({ ctx });
@@ -19,8 +22,7 @@ module.exports = async function (ctx) {
     return;
   }
 
-  // Save brainstorm document if the agent produced one.
-  // Resolves the story folder from the map; falls back to board/stories/{id}/.
+  // Save brainstorm document.
   const brainstorm = ctx.brainstorm || ctx.agentResult;
   if (brainstorm) {
     const storyDir = adoMap.lookupDir(cfg.repoRoot, storyId)
@@ -31,38 +33,39 @@ module.exports = async function (ctx) {
     ctx.send(`Saved tech brainstorm → ${brainstormPath}`);
   }
 
-  // Confirm before any ADO / Teams action.
-  if (!(await ctx.confirm(`Set ${storyId} to "In Progress" in Azure DevOps and notify Teams?`))) {
-    ctx.send('Cancelled — ADO state and Teams notification not sent.');
+  const pmLabel     = pm.toolLabel(cfg);
+  const notifyLabel = notify.toolLabel(cfg);
+  const notifyPart  = cfg.notificationTool !== 'none' ? ` and notify ${notifyLabel}` : '';
+
+  if (!(await ctx.confirm(`Set ${storyId} to "In Progress" in ${pmLabel}${notifyPart}?`))) {
+    ctx.send('Cancelled — state transition and notification not sent.');
     return;
   }
 
-  // Resolve ADO numeric ID from the local map.
-  // The Evyasys ID (e.g. EVYA-1042) must be converted to the ADO work item number
-  // (e.g. 5678) — setState requires the numeric ADO ID, not the Evyasys ID.
-  const adoStoryId = adoMap.lookup(cfg.repoRoot, storyId);
-  if (!adoStoryId && !cfg.dryRun) {
-    ctx.send(`Warning: ADO work item ID for ${storyId} not found in map — state change may target the wrong item. Run /evyasys:CreateStory first to ensure the mapping exists.`);
+  if (cfg.pmTool !== 'local') {
+    const pmStoryId = adoMap.lookup(cfg.repoRoot, storyId);
+    if (!pmStoryId && !cfg.dryRun) {
+      ctx.send(`Warning: ${pmLabel} ID for ${storyId} not found in map — state change may target the wrong item.`);
+    }
+    const idForPm = pmStoryId || storyId;
+
+    await pm.ensureCredentials(cfg);
+    await runIntegration({
+      name: `${cfg.pmTool}:set-state(In Progress) [#${idForPm}]`, cfg,
+      args: { storyId: idForPm, state: 'In Progress' },
+      live: () => pm.setState(cfg, { storyId: idForPm, state: 'In Progress' }),
+    });
   }
-  const idForAdo = adoStoryId || storyId;
 
-  await ensurePat(cfg, ctx);
+  await notify.ensureCredentials(cfg);
   await runIntegration({
-    name: `azure-devops:set-state(In Progress) [ADO #${idForAdo}]`,
-    cfg,
-    args: { storyId: idForAdo, state: 'In Progress' },
-    live: async () =>
-      require('../../scripts/integrations/azure_devops').setState({ storyId: idForAdo, state: 'In Progress' }),
-  });
-
-  await ensureTeamsWebhook(cfg, ctx);
-  await runIntegration({
-    name: 'teams:dev-kickoff',
-    cfg,
+    name: `${cfg.notificationTool}:dev-kickoff`, cfg,
     args: { storyId },
-    live: async () =>
-      require('../../scripts/integrations/teams_webhook').devKickoff({ storyId }),
+    live: () => notify.send(cfg, { event: 'dev-kickoff', storyId }),
   });
 
-  ctx.send(`${storyId} is now In Progress (ADO #${idForAdo}). Kickoff card sent to Teams.`);
+  const pmDetail = cfg.pmTool !== 'local'
+    ? ` (${pmLabel} #${adoMap.lookup(cfg.repoRoot, storyId) || storyId})`
+    : '';
+  ctx.send(`${storyId} is now In Progress${pmDetail}. Kickoff notification sent.`);
 };

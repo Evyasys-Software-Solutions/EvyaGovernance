@@ -1,5 +1,13 @@
 [
   {
+    "name": "Setup",
+    "description": "Configure Evyasys for this project — choose PM tool (Local / Azure DevOps / JIRA / GitHub Projects) and notification channel (None / Teams / Slack / WhatsApp / Email), then collect and encrypt credentials. Safe to re-run to update config or rotate secrets."
+  },
+  {
+    "name": "CreateDocs",
+    "description": "Scan the entire codebase and generate 19 quality-gate documents into .evyasys/docs/ covering architecture, standards, patterns, testing, security, and more. Pass --retrain to regenerate only docs affected by recent git changes."
+  },
+  {
     "name": "CreateStory",
     "description": "Draft a complete business story from project context — asks clarifying questions one at a time, handles Epic filing, pushes to Azure DevOps and notifies Teams on approval."
   },
@@ -26,5 +34,9 @@
   {
     "name": "FinishQa",
     "description": "Release sign-off — validates all TC outcomes recorded, no P0/P1 defects open, drafts plain-language release notes. Transitions ADO to Done. Pass StoryID."
+  },
+  {
+    "name": "GenerateReleaseNote",
+    "description": "Compile a branded PDF release notes document from one or more completed stories — groups by Epic, consolidates quality gates, proposes version from history, generates PDF. Pass story IDs e.g. EVYA-1042 EVYA-1043."
   }
 ]

@@ -18,10 +18,11 @@ artifacts:
 
 integrations:
   repo: local_git
-  board: azure_devops
-  chat: teams
+  board: configurable   # local | devops | jira | github — set via /evyasys:Setup
+  chat: configurable    # none | teams | slack | whatsapp — set via /evyasys:Setup
 
 workflow_packages:
+  - workflows/setup
   - workflows/create-story
   - workflows/create-subtask
   - workflows/start-dev

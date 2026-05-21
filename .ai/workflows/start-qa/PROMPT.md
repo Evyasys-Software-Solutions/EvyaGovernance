@@ -29,6 +29,20 @@ test data availability. A test plan without an executable environment is useless
 
 ---
 
+## Step 0 — Check for previously passed test cases
+
+Before reading any documents, check whether a Playwright spec already exists:
+- Look for `tests/e2e/<StoryID>.spec.ts` in the project root.
+- If the file exists, scan it for lines matching `// EVYA:TC-XXX:PASSED:DATE`.
+- Build a list of already-passed TC IDs and their pass dates.
+
+In your test plan, mark each previously-passed TC as:
+> **[Skip — passed on DATE]** — re-run only if the related code changed since that date.
+
+This avoids redundant re-testing of stable, already-validated scenarios.
+
+---
+
 ## Step 1 — Read all inputs
 Read the story, dev summary, and brainstorm in full before writing anything.
 The dev summary's **Files touched** and **Manual QA hints** are your regression

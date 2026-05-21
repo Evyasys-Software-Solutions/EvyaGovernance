@@ -5,15 +5,16 @@
  * A review that isn't saved on NO-GO leaves the developer with nothing to fix from —
  * always persist the findings, then decide what notification to post.
  *
- *   GO     → save review → post Teams GO card → prompt to run FinishDev.
- *   NO-GO  → save review → post Teams NO-GO card → prompt to fix and re-run.
- *   Unclear → ask user whether to save; no Teams notification, no state change.
+ *   GO     → save review → send GO notification → prompt to run FinishDev.
+ *   NO-GO  → save review → send NO-GO notification → prompt to fix and re-run.
+ *   Unclear → ask user whether to save; no notification, no state change.
  */
 const path = require('path');
 const fs   = require('fs');
-const { runIntegration }             = require('../../scripts/lib/dryrun');
-const { loadConfig, ensureTeamsWebhook } = require('../../scripts/lib/config');
-const adoMap                         = require('../../scripts/lib/ado-map');
+const { runIntegration }  = require('../../scripts/lib/dryrun');
+const { loadConfig }      = require('../../scripts/lib/config');
+const adoMap              = require('../../scripts/lib/ado-map');
+const notify              = require('../../scripts/lib/notify-adapter');
 
 // Word-boundary patterns to avoid false positives ("FAILURE", "failover", etc.).
 // NO-GO must be tested before GO since "GO" would otherwise match inside "NO-GO".
@@ -32,11 +33,11 @@ module.exports = async function (ctx) {
   const isNoGo = RE_NO_GO.test(review);
   const isGo   = !isNoGo && RE_GO.test(review);
 
-  // ── Resolve story folder ─────────────────────────────────────────────────────
+  // Resolve story folder.
   const storyDir = adoMap.lookupDir(cfg.repoRoot, storyId)
     || path.join(cfg.repoRoot, '.evyasys', 'board', 'stories', storyId);
 
-  // ── Save review — always on GO/NO-GO; ask user only when verdict is unclear ──
+  // Save on GO/NO-GO; ask user only when verdict is unclear.
   if (!isGo && !isNoGo) {
     const save = await ctx.confirm(`Verdict unclear — save this review report to ${storyDir}?`);
     if (!save) { ctx.send('Review not saved. Run /evyasys:ReviewDev again when ready.'); return; }
@@ -47,30 +48,27 @@ module.exports = async function (ctx) {
   fs.writeFileSync(reviewPath, review, 'utf8');
   ctx.send(`Code review saved → ${reviewPath}`);
 
-  // ── Unclear verdict: saved, nothing else to do ───────────────────────────────
   if (!isGo && !isNoGo) {
     ctx.send('Review saved. Verdict was unclear — confirm the outcome manually if needed.');
     return;
   }
 
-  await ensureTeamsWebhook(cfg, ctx);
+  await notify.ensureCredentials(cfg);
 
-  // ── NO-GO: notify team, stop — do not advance ADO state ─────────────────────
   if (isNoGo) {
     await runIntegration({
-      name: 'teams:review-no-go', cfg,
+      name: `${cfg.notificationTool}:review-no-go`, cfg,
       args: { storyId },
-      live: async () => require('../../scripts/integrations/teams_webhook').reviewNoGo({ storyId }),
+      live: () => notify.send(cfg, { event: 'review-no-go', storyId }),
     });
     ctx.send(`Review verdict: NO-GO ❌ — fix all Critical items and run /evyasys:ReviewDev ${storyId} again.`);
     return;
   }
 
-  // ── GO: post Teams card ──────────────────────────────────────────────────────
   await runIntegration({
-    name: 'teams:review-passed', cfg,
+    name: `${cfg.notificationTool}:review-passed`, cfg,
     args: { storyId },
-    live: async () => require('../../scripts/integrations/teams_webhook').reviewPassed({ storyId }),
+    live: () => notify.send(cfg, { event: 'review-passed', storyId }),
   });
 
   ctx.send(`Review passed ✅ — proceed with /evyasys:FinishDev ${storyId}`);

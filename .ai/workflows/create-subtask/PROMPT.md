@@ -175,3 +175,29 @@ On approval, the hook saves the file and creates ADO child Tasks.
 ## Output
 - `.evyasys/board/**/<StoryID>/subtasks/<StoryID>_Subtasks.md`
 - ADO child Task IDs (back-written into each ## Task header)
+
+---
+
+## Final output block — Playwright spec data (required)
+
+After the confirmed task list, append **exactly one** structured block at the very end of your output.
+This block is parsed by the hook to scaffold the Playwright spec file — it is never saved to the subtasks file.
+
+Collect every test case from the QA task's test scenarios table and emit:
+
+```
+<!-- EVYASPEC
+[
+  { "id": "TC-001", "ac": "AC1: <short AC title>", "title": "<test case title>", "type": "happy-path" },
+  { "id": "TC-002", "ac": "AC1: <short AC title>", "title": "<test case title>", "type": "negative" },
+  { "id": "TC-003", "ac": "AC2: <short AC title>", "title": "<test case title>", "type": "edge" }
+]
+-->
+```
+
+Rules:
+- One entry per test case row in the QA task.
+- `id` format: `TC-NNN` (three-digit zero-padded).
+- `ac` is the short AC label the TC covers (used to group tests into `describe` blocks).
+- `type` is one of: `happy-path` | `positive` | `negative` | `edge` | `regression`.
+- Do **not** omit this block even if the QA task has no Playwright-specific tests — emit an empty array `[]`.

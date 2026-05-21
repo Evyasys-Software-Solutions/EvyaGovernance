@@ -1,14 +1,17 @@
 /**
  * Post-agent hook for evyasys-start-qa.
  *
- * Saves the test plan, transitions ADO → In QA,
- * and posts the Teams notification — all after user approval.
+ * Saves the test plan, transitions the story to "In QA" in the configured PM tool,
+ * and sends the QA notification — all after user approval.
  */
 const path = require('path');
 const fs   = require('fs');
-const { runIntegration }                              = require('../../scripts/lib/dryrun');
-const { loadConfig, ensurePat, ensureTeamsWebhook }   = require('../../scripts/lib/config');
-const adoMap                                          = require('../../scripts/lib/ado-map');
+const { runIntegration } = require('../../scripts/lib/dryrun');
+const { loadConfig }     = require('../../scripts/lib/config');
+const adoMap             = require('../../scripts/lib/ado-map');
+const pm                 = require('../../scripts/lib/pm-adapter');
+const notify             = require('../../scripts/lib/notify-adapter');
+const pw                 = require('../../scripts/lib/playwright-manager');
 
 module.exports = async function (ctx) {
   const cfg     = await loadConfig({ ctx });
@@ -26,34 +29,44 @@ module.exports = async function (ctx) {
     ctx.send(`Saved test plan → ${out}`);
   }
 
-  if (!(await ctx.confirm(`Set ${storyId} to "In QA" and notify Teams?`))) {
+  const pmLabel     = pm.toolLabel(cfg);
+  const notifyLabel = notify.toolLabel(cfg);
+  const notifyPart  = cfg.notificationTool !== 'none' ? ` and notify ${notifyLabel}` : '';
+
+  if (!(await ctx.confirm(`Set ${storyId} to "In QA" in ${pmLabel}${notifyPart}?`))) {
     ctx.send('Cancelled.'); return;
   }
 
-  // Resolve ADO numeric ID — required for setState; Evyasys IDs are not ADO IDs.
-  const adoStoryId = adoMap.lookup(cfg.repoRoot, storyId);
-  if (!adoStoryId && !cfg.dryRun) {
-    ctx.send(`Warning: ADO work item ID for ${storyId} not found in map — state change may target the wrong item.`);
+  if (cfg.pmTool !== 'local') {
+    const pmStoryId = adoMap.lookup(cfg.repoRoot, storyId);
+    if (!pmStoryId && !cfg.dryRun) {
+      ctx.send(`Warning: ${pmLabel} ID for ${storyId} not found in map — state change may target the wrong item.`);
+    }
+    const idForPm = pmStoryId || storyId;
+
+    await pm.ensureCredentials(cfg);
+    await runIntegration({
+      name: `${cfg.pmTool}:set-state(In QA) [#${idForPm}]`, cfg,
+      args: { storyId: idForPm, state: 'In QA' },
+      live: () => pm.setState(cfg, { storyId: idForPm, state: 'In QA' }),
+    });
   }
-  const idForAdo = adoStoryId || storyId;
 
-  await ensurePat(cfg, ctx);
+  await notify.ensureCredentials(cfg);
   await runIntegration({
-    name: `azure-devops:set-state(In QA) [ADO #${idForAdo}]`,
-    cfg,
-    args: { storyId: idForAdo, state: 'In QA' },
-    live: async () =>
-      require('../../scripts/integrations/azure_devops').setState({ storyId: idForAdo, state: 'In QA' }),
-  });
-
-  await ensureTeamsWebhook(cfg, ctx);
-  await runIntegration({
-    name: 'teams:qa-started',
-    cfg,
+    name: `${cfg.notificationTool}:qa-started`, cfg,
     args: { storyId },
-    live: async () =>
-      require('../../scripts/integrations/teams_webhook').qaStarted({ storyId }),
+    live: () => notify.send(cfg, { event: 'qa-started', storyId }),
   });
 
-  ctx.send(`${storyId} is now In QA (ADO #${idForAdo}). QA card sent to Teams.`);
+  const pmDetail = cfg.pmTool !== 'local'
+    ? ` (${pmLabel} #${adoMap.lookup(cfg.repoRoot, storyId) || storyId})`
+    : '';
+
+  const passedTcs = pw.loadPassedTests(cfg.repoRoot, storyId);
+  const skipNote  = passedTcs.length > 0
+    ? ` ${passedTcs.length} TC${passedTcs.length !== 1 ? 's' : ''} already passed from previous run (${passedTcs.map(t => t.id).join(', ')}) — marked skip in spec.`
+    : '';
+
+  ctx.send(`${storyId} is now In QA${pmDetail}. QA notification sent.${skipNote}`);
 };

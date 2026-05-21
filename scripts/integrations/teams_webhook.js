@@ -125,6 +125,48 @@ async function qaFinished({ storyId }) {
   }));
 }
 
+async function bugFound({ storyId, count, criticalCount }) {
+  const countStr    = count         ? count + ' bug' + (count !== 1 ? 's' : '')                     : 'bugs';
+  const criticalStr = criticalCount ? criticalCount + ' critical/high'                              : '';
+  const detail      = criticalStr   ? countStr + ' (' + criticalStr + ') — story remains In QA'    : countStr + ' logged — story marked Done';
+  return post(buildCard({
+    title:    '🐛 Bugs Found: ' + storyId,
+    summary:  'QA found ' + countStr + ' in ' + storyId + '.',
+    sections: [{ title: 'Status', text: detail }],
+  }));
+}
+
+async function releaseGenerated({ storyId, storyCount, version, pdfFile }) {
+  const versionStr = version  ? ' · v' + version           : '';
+  const countStr   = storyCount ? storyCount + ' stor' + (storyCount !== 1 ? 'ies' : 'y') : '';
+  const detail     = [countStr, pdfFile ? 'PDF saved to ' + pdfFile : ''].filter(Boolean).join(' · ') || 'Release notes generated.';
+  return post(buildCard({
+    title:    '📄 Release Notes: ' + storyId + versionStr,
+    summary:  'Release notes generated for ' + storyId + versionStr + '.',
+    sections: [{ title: 'Status', text: detail }],
+  }));
+}
+
+const EVENT_MAP = {
+  'story-created':      ({ storyId, file })                        => storyCreated({ storyId, file }),
+  'subtasks-created':   ({ storyId, count })                       => subtasksCreated({ storyId, count }),
+  'dev-kickoff':        ({ storyId })                              => devKickoff({ storyId }),
+  'review-passed':      ({ storyId })                              => reviewPassed({ storyId }),
+  'review-no-go':       ({ storyId })                              => reviewNoGo({ storyId }),
+  'dev-finished':       ({ storyId })                              => devFinished({ storyId }),
+  'qa-started':         ({ storyId })                              => qaStarted({ storyId }),
+  'qa-finished':        ({ storyId })                              => qaFinished({ storyId }),
+  'bug-found':          ({ storyId, count, criticalCount })        => bugFound({ storyId, count, criticalCount }),
+  'release-generated':  ({ storyId, storyCount, version, pdfFile }) => releaseGenerated({ storyId, storyCount, version, pdfFile }),
+};
+
+/** Called by notify-adapter with { event, storyId, ...extras }. */
+function send({ event, storyId, ...extras }) {
+  const fn = EVENT_MAP[event];
+  if (!fn) return Promise.resolve({ skipped: true, reason: 'Unknown event: ' + event });
+  return fn({ storyId, ...extras });
+}
+
 function parseArgs(argv) {
   const out = { _: [] };
   for (let i = 0; i < argv.length; i++) {
@@ -138,24 +180,15 @@ function parseArgs(argv) {
 if (require.main === module) {
   const sub  = process.argv[2];
   const args = parseArgs(process.argv.slice(3));
-  const map  = {
-    'story-created':    function() { return storyCreated({ storyId: args.id, file: args.file }); },
-    'subtasks-created': function() { return subtasksCreated({ storyId: args.id, count: args.count ? Number(args.count) : undefined }); },
-    'dev-kickoff':      function() { return devKickoff({ storyId: args.id }); },
-    'review-passed':    function() { return reviewPassed({ storyId: args.id }); },
-    'review-no-go':     function() { return reviewNoGo({ storyId: args.id }); },
-    'dev-finished':     function() { return devFinished({ storyId: args.id }); },
-    'qa-started':       function() { return qaStarted({ storyId: args.id }); },
-    'qa-finished':      function() { return qaFinished({ storyId: args.id }); },
-  };
-  if (!map[sub]) {
+  const fn   = EVENT_MAP[sub];
+  if (!fn) {
     console.error('Unknown subcommand: ' + sub);
-    console.error('Valid: ' + Object.keys(map).join(', '));
+    console.error('Valid: ' + Object.keys(EVENT_MAP).join(', '));
     process.exit(2);
   }
-  map[sub]()
+  fn({ storyId: args.id, file: args.file, count: args.count ? Number(args.count) : undefined, criticalCount: args['critical-count'] ? Number(args['critical-count']) : undefined, storyCount: args['story-count'] ? Number(args['story-count']) : undefined, version: args.version, pdfFile: args['pdf-file'] })
     .then(function(r) { console.log(JSON.stringify(r, null, 2)); })
     .catch(function(e) { console.error(e); process.exit(1); });
 }
 
-module.exports = { storyCreated, subtasksCreated, devKickoff, reviewPassed, reviewNoGo, devFinished, qaStarted, qaFinished };
+module.exports = { send, storyCreated, subtasksCreated, devKickoff, reviewPassed, reviewNoGo, devFinished, qaStarted, qaFinished, bugFound, releaseGenerated };

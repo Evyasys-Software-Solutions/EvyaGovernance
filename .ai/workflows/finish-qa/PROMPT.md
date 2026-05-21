@@ -106,7 +106,55 @@ Run `CHECKLIST.md`. All items must pass before showing output.
 Present the release notes and gate summary to the user.
 Wait for explicit approval before the hook transitions ADO to Done.
 
+---
+
+## Final output blocks (required — appended after release notes)
+
+After the confirmed release notes, append **exactly two** structured blocks in this order.
+These are parsed by the hook — they are never saved to the release notes file.
+
+### Block 1 — TC outcomes (all TCs, every outcome)
+
+```
+<!-- EVYATCRESULTS
+[
+  { "id": "TC-001", "status": "PASSED", "date": "YYYY-MM-DD" },
+  { "id": "TC-002", "status": "FAILED", "date": "YYYY-MM-DD" },
+  { "id": "TC-003", "status": "BLOCKED", "date": "YYYY-MM-DD" }
+]
+-->
+```
+
+- Include every TC from the test plan.
+- `status` is one of: `PASSED` | `FAILED` | `BLOCKED`.
+- `date` is today's date in ISO format.
+- The hook uses PASSED entries to update the Playwright spec (`test.skip(true, 'PASSED on DATE')`).
+
+### Block 2 — Bugs found (only if defects were found during QA)
+
+```
+<!-- EVYABUGS
+[
+  {
+    "title": "Short descriptive title",
+    "description": "Steps to reproduce and expected vs actual behaviour",
+    "severity": 2,
+    "tcId": "TC-002"
+  }
+]
+-->
+```
+
+- Include only bugs/defects discovered during this QA cycle.
+- `severity`: 1 = Critical (P1), 2 = High (P2), 3 = Medium (P3), 4 = Low (P4).
+- `tcId`: the TC that revealed this bug (optional but recommended).
+- If no bugs were found, emit an empty array: `<!-- EVYABUGS [] -->`.
+- The hook creates these as Bug work items in the PM tool linked to the parent story.
+- **Severity 1–2 bugs block release**: the story remains In QA until fixed.
+- **Severity 3–4 bugs only**: story is marked Done; bugs are logged for the next sprint.
+
 ## Output
 - `.evyasys/board/**/<StoryID>/<StoryID>_ReleaseNotes.md`
-- ADO state → **Done**
-- Teams release card posted
+- ADO state → **Done** (or stays **In QA** if P1/P2 bugs found)
+- Bug work items created in ADO (linked to story)
+- Teams release card posted (or bug-found card if blocking bugs)

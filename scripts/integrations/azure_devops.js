@@ -81,6 +81,11 @@ function parseStoryMarkdown(file) {
   };
 }
 
+function extractStoryPoints(md) {
+  const m = md.match(/^Story[\s-]?Points:\s*(\d+)/im);
+  return m ? parseInt(m[1], 10) : null;
+}
+
 /**
  * Set a parent–child hierarchy link in ADO.
  * Used for: Story → Epic  and  Task → Story.
@@ -148,15 +153,20 @@ async function createEpic({ epicId, title }) {
  * If epicId is a non-numeric Evyasys-style ID (e.g. "EP-001"), the Epic is
  * created automatically first and the numeric ADO ID is used for linking.
  */
-async function createStories({ storyId, file, epicId: explicitEpicId }) {
+async function createStory({ storyId, file, epicId: explicitEpicId }) {
   const cfg = await loadConfig();
+  const md = fs.readFileSync(file, 'utf8');
   const { title, description, epicId: parsedEpicId } = parseStoryMarkdown(file);
   const epicId = explicitEpicId || parsedEpicId;
+  const storyPoints = extractStoryPoints(md);
 
   const patch = [
     { op: 'add', path: '/fields/System.Title',       value: storyId ? `${storyId}: ${title}` : title },
     { op: 'add', path: '/fields/System.Description', value: markdownToHtml(description) },
   ];
+  if (storyPoints !== null) {
+    patch.push({ op: 'add', path: '/fields/Microsoft.VSTS.Scheduling.StoryPoints', value: storyPoints });
+  }
   const created = await adoFetch(cfg, witTypeUrl(cfg.workItemTypes.story), { method: 'POST', body: patch });
 
   if (epicId && created && created.id && !cfg.dryRun) {
@@ -203,6 +213,38 @@ async function createSubtasks({ storyId, file, storyAdoId }) {
   return results;
 }
 
+/**
+ * Create a Bug work item linked to a parent story.
+ * @param {object} params — { storyId, title, description, severity, tcId, storyPmId }
+ * severity: 1=Critical, 2=High, 3=Medium, 4=Low
+ */
+async function createBug({ storyId, title, description, severity = 3, tcId, storyPmId }) {
+  const cfg = await loadConfig();
+  const severityMap = { 1: '1 - Critical', 2: '2 - High', 3: '3 - Medium', 4: '4 - Low' };
+  const adoSeverity = severityMap[severity] || severityMap[3];
+
+  const bugTitle = tcId ? `[${tcId}] ${title}` : title;
+  const repro = description || `Bug found during QA for story ${storyId}${tcId ? ` (${tcId})` : ''}.`;
+
+  const patch = [
+    { op: 'add', path: '/fields/System.Title',              value: bugTitle },
+    { op: 'add', path: '/fields/System.Description',        value: markdownToHtml(repro) },
+    { op: 'add', path: '/fields/Microsoft.VSTS.Common.Severity', value: adoSeverity },
+  ];
+  const created = await adoFetch(cfg, witTypeUrl(cfg.workItemTypes.bug || 'Bug'), { method: 'POST', body: patch });
+
+  if (storyPmId && created && created.id && !cfg.dryRun) {
+    try {
+      await linkToParent(cfg, created.id, storyPmId);
+      console.log(`[evyasys] Linked bug ${created.id} → story ${storyPmId}`);
+    } catch (e) {
+      console.warn(`[evyasys] Story link failed (bug still created): ${e.message}`);
+    }
+  }
+
+  return created;
+}
+
 async function setState({ storyId, state }) {
   const cfg = await loadConfig();
   const numericId = (storyId || '').replace(/[^0-9]/g, '') || storyId;
@@ -230,14 +272,15 @@ if (require.main === module) {
   const [sub, ...rest] = process.argv.slice(2);
   const args = parseArgs(rest);
   const map = {
-    'create-stories':  () => createStories({ storyId: args.id, file: args.file }),
+    'create-story':    () => createStory({ storyId: args.id, file: args.file }),
     'create-subtasks': () => createSubtasks({ storyId: args.story, file: args.file, storyAdoId: args['story-ado-id'] }),
     'set-state':       () => setState({ storyId: args.id, state: args.state }),
     'get-work-item':   () => getWorkItem({ storyId: args.id }),
+    'create-bug':      () => createBug({ storyId: args['story-id'], title: args.title, description: args.description, severity: args.severity ? parseInt(args.severity, 10) : 3, tcId: args['tc-id'], storyPmId: args['story-pm-id'] }),
   };
   if (!map[sub]) { console.error(`Unknown subcommand: ${sub}`); process.exit(2); }
   map[sub]().then((r) => console.log(JSON.stringify(r, null, 2)))
             .catch((e) => { console.error(e); process.exit(1); });
 }
 
-module.exports = { findEpic, createEpic, createStories, createSubtasks, setState, getWorkItem };
+module.exports = { findEpic, createEpic, createStory, createSubtasks, setState, getWorkItem, createBug };

@@ -4,15 +4,18 @@ You are Evya Business Analyst described in `AGENT.md`.
 
 ---
 
-## Step 0 — Ask for local save folder (first, before anything else)
+## Step 0 — Detect or create the Epic (before anything else)
 
-Ask this single question before loading any context or drafting anything:
+1. List all local epic folders: `Glob .evyasys/board/epics/*/` — each folder name is an Epic ID (e.g. `EP-001`).
+2. For each existing epic, read its `<EpicID>_UserStory.md` (or any `.md` file) to get the epic title/theme.
+3. Based on what the user describes, decide:
+   - **Fits an existing epic** → use that epic ID; briefly tell the user: _"I'll file this under EP-00X — [Epic Title]. Does that fit?"_
+   - **Doesn't fit any existing epic** → propose creating a new one; suggest an ID (next available `EP-NNN`) and a short title; ask for confirmation.
+   - **No epics yet** → propose `EP-001` with a short inferred title; ask for confirmation.
 
-> "Where should I save this story file?
-> (a) `.evyasys/board/` — auto-organized under epics (recommended)
-> (b) A different folder — paste the relative path from your project root"
+Store the resolved `EPIC_ID`. The hook will save the story to `.evyasys/board/epics/<EPIC_ID>/stories/<EVYA-id>/`.
 
-Wait for the answer. Store it as `SAVE_FOLDER`. Default to `.evyasys/board/` (option a) if the user picks (a) or presses Enter — the hook places it at `board/epics/<epic-id>/stories/<id>/` or `board/stories/<id>/` automatically.
+> If the user explicitly says "no epic / standalone story", store `EPIC_ID = null` and the hook saves to `.evyasys/board/stories/<EVYA-id>/`.
 
 ---
 
@@ -38,7 +41,12 @@ Do not proceed to drafting until all blocking questions are answered.
 ## Step 3 — Draft the story
 Fill `STORY_TEMPLATE.md` strictly in business language.
 - Never include code, class names, endpoints, or implementation specifics.
-- Fill the **`Epic:`** field: if the user mentioned an epic, or if one can be inferred from context or memory, populate it. Ask "Should this story belong to an existing epic, or start a new one?" if genuinely unclear.
+- Fill the **`Epic:`** field with the resolved `EPIC_ID` from Step 0.
+- Fill the **`Status:`** field with `Backlog` (all new stories start in Backlog by default).
+- Estimate **Story Points** using the project velocity (read `velocity` from `.evyasys/project.yaml`; default scale: 3, 5, 8, 13, 21):
+  - Look at the number of ACs, complexity, and integration scope.
+  - Pick the nearest point value from the scale; if genuinely uncertain, note the range (e.g. "5–8 SP").
+  - Add `Story Points: <N>` as a metadata line in the story header (alongside Status, Epic, etc.).
 
 ---
 

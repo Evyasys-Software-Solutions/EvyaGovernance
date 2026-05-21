@@ -1,0 +1,146 @@
+/**
+ * Slack incoming-webhook integration for Evyasys.
+ * Reads webhook from .evyasys/project.yaml (slack.webhook) or SLACK_WEBHOOK env var.
+ *
+ * CLI:
+ *   node slack_webhook.js story-created     --id EVYA-id [--file PATH]
+ *   node slack_webhook.js subtasks-created  --id EVYA-id [--count N]
+ *   node slack_webhook.js dev-kickoff       --id EVYA-id
+ *   node slack_webhook.js review-passed     --id EVYA-id
+ *   node slack_webhook.js review-no-go      --id EVYA-id
+ *   node slack_webhook.js dev-finished      --id EVYA-id
+ *   node slack_webhook.js qa-started        --id EVYA-id
+ *   node slack_webhook.js qa-finished       --id EVYA-id
+ */
+const fs = require('fs');
+const { loadConfig } = require('../lib/config');
+
+const snippet = (t, max = 500) => (!t ? '' : t.length > max ? t.slice(0, max) + '…' : t);
+
+function buildMessage(icon, title, text) {
+  return {
+    blocks: [
+      {
+        type: 'section',
+        text: { type: 'mrkdwn', text: `${icon} *${title}*` },
+      },
+      {
+        type: 'section',
+        text: { type: 'mrkdwn', text: text },
+      },
+    ],
+  };
+}
+
+async function post(message) {
+  const cfg = await loadConfig();
+  if (cfg.dryRun) {
+    console.log('[evyasys:dry-run] Slack message:\n' + JSON.stringify(message, null, 2));
+    return { dryRun: true };
+  }
+  if (!cfg.slack.webhook) {
+    throw new Error('No Slack webhook configured. Add slack.webhook to .evyasys/project.yaml or run /evyasys:Setup.');
+  }
+  const fetchFn = typeof fetch !== 'undefined' ? fetch : require('node-fetch');
+  const res = await fetchFn(cfg.slack.webhook, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(message),
+  });
+  if (!res.ok) throw new Error('Slack POST failed: ' + res.status + ' ' + (await res.text()));
+  return { ok: true };
+}
+
+function storyCreated({ storyId, file }) {
+  const preview = file ? snippet(fs.readFileSync(file, 'utf8')) : '';
+  return post(buildMessage('📋', `New Story Ready: ${storyId}`, preview || 'Story created and pushed to the board.'));
+}
+
+function subtasksCreated({ storyId, count }) {
+  const countStr = count ? `${count} task${count !== 1 ? 's' : ''}` : 'tasks';
+  return post(buildMessage('🗂️', `Subtasks Ready: ${storyId}`, `${countStr} created — ready for development.`));
+}
+
+function devKickoff({ storyId }) {
+  return post(buildMessage('🚀', `Dev Started: ${storyId}`, 'In Progress — technical approach agreed.'));
+}
+
+function reviewPassed({ storyId }) {
+  return post(buildMessage('✅', `Code Review Passed: ${storyId}`, 'Review passed — no Critical issues remaining.'));
+}
+
+function reviewNoGo({ storyId }) {
+  return post(buildMessage('❌', `Code Review NO-GO: ${storyId}`, 'Fix all Critical findings and run /evyasys:ReviewDev again.'));
+}
+
+function devFinished({ storyId }) {
+  return post(buildMessage('🔀', `Ready for QA: ${storyId}`, 'Development complete — handed off to QA.'));
+}
+
+function qaStarted({ storyId }) {
+  return post(buildMessage('🧪', `QA Started: ${storyId}`, 'Test plan committed — QA in progress.'));
+}
+
+function qaFinished({ storyId }) {
+  return post(buildMessage('🚢', `Released: ${storyId}`, 'Passed QA and marked Done. Release notes committed.'));
+}
+
+function bugFound({ storyId, count, criticalCount }) {
+  const countStr    = count         ? `${count} bug${count !== 1 ? 's' : ''}`   : 'bugs';
+  const criticalStr = criticalCount ? ` (${criticalCount} critical/high)`       : '';
+  const status      = criticalCount ? 'Story remains In QA — fix required.'     : 'Story marked Done — bugs logged for tracking.';
+  return post(buildMessage('🐛', `Bugs Found: ${storyId}`, `${countStr}${criticalStr} found during QA. ${status}`));
+}
+
+function releaseGenerated({ storyId, storyCount, version, pdfFile }) {
+  const versionStr = version    ? ` · v${version}`                                        : '';
+  const countStr   = storyCount ? `${storyCount} stor${storyCount !== 1 ? 'ies' : 'y'}`  : '';
+  const detail     = [countStr, pdfFile ? `PDF saved to ${pdfFile}` : ''].filter(Boolean).join(' · ') || 'Release notes generated.';
+  return post(buildMessage('📄', `Release Notes: ${storyId}${versionStr}`, detail));
+}
+
+const EVENT_MAP = {
+  'story-created':     ({ storyId, file })                         => storyCreated({ storyId, file }),
+  'subtasks-created':  ({ storyId, count })                        => subtasksCreated({ storyId, count }),
+  'dev-kickoff':       ({ storyId })                               => devKickoff({ storyId }),
+  'review-passed':     ({ storyId })                               => reviewPassed({ storyId }),
+  'review-no-go':      ({ storyId })                               => reviewNoGo({ storyId }),
+  'dev-finished':      ({ storyId })                               => devFinished({ storyId }),
+  'qa-started':        ({ storyId })                               => qaStarted({ storyId }),
+  'qa-finished':       ({ storyId })                               => qaFinished({ storyId }),
+  'bug-found':         ({ storyId, count, criticalCount })         => bugFound({ storyId, count, criticalCount }),
+  'release-generated': ({ storyId, storyCount, version, pdfFile }) => releaseGenerated({ storyId, storyCount, version, pdfFile }),
+};
+
+/** Called by notify-adapter with { event, storyId, ...extras }. */
+function send({ event, storyId, ...extras }) {
+  const fn = EVENT_MAP[event];
+  if (!fn) return Promise.resolve({ skipped: true, reason: `Unknown event: ${event}` });
+  return fn({ storyId, ...extras });
+}
+
+// CLI
+if (require.main === module) {
+  function parseArgs(argv) {
+    const out = { _: [] };
+    for (let i = 0; i < argv.length; i++) {
+      const a = argv[i];
+      if (a.startsWith('--')) { out[a.slice(2)] = argv[++i]; }
+      else { out._.push(a); }
+    }
+    return out;
+  }
+  const sub  = process.argv[2];
+  const args = parseArgs(process.argv.slice(3));
+  const fn   = EVENT_MAP[sub];
+  if (!fn) {
+    console.error('Unknown subcommand: ' + sub);
+    console.error('Valid: ' + Object.keys(EVENT_MAP).join(', '));
+    process.exit(2);
+  }
+  fn({ storyId: args.id, file: args.file, count: args.count ? Number(args.count) : undefined })
+    .then(r => console.log(JSON.stringify(r, null, 2)))
+    .catch(e => { console.error(e); process.exit(1); });
+}
+
+module.exports = { send, storyCreated, subtasksCreated, devKickoff, reviewPassed, reviewNoGo, devFinished, qaStarted, qaFinished, bugFound, releaseGenerated };

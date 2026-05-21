@@ -45,31 +45,29 @@ claude
 /reload-plugins
 ```
 
-Type `/evya` — you should see 8 commands in autocomplete.
+Type `/evya` — you should see 10 commands in autocomplete.
 
 ---
 
-## Step 2 — Save your Azure DevOps PAT (once per machine)
+## Step 2 — Configure your project (once per project, first user)
 
-Generate at `https://dev.azure.com/<your-org>/_usersSettings/tokens` — scope: **Work Items (Read & write)**
+**Inside Claude Code** from your project root:
 
-```bash
-# macOS / Linux
-evyasys=$(ls -td ~/.claude/plugins/cache/EvyaGovernance/evyasys/*/ | head -1)
-bash "${evyasys}scripts/login.sh"
+```
+/evyasys:Setup
 ```
 
-```powershell
-# Windows
-$evyasys = (Get-Item "$env:USERPROFILE\.claude\plugins\cache\EvyaGovernance\evyasys\*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
-powershell -ExecutionPolicy Bypass -File "$evyasys\scripts\setup.ps1"
-```
+The wizard asks you to pick:
+- **PM Tool:** Local folder only / Azure DevOps / JIRA / GitHub Projects
+- **Notification Tool:** None / Teams / Slack / WhatsApp / Email
 
-Stored at `~/.evyasys/credentials` — never committed to any repo.
+Then collects credentials for your chosen tools. Non-sensitive settings are saved to `.evyasys/project.yaml` (commit this). Personal secrets are encrypted to `~/.evyasys/credentials` (never committed).
+
+**Teammates:** just `git pull` to get the project config, then run `/evyasys:Setup` to enter their own credentials.
 
 ---
 
-## Step 3 — Add Evyasys config to your project repo (once per project)
+## Step 3 — Copy the project template (if .evyasys/ doesn't exist yet)
 
 ```bash
 # macOS / Linux
@@ -83,21 +81,7 @@ $evyasys = (Get-Item "$env:USERPROFILE\.claude\plugins\cache\EvyaGovernance\evya
 Copy-Item -Recurse "$evyasys\project-template\.evyasys" ".\.evyasys"
 ```
 
-Edit `.evyasys/project.yaml` with all three settings:
-
-```yaml
-name: "Your Project Name"
-
-azure_devops:
-  org: "YourAzureOrg"
-  project: "YourAzureProject"
-
-teams:
-  webhook: "https://your-org.webhook.office.com/webhookb2/..."
-```
-
-> **Teams webhook:** Teams channel → ··· → Connectors → Incoming Webhook → copy URL.  
-> Leave blank — Evyasys will prompt and save it automatically on first use.
+Then run `/evyasys:Setup` — it will fill in `.evyasys/project.yaml` for you.
 
 Commit so the whole team shares the config:
 
@@ -106,8 +90,6 @@ git add .evyasys/project.yaml
 git commit -m "Add Evyasys config"
 git push
 ```
-
-Teammates just `git pull` — no additional setup needed.
 
 ---
 
@@ -123,22 +105,118 @@ Re-run with `--retrain` after major architecture changes.
 
 ---
 
-## The 8 commands — full delivery pipeline
+## The 10 commands — full delivery pipeline
 
 Open Claude Code from **inside your project folder**, then:
 
-| Command | Who | What happens |
-|---|---|---|
-| `/evyasys:CreateDocs` | Tech Lead | Scan codebase → 19 quality-gate docs → `.evyasys/docs/` |
-| `/evyasys:CreateStory` | BA / PO | Questions one at a time → business story → ADO User Story → 📋 Teams |
-| `/evyasys:CreateSubtask EVYA-1042` | Tech Lead | 3 strategies (A/B/C, team approval) → dev tasks + QA task → ADO child Tasks → 🗂️ Teams |
-| `/evyasys:StartDev EVYA-1042` | Eng Lead | Load quality-gate docs → **Brainstorm** (3+ approaches, approval) → gates → ADO **In Progress** → 🚀 Teams |
-| `/evyasys:ReviewDev EVYA-1042` | Senior Dev | Independent review (AC coverage, arch, security, standards) → report saved on GO + NO-GO → ✅/❌ Teams |
-| `/evyasys:FinishDev EVYA-1042` | Dev | AC audit → diff check → Dev Summary + architect gate → ADO **Ready for QA** → 🔀 Teams |
-| `/evyasys:StartQa EVYA-1042` | QA | Environment questions → test plan with domain gates → ADO **In QA** → 🧪 Teams |
-| `/evyasys:FinishQa EVYA-1042` | QA / Release | TC outcomes + domain gates + release notes → ADO **Done** → 🚢 Teams |
+```mermaid
+flowchart TD
+    classDef setup fill:#dbeafe,stroke:#3b82f6,color:#1d4ed8
+    classDef plan  fill:#dcfce7,stroke:#16a34a,color:#166534
+    classDef dev   fill:#fef9c3,stroke:#ca8a04,color:#92400e
+    classDef qa    fill:#fce7f3,stroke:#db2777,color:#9d174d
 
-**Nothing touches ADO or Teams until you explicitly approve.**
+    subgraph ONCE["⚙️  Once per project"]
+      direction LR
+      S1["🔧  /evyasys:Setup
+      👤 Any team member"]:::setup
+      S2["📚  /evyasys:CreateDocs
+      🏗️ Tech Lead"]:::setup
+      S1 --> S2
+    end
+
+    subgraph PLAN["📋  Planning — per story"]
+      direction LR
+      P1["📖  /evyasys:CreateStory
+      👔 PO / BA"]:::plan
+      P2["📝  /evyasys:CreateSubtask
+      🏗️ Tech Lead · Architect"]:::plan
+      P1 --> P2
+    end
+
+    subgraph DEVPHASE["💻  Development — per story"]
+      direction LR
+      D1["🚀  /evyasys:StartDev
+      💻 Dev Lead"]:::dev
+      D2["🔍  /evyasys:ReviewDev
+      🎯 Senior Developer"]:::dev
+      D3["🏁  /evyasys:FinishDev
+      💻 Developer"]:::dev
+      D1 --> D2
+      D2 -->|"NO-GO → fix & re-run"| D1
+      D2 -->|"GO ✅"| D3
+    end
+
+    subgraph QAPHASE["🧪  QA & Release — per story"]
+      direction LR
+      Q1["🧪  /evyasys:StartQa
+      🔬 QA Engineer"]:::qa
+      Q2["🚢  /evyasys:FinishQa
+      📦 Release Manager"]:::qa
+      Q3["📄  /evyasys:GenerateReleaseNote
+      📦 Release Manager"]:::qa
+      Q1 --> Q2
+      Q2 --> Q3
+    end
+
+    ONCE --> PLAN --> DEVPHASE --> QAPHASE
+```
+
+| Command | Who | PM State After | Notification |
+|---|---|---|---|
+| `/evyasys:Setup` | 👤 Any team member | — | — |
+| `/evyasys:CreateDocs` | 🏗️ Tech Lead | — | — |
+| `/evyasys:CreateStory` | 👔 PO / BA | Backlog | 📋 Story Created |
+| `/evyasys:CreateSubtask EVYA-1042` | 🏗️ Architect | Tasks created | 📝 Subtasks Ready |
+| `/evyasys:StartDev EVYA-1042` | 💻 Dev Lead | **In Progress** | 🚀 Dev Started |
+| `/evyasys:ReviewDev EVYA-1042` | 🎯 Senior Dev | — (GO or NO-GO) | ✅ Passed or ❌ NO-GO |
+| `/evyasys:FinishDev EVYA-1042` | 💻 Developer | **Ready for QA** | 🏁 Dev Finished |
+| `/evyasys:StartQa EVYA-1042` | 🔬 QA Engineer | **In QA** | 🧪 QA Started |
+| `/evyasys:FinishQa EVYA-1042` | 📦 Release Manager | **Done** ✅ | 🚢 Released |
+| `/evyasys:GenerateReleaseNote EVYA-1042 EVYA-1043` | 📦 Release Manager | — | 📄 PDF emailed |
+
+**Nothing touches your PM tool or notification channel until you explicitly approve.**
+
+---
+
+## PDF setup (for GenerateReleaseNote)
+
+```bash
+npm install pdfkit
+```
+
+Configure branding in `.evyasys/project.yaml` under `release_notes:` — or let `/evyasys:Setup` ask you:
+
+| Setting | What it controls | Default |
+|---|---|---|
+| `company_name` | PDF header + footer text | project name |
+| `logo_path` | Company logo on cover page (PNG/JPEG) | none |
+| `brand_color` | Header/cover band color (hex) | `#0078d4` |
+| `output_dir` | Where PDFs are saved | `.evyasys/releases/` |
+| `naming_convention` | `v{version}` / `Sprint-{N}` / `{date}` | `v{version}` |
+
+PDFs are saved to `.evyasys/releases/` and release history is tracked in `.evyasys/memory/release-notes.json`.
+
+---
+
+## Supported PM Tools
+
+| Tool | What syncs |
+|---|---|
+| `local` | Nothing external — artefacts in `.evyasys/board/` only |
+| `devops` | Azure DevOps — Epics, User Stories, Tasks, state transitions |
+| `jira` | JIRA Cloud — Epics, Stories, Sub-tasks, issue transitions |
+| `github` | GitHub Issues + Projects v2 — issues, labels, board cards |
+
+## Supported Notification Tools
+
+| Tool | How |
+|---|---|
+| `none` | Not needed — no notifications |
+| `teams` | Incoming webhook card to a Teams channel |
+| `slack` | Incoming webhook message to a Slack channel |
+| `whatsapp` | Twilio API WhatsApp message |
+| `email` | HTML email via SMTP — Gmail, Outlook, SendGrid, or any SMTP server |
 
 ---
 
@@ -163,6 +241,9 @@ Open Claude Code from **inside your project folder**, then:
                     ├── EVYA-1042_ReleaseNotes.md     ← FinishQa
                     └── subtasks/
                         └── EVYA-1042_Subtasks.md     ← CreateSubtask
+releases/
+    └── Release_v1.2.0_2026-05-21.md   ← GenerateReleaseNote (markdown)
+    └── Release_v1.2.0_2026-05-21.pdf  ← GenerateReleaseNote (PDF)
 ```
 
 Stories without an Epic are saved at `.evyasys/board/stories/<id>/`.
@@ -207,10 +288,9 @@ Then repeat Step 1 (install the plugin again).
 |---|---|
 | `claude` command not found | Install Node.js 18+ then `npm install -g @anthropic-ai/claude-code` |
 | Commands don't appear after `/reload-plugins` | Clear cache (see Update section above) and reinstall |
-| PAT not found | Re-run Step 2 (`setup.ps1` on Windows, `login.sh` on macOS/Linux) |
-| Teams webhook missing | Run any command — it prompts and saves to `project.yaml` automatically |
-| ADO 401 error | PAT expired — re-run Step 2 |
-| Missing ADO org/project | Edit `.evyasys/project.yaml` in your project root |
+| No PM tool configured | Run `/evyasys:Setup` |
+| Credentials not found / 401 error | Credentials expired — run `/evyasys:Setup` and re-enter |
+| Webhook missing | Run `/evyasys:Setup` to update the webhook URL |
 | Wrong project loaded | Open Claude Code from inside the correct project folder |
 
 ---
@@ -220,7 +300,7 @@ Then repeat Step 1 (install the plugin again).
 | Location | What | In git? |
 |---|---|---|
 | `~/.claude/plugins/cache/EvyaGovernance/` | Plugin (auto-installed) | ✅ EvyaGovernance repo |
-| `<project>/.evyasys/project.yaml` | ADO config + Teams webhook | ✅ project repo |
+| `<project>/.evyasys/project.yaml` | PM tool + notification tool config | ✅ project repo |
 | `<project>/.evyasys/docs/` | Quality-gate documents (19 files) | ✅ project repo |
 | `<project>/.evyasys/board/` | All story artefacts | ✅ project repo |
-| `~/.evyasys/credentials` | Your Azure DevOps PAT | ❌ never committed |
+| `~/.evyasys/credentials` | Your personal credentials (encrypted) | ❌ never committed |
