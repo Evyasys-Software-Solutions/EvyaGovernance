@@ -129,6 +129,33 @@ function storiesBatchCreated({ stories, projectName }) {
   ));
 }
 
+function subtasksBatchCreated({ stories, sharedTasks, crossStoryFlags, projectName }) {
+  const totalTasks  = stories.reduce((n, s) => n + (s.taskCount || 0), 0);
+  const synced      = stories.filter(s => s.status === 'synced').length;
+  const failed      = stories.filter(s => s.status === 'sync-failed').length;
+  const saved       = stories.filter(s => s.status === 'saved').length;
+  const statusParts = [
+    synced > 0 ? `${synced} synced` : '',
+    saved  > 0 ? `${saved} local`   : '',
+    failed > 0 ? `${failed} failed` : '',
+  ].filter(Boolean);
+  const rows = stories.map(s => {
+    const icon    = s.status === 'synced' ? '✅' : s.status === 'sync-failed' ? '⚠️' : '💾';
+    const pmStr   = s.pmIds && s.pmIds.length > 0 ? s.pmIds.map(id => '#' + id).join(', ') : '—';
+    const taskStr = `${s.taskCount || 0} task${(s.taskCount || 0) !== 1 ? 's' : ''}`;
+    return `${icon} *${s.storyId}* ${s.title} | ${taskStr} | ${pmStr}`;
+  }).join('\n');
+  const flagsStr = crossStoryFlags && crossStoryFlags.length > 0
+    ? '\n_Cross-story: ' + crossStoryFlags.join('; ') + '_'
+    : '';
+  const header = projectName ? `*${projectName}*\n` : '';
+  return post(buildMessage(
+    '📝',
+    `${totalTasks} Task${totalTasks !== 1 ? 's' : ''} Across ${stories.length} Stor${stories.length !== 1 ? 'ies' : 'y'}${projectName ? ': ' + projectName : ''}`,
+    `${header}${rows}\n_${statusParts.join(' · ')}_${flagsStr}`
+  ));
+}
+
 function releaseGenerated({ storyId, storyCount, version, pdfFile }) {
   const versionStr = version    ? ` · v${version}`                                        : '';
   const countStr   = storyCount ? `${storyCount} stor${storyCount !== 1 ? 'ies' : 'y'}`  : '';
@@ -141,6 +168,7 @@ const EVENT_MAP = {
   'epics-created':         ({ epics })                                      => epicsCreated({ epics }),
   'stories-batch-created': ({ stories, projectName })                       => storiesBatchCreated({ stories, projectName }),
   'subtasks-created':      ({ storyId, count })                             => subtasksCreated({ storyId, count }),
+  'subtasks-batch-created': ({ stories, sharedTasks, crossStoryFlags, projectName }) => subtasksBatchCreated({ stories, sharedTasks, crossStoryFlags, projectName }),
   'dev-kickoff':           ({ storyId })                                    => devKickoff({ storyId }),
   'review-passed':         ({ storyId })                                    => reviewPassed({ storyId }),
   'review-no-go':          ({ storyId })                                    => reviewNoGo({ storyId }),
@@ -177,9 +205,22 @@ if (require.main === module) {
     console.error('Valid: ' + Object.keys(EVENT_MAP).join(', '));
     process.exit(2);
   }
-  fn({ storyId: args.id, file: args.file, count: args.count ? Number(args.count) : undefined })
+  fn({
+    storyId:         args.id,
+    file:            args.file,
+    count:           args.count           ? Number(args.count)           : undefined,
+    criticalCount:   args['critical-count'] ? Number(args['critical-count']) : undefined,
+    storyCount:      args['story-count']  ? Number(args['story-count'])  : undefined,
+    version:         args.version,
+    pdfFile:         args['pdf-file'],
+    stories:         args.stories         ? JSON.parse(args.stories)         : undefined,
+    sharedTasks:     args['shared-tasks'] ? JSON.parse(args['shared-tasks']) : undefined,
+    crossStoryFlags: args['cross-flags']  ? JSON.parse(args['cross-flags'])  : undefined,
+    projectName:     args['project-name'],
+    epics:           args.epics           ? JSON.parse(args.epics)           : undefined,
+  })
     .then(r => console.log(JSON.stringify(r, null, 2)))
     .catch(e => { console.error(e); process.exit(1); });
 }
 
-module.exports = { send, storyCreated, epicsCreated, storiesBatchCreated, subtasksCreated, devKickoff, reviewPassed, reviewNoGo, devFinished, qaStarted, qaFinished, bugFound, releaseGenerated };
+module.exports = { send, storyCreated, epicsCreated, storiesBatchCreated, subtasksCreated, subtasksBatchCreated, devKickoff, reviewPassed, reviewNoGo, devFinished, qaStarted, qaFinished, bugFound, releaseGenerated };

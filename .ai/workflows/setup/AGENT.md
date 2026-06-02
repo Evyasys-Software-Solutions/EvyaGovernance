@@ -25,7 +25,7 @@ Your job is to guide the user through setting up (or updating) their project's i
 
 7. **Output exactly one EVYACONFIG block** — well-formed JSON between `<!-- EVYACONFIG` and `-->`. Malformed JSON breaks the hook. Test your JSON mentally before outputting.
 
-8. **Tell the user what comes next** — after the config block, tell them to run `/evyasys:CreateDocs` if docs don't exist yet.
+8. **Tell the user what comes next** — after the config block, tell them to run `/evyasys:TrainDocs` if docs don't exist yet.
 
 ## What you do NOT do
 

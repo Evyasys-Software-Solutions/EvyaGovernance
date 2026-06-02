@@ -1,203 +1,334 @@
-# Prompt: /evyasys:CreateSubtask <StoryID>
+# Prompt: /evyasys:CreateSubtask
 
 You are the Senior Developer described in `AGENT.md`.
 
-## Inputs
-- StoryID from `$ARGUMENTS`
-- Story: `.evyasys/board/**/<id>/<id>_UserStory.md` (use Glob to locate)
-- Repo scan: `python scripts/repo_scan.py --story <id>`
-- Plugin rules: `.ai/rules/*.md`
-- Project rules: `.evyasys/rules/*.md` (overrides plugin rules)
-- **Project docs: `.evyasys/docs/ARCHITECTURE.md`, `RULES.md`, `STANDARDS.md`, `PATTERNS.md`,
-  `ERROR_HANDLING.md`** (load if directory exists — highest-priority constraints; all tasks must comply)
-- **Domain docs** — loaded after reading the story's **Impacted Areas** flags (Step 1):
+## Arguments
 
-  | Flag | Load from `.evyasys/docs/` |
-  |---|---|
-  | Security | `SECURITY.md` |
-  | DB | `DB_STANDARDS.md` |
-  | Frontend | `FRONTEND.md`, `DESIGN_SYSTEM.md` |
-  | API | `API_STANDARDS.md` |
-  | Performance | `PERFORMANCE.md` |
-- Project config: `.evyasys/project.yaml`
-- Task template: `.ai/workflows/create-subtask/TASK_TEMPLATE.md`
-- Questioning guide: `.ai/workflows/create-subtask/QUESTIONING.md`
+Space-separated list of story IDs and/or epic IDs.
+
+```
+/evyasys:CreateSubtask EVYA-1001
+/evyasys:CreateSubtask EVYA-1001 EVYA-1002 EVYA-1003
+/evyasys:CreateSubtask EP-001
+/evyasys:CreateSubtask EP-001 EVYA-1005
+```
 
 ---
 
 <HARD-GATE>
-Do NOT write any tasks until you have completed Steps 1–4 and received explicit
-strategy confirmation. Tasks written before understanding the scope and strategy
-will be wrong and will be rejected.
+Two gates must clear before any subtask is written:
+1. IDs confirmed by user at Step 0 — no file reads until then.
+2. Consolidated plan approved by user at Gate 1 (Step 7) — no tasks until then.
+The shared context (Steps 1–4) must be built in full before per-story planning begins.
 </HARD-GATE>
 
 ---
 
-## Step 1 — Read the story in full
-Find the story folder by globbing `.evyasys/board/**/<id>/`. Read `<id>_UserStory.md` completely.
-List every Acceptance Criterion. You will link at least one task to each AC.
+## PHASE 1 — SHARED CONTEXT (execute once for the entire batch)
 
-After reading the story, check the **Impacted Areas** section and load the matching domain docs
-from `.evyasys/docs/` (Security / DB / Frontend / API / Performance — as listed in the Inputs
-table above). These docs constrain the Technical Analysis in Step 5 just as the base docs do.
+### Step 0 — Resolve inputs
 
-## Step 2 — Probe the codebase and load project standards
+<HARD-GATE>
+IDs are mandatory. Do NOT read any file, run any scan, or begin any analysis
+until the story/epic list is confirmed by the user at the end of this step.
+</HARD-GATE>
 
-Run `python scripts/repo_scan.py --story <id>`.
-Produce a concrete inventory:
-- Every file and module that will be touched
-- Shared utilities or integration points in scope
-- Existing patterns for similar operations (naming, layering, error handling)
-- Any risky, unfamiliar, or tightly-coupled areas
-- DB tables, API routes, events, or external services involved
+#### 0a — Collect IDs (always fires first)
 
-Then cross-reference findings against project docs (if `.evyasys/docs/` exists):
-- **ARCHITECTURE.md** — which layers will be touched? Are all changes in the correct layer?
-- **PATTERNS.md** — is there an approved pattern for this feature type? If yes, all tasks must use it.
-- **RULES.md** — do any hard "never do" rules apply to this story's scope?
-- **STANDARDS.md** — what naming conventions apply to the files that will be created or modified?
+**If `$ARGUMENTS` is empty** — check whether `/evyasys:CreateStory` produced story IDs
+earlier in this session. If yes, offer them:
 
-Note your findings — they constrain every Technical Analysis you write in Step 5.
-
-This inventory directly drives the Technical Analysis sections in Step 5.
-If the scan is insufficient to write specific file paths and method names, read
-additional files until you can.
-
-## Step 3 — Ask clarifying questions (one at a time)
-Using `QUESTIONING.md`, identify any ambiguities that would produce wrong tasks.
-Ask one question at a time. Wait for the answer before asking the next.
-Use multiple-choice format where possible.
-Only ask if the answer genuinely changes the decomposition.
-
-**Do NOT proceed to Step 4 until all blocking questions are answered.**
-
-## Step 4 — Present the three decomposition strategies
-
-Always present all three strategies below. Pre-select **Strategy A** as recommended
-unless the repo scan gives a strong specific reason to prefer another.
-
-| Strategy | Approach | Best when |
-|---|---|---|
-| **A — Backend-first + Frontend in logical groupings** *(recommended)* | Data/service/API layer first; UI tasks grouped by feature area after | Most stories — keeps frontend blocked for minimum time; backend is independently testable |
-| **B — Vertical slices (end-to-end per feature)** | Each task delivers one complete AC end-to-end | ACs are truly independent with no shared data model or service |
-| **C — Layer by layer** | All data layer → all service layer → all UI | Large cross-cutting refactors where layer boundaries are the primary risk |
-
-Present as:
-> **Recommended: Strategy A — Backend-first + Frontend in logical groupings**
-> _[One sentence citing a specific reason from the repo scan why A fits this story]_
+> I can see stories from this session: **EVYA-1001, EVYA-1002, EVYA-1003**
 >
-> Other options:
-> - Strategy B — [one sentence trade-off for this story]
-> - Strategy C — [one sentence trade-off for this story]
+> Shall I decompose these into subtasks, or would you like to specify different IDs?
 >
-> **Does Strategy A work, or would you prefer B or C?**
+> **(A) Use the stories above**  
+> **(B) I'll specify the IDs**
 
-**Wait for explicit confirmation before writing any tasks.**
+If no session context is available (first command of the session, or no stories were
+created yet), ask:
 
-## Step 5 — Decompose into tasks
+> **Which stories or epics should I break down into tasks?**
+>
+> Provide one or more of:
+> - Story IDs — `EVYA-1042 EVYA-1043`
+> - Epic IDs — `EP-001` (all stories in the epic)
+> - Mix — `EP-001 EVYA-1005`
 
-Using `TASK_TEMPLATE.md`, write 3–7 implementation tasks (structured per the agreed
-strategy) followed by **exactly one mandatory QA task as the final task**.
+**Stop. Do not do anything else until the user responds.**
 
-### Functional headline rule
-Every task headline must be **functional and outcome-focused** — readable by a
-product manager or non-developer.
+**If `$ARGUMENTS` is provided** — proceed directly to Step 0b. No confirmation needed; the user already specified what they want.
 
-✅ Good headlines:
-- "Store property visit history per agent"
-- "Filter visit list by date range and status"
-- "Send approval confirmation to applicant"
+#### 0b — Parse and expand
 
-❌ Bad headlines (move these to Technical Analysis):
-- "Implement VisitHistoryService.getHistory()"
-- "Add GET /api/visits endpoint"
-- "Create VisitFilterDto class"
+Parse the confirmed token list. Classify each token:
+- Matches `EVYA-\d+` → story ID (direct)
+- Anything else → treat as epic ID; glob `.evyasys/board/epics/{id}/stories/*/` to expand
 
-Technical names, class names, and endpoint paths belong in the
-**Technical Analysis** section — never in the headline.
+Deduplicate — if a story ID appears both explicitly and via epic expansion, count it once.
 
-### Technical Analysis quality bar
+Show:
+> Resolved **N** stories across **M** epic(s): EVYA-1001, EVYA-1002, …
+> Reading story files…
 
-The Technical Analysis section must be specific enough for a developer with no prior
-context to implement the task correctly and completely. Every implementation task
-**must** include all of the following that apply:
-
-| Required element | Example of sufficient detail |
-|---|---|
-| Exact file paths | `src/services/VisitService.ts` — not "the service layer" |
-| Method signatures | `VisitService.getHistory(agentId: string, filters: FilterDto): VisitRecord[]` |
-| DB changes | Table name, column name + type + constraint, migration filename |
-| API contract | `GET /api/v1/visits?agentId=&from=&to=` → `200 [{ id, date, status }]` |
-| Edge cases | Named explicitly: "when `agentId` is not found → throw `NotFoundException`" |
-| Security / validation | Layer (controller/guard/middleware) + specific rule |
-| Performance | Volume estimate + indexing or caching decision |
-
-**Shallow descriptions such as "update the service to handle this" are not
-acceptable and will be rejected at self-review.**
-
-If you cannot fill in the technical analysis for a task, run another targeted repo
-scan on the specific files involved before proceeding.
-
-### Mandatory final task: QA — Test Scenarios & Playwright Automation
-
-The last task is **always** the QA task, regardless of story size or type.
-It must include a test scenarios table with at minimum one row per category:
-
-| Category | Description |
-|---|---|
-| **Happy Path** | Primary flow with valid data, all ACs satisfied |
-| **Positive** | Additional valid inputs or states that must succeed |
-| **Negative** | Invalid inputs, missing required fields, wrong state — must be rejected gracefully |
-| **Edge / Corner** | Boundary values, empty collections, max-length inputs, concurrent actions |
-| **Regression** | Behaviours from adjacent features that must not break |
-
-For every UI-facing AC, write a Playwright automation test. Name the spec file
-`tests/e2e/<storyId>.spec.ts`. Use `data-testid` or ARIA role locators.
-Do not use raw CSS class selectors.
-
-Use the QA task format in `TASK_TEMPLATE.md`.
-
-## Step 6 — Self-review against CHECKLIST.md
-Every item must pass before showing the output. Fix silently if any fail.
-
-Before running the checklist, do one final standards pass:
-- Does any task's Technical Analysis propose code in the wrong architectural layer?
-  (cross-check against `ARCHITECTURE.md` — fix the approach if yes, do not flag and move on)
-- Does any task use a pattern not approved in `PATTERNS.md` when an approved one exists?
-  (replace with the approved pattern — name the approved alternative explicitly)
-- Does any task violate a hard rule from `RULES.md`?
-  (revise the task — violations are not acceptable in the output)
-
-## Step 7 — Show and confirm
-Present the filled task list to the user. Wait for explicit approval.
-On approval, the hook saves the file and creates ADO child Tasks.
-
-## Output
-- `.evyasys/board/**/<StoryID>/subtasks/<StoryID>_Subtasks.md`
-- ADO child Task IDs (back-written into each ## Task header)
+If any ID cannot be resolved, warn inline and continue with the ones found.
 
 ---
 
-## Final output block — Playwright spec data (required)
+### Step 1 — Load all story files
 
-After the confirmed task list, append **exactly one** structured block at the very end of your output.
-This block is parsed by the hook to scaffold the Playwright spec file — it is never saved to the subtasks file.
+Read every `{storyId}_UserStory.md` in one batch (glob `.evyasys/board/**/{storyId}/{storyId}_UserStory.md` for each).
 
-Collect every test case from the QA task's test scenarios table and emit:
+For each story extract and record:
+- Title
+- Epic ID
+- All Acceptance Criteria (full enumerated list)
+- Impacted Areas flags: Security / DB / Frontend / API / Performance
+
+Build an internal story registry used throughout. Do **not** read any source-code file yet.
+
+---
+
+### Step 2 — Load shared knowledge base (once)
+
+#### A — Quality-gate docs
+
+Check whether `.evyasys/docs/` exists.
+
+**If YES** — load the base docs shared by all stories:
+`ARCHITECTURE.md` · `RULES.md` · `STANDARDS.md` · `PATTERNS.md` · `ERROR_HANDLING.md`
+
+Then load domain docs based on the **union** of all Impacted Areas flags across all stories:
+
+| Flag in any story | Load from `.evyasys/docs/` |
+|---|---|
+| Security | `SECURITY.md` |
+| DB | `DB_STANDARDS.md` |
+| Frontend | `FRONTEND.md`, `DESIGN_SYSTEM.md` |
+| API | `API_STANDARDS.md` |
+| Performance | `PERFORMANCE.md` |
+
+**If NO docs directory** — note: "Quality-gate docs not found — will derive standards from codebase in Step 3."
+
+#### B — Rules and templates
+
+Load `.ai/rules/*.md`, project overrides `.evyasys/rules/*.md` (project wins on conflict), `TASK_TEMPLATE.md`, `QUESTIONING.md`.
+
+---
+
+### Step 3 — Unified code analysis (read each file exactly once)
+
+1. Collect all Impacted Areas from every story in the registry
+2. **Union and deduplicate** the file/module list — if EVYA-1001 and EVYA-1002 both touch `UserService.ts`, read it once
+3. Run `python scripts/repo_scan.py --story <id>` for each unique module, or read the files directly if repo_scan is unavailable
+4. If `.evyasys/docs/` was absent — derive and document key standards from the patterns observed in code (naming conventions, layering, error handling, test patterns)
+
+Produce the **shared technical inventory**:
+
+| Category | Content |
+|---|---|
+| Files in scope | Every file, annotated with which stories touch it |
+| Shared files | Files touched by 2+ stories — flag each with story list |
+| DB tables | All tables involved across all stories |
+| API routes | All routes touched across all stories |
+| Approved patterns | From docs or observed in code |
+| Applied standards | Rules that constrain all tasks |
+
+This inventory is the **only code read** that occurs. Phase 2 uses it — no further file reads.
+
+---
+
+### Step 4 — Cross-story dependency analysis
+
+Using the shared inventory, identify and record:
+
+1. **Shared files** — same file modified by multiple stories → flag for sequencing or ownership split
+2. **Shared infrastructure tasks** — one DB migration / base service / config entry needed by multiple stories → created once (in the owning story), referenced in others
+3. **Development sequence** — which stories must complete (or partially complete) before others can safely start
+4. **Parallelisable stories** — stories with no shared files that can be developed simultaneously without merge conflicts
+5. **Merge-conflict risk** — stories that will conflict at PR time if developed in parallel
+
+Summarise findings — displayed at Gate 1 and used to generate cross-story notes in the EVYASUBTASKBATCH manifest.
+
+---
+
+## PHASE 2 — PLANNING
+
+### Step 5 — Clarifying questions (if needed)
+
+Using `QUESTIONING.md`, identify blocking ambiguities. Rules:
+- Ask **batch-level questions first** (affect all stories) — one at a time, wait for answer
+- Ask story-specific questions only if genuinely blocking for that story
+- Use multiple-choice format wherever possible
+- Skip if the shared technical context already answers the question
+
+Do **not** proceed to Step 6 until all blocking questions are answered.
+
+---
+
+### Step 6 — Strategy selection
+
+Recommend a strategy for each story. Default to **A** for the batch; vary per story only if the repo scan provides a specific reason.
+
+| Strategy | Description | Best when |
+|---|---|---|
+| **A — Backend-first + Frontend in logical groupings** *(recommended)* | Data/service/API layer first; UI grouped by feature area | Most stories — backend independently testable, frontend blocked for minimum time |
+| **B — Vertical slices** | Each task delivers one complete AC end-to-end | ACs are truly independent with no shared data model or service |
+| **C — Layer by layer** | All data → all service → all UI | Large cross-cutting refactors where layer boundaries are the primary risk |
+
+---
+
+### Step 7 — ⛔ GATE 1: Consolidated plan approval (always fires)
+
+Present a single table covering all stories:
+
+| Story | Title | ACs | Strategy | Est. Tasks | Key Areas | Cross-story note |
+|---|---|---|---|---|---|---|
+| EVYA-1001 | … | 5 | A | 5 | UserService, DB:users | shares DB migration with EVYA-1002 |
+| EVYA-1002 | … | 4 | A | 4 | UserService, EmailService | shared DB migration owned by EVYA-1001 |
+
+Below the table show:
+- **Shared tasks identified:** N — [list titles]
+- **Cross-story flags:** [list each]
+- **Recommended sequence:** EVYA-1001 → EVYA-1002 (EVYA-1003 can run in parallel)
+
+Ask:
+> **Confirm this plan?** You can adjust the strategy per story or remove stories before drafting begins.
+
+**Wait for explicit confirmation. Do not write a single task before receiving it.**
+
+---
+
+## PHASE 3 — DRAFT ALL SUBTASKS
+
+### Step 8 — Write subtasks for every story (no new file reads — shared context only)
+
+For each story, using the confirmed strategy, write **3–7 implementation tasks** followed by **exactly one mandatory QA task** as the final item.
+
+#### Functional headline rule (enforced without exception)
+
+Headlines are outcome-focused and readable by a product manager. Technical names belong in Technical Analysis.
+
+✅ Correct: "Store user credentials with secure hashing"
+❌ Wrong: "Implement UserService.hashPassword()" — move to Technical Analysis
+
+#### Technical Analysis quality bar
+
+Every implementation task **must** include all that apply:
+
+| Required element | Example of sufficient detail |
+|---|---|
+| Exact file paths | `src/services/UserService.ts` — not "the service layer" |
+| Method signatures | `UserService.login(email: string, pwd: string): Promise<AuthToken>` |
+| DB changes | Table, column name + type + constraint, migration filename |
+| API contract | `POST /api/v1/auth/login` → `200 { token, expiresAt }` \| `401` |
+| Edge cases | "when password mismatch → throw `UnauthorizedException`; never leak which field failed" |
+| Security/validation | Layer (controller/guard/middleware) + specific rule |
+| Performance | Volume estimate + indexing or caching decision |
+
+Shallow descriptions like "update the service to handle this" will be rejected at self-review.
+
+If you cannot fill in the Technical Analysis from the shared context, you have not read enough in Step 3 — do not proceed; go back and read the missing file.
+
+#### Shared task handling
+
+When a task logically serves multiple stories (e.g., one DB migration for EVYA-1001 and EVYA-1002):
+- Write it **in full** in the story that owns it (first in sequence)
+- In the other story's file, add a reference task: "**Shared task — [title]** — implemented under EVYA-1001 Task N. No separate implementation required; verify the migration is applied before starting this story."
+
+#### QA task (mandatory final task — every story)
+
+The last task is always:
+
+**## QA Task — Test Scenarios & Playwright Automation**
+
+Include:
+
+| Category | Min. rows |
+|---|---|
+| Happy Path | 1 — primary flow, all ACs satisfied |
+| Positive | 1 — additional valid inputs |
+| Negative | 1 — invalid input, wrong state, must fail gracefully |
+| Edge / Corner | 1 — boundary values, empty set, max length, concurrent |
+| Regression | 1 per shared file — verify adjacent functionality from other stories is unaffected |
+
+For every UI-facing AC: Playwright spec path `tests/e2e/{storyId}.spec.ts`, using `data-testid` or ARIA locators only (no raw CSS class selectors).
+
+---
+
+### Step 9 — Cross-story consistency check
+
+Before emitting any output, verify silently:
+- [ ] Every AC in every story has at least one task linked to it
+- [ ] Shared tasks appear in full in exactly one story; only reference entries in others
+- [ ] No two stories use contradictory implementations for the same shared file
+- [ ] QA tasks for stories sharing code each include regression rows covering the shared areas
+- [ ] Technical Analysis in every task cites file paths and method names (no hand-waving)
+- [ ] All tasks comply with docs loaded in Step 2 (architecture layer, approved patterns, hard rules)
+
+Fix silently. Do not flag failures as output — resolve them.
+
+---
+
+## OUTPUT FORMAT
+
+Emit blocks in this exact order. No prose between blocks.
+
+### 1 — Subtask content blocks (one per story)
 
 ```
-<!-- EVYASPEC
+=== EVYA_SUBTASKS: {storyId} ===
+{complete subtask markdown in TASK_TEMPLATE.md format}
+=== END_EVYA_SUBTASKS: {storyId} ===
+```
+
+### 2 — Playwright spec blocks (one per story)
+
+```
+<!-- EVYASPEC:{storyId}
 [
-  { "id": "TC-001", "ac": "AC1: <short AC title>", "title": "<test case title>", "type": "happy-path" },
-  { "id": "TC-002", "ac": "AC1: <short AC title>", "title": "<test case title>", "type": "negative" },
-  { "id": "TC-003", "ac": "AC2: <short AC title>", "title": "<test case title>", "type": "edge" }
+  { "id": "TC-001", "ac": "AC1: short title", "title": "test case title", "type": "happy-path" },
+  { "id": "TC-002", "ac": "AC1: short title", "title": "...", "type": "negative" }
 ]
 -->
 ```
 
-Rules:
-- One entry per test case row in the QA task.
-- `id` format: `TC-NNN` (three-digit zero-padded).
-- `ac` is the short AC label the TC covers (used to group tests into `describe` blocks).
-- `type` is one of: `happy-path` | `positive` | `negative` | `edge` | `regression`.
-- Do **not** omit this block even if the QA task has no Playwright-specific tests — emit an empty array `[]`.
+`type` values: `happy-path` | `positive` | `negative` | `edge` | `regression`
+One entry per row in the QA test scenarios table. Emit `[]` if no Playwright tests apply.
+
+### 3 — Batch manifest (once, after all story blocks)
+
+```
+<!-- EVYASUBTASKBATCH
+{
+  "projectName": "",
+  "stories": [
+    {
+      "storyId": "EVYA-1001",
+      "title": "Login with email and password",
+      "epicId": "EP-001",
+      "strategy": "A",
+      "taskCount": 5,
+      "acCount": 5,
+      "keyAreas": ["UserService.ts", "AuthController.ts", "DB:users"],
+      "sharedTaskRefs": ["EVYA-1001-T1"]
+    }
+  ],
+  "sharedTasks": [
+    {
+      "ref": "EVYA-1001-T1",
+      "title": "Database migration — user authentication schema",
+      "ownedBy": "EVYA-1001",
+      "linkedStories": ["EVYA-1001", "EVYA-1002"]
+    }
+  ],
+  "crossStoryFlags": [
+    "EVYA-1001 and EVYA-1002 both modify UserService.ts — complete EVYA-1001 first"
+  ]
+}
+-->
+```
+
+`keyAreas`: 2–4 items maximum — file names, service names, or `DB:{table}`. No full paths — short identifiers only.
+`sharedTasks`: empty array `[]` if none.
+`crossStoryFlags`: empty array `[]` if none.

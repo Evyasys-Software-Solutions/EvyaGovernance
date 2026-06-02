@@ -5,7 +5,7 @@
  * none | teams | slack | whatsapp | email
  *
  * Events: story-created | epics-created | stories-batch-created |
- *         subtasks-created | dev-kickoff | review-passed |
+ *         subtasks-created | subtasks-batch-created | dev-kickoff | review-passed |
  *         review-no-go | dev-finished | qa-started | qa-finished |
  *         bug-found | release-generated
  */
@@ -43,13 +43,14 @@ async function ensureCredentials(cfg) {
  * @param {object} cfg — loaded config
  * @param {object} params — { event, storyId, ...extras }
  *   event: 'story-created' | 'epics-created' | 'stories-batch-created' |
- *          'subtasks-created' | 'dev-kickoff' | 'review-passed' |
+ *          'subtasks-created' | 'subtasks-batch-created' | 'dev-kickoff' | 'review-passed' |
  *          'review-no-go' | 'dev-finished' | 'qa-started' | 'qa-finished' |
  *          'bug-found' | 'release-generated'
  *   extras: event-specific
- *     epics-created:         { epics: [{ epicId, title, status, pmId, pmLabel }] }
- *     stories-batch-created: { stories: [{ storyId, title, epicId, points, pmId, status }], projectName, pmLabel }
- *     story-created:         { file, storyId }
+ *     epics-created:          { epics: [{ epicId, title, status, pmId, pmLabel }] }
+ *     stories-batch-created:  { stories: [{ storyId, title, epicId, points, pmId, status }], projectName, pmLabel }
+ *     subtasks-batch-created: { stories: [{ storyId, title, epicId, taskCount, pmIds, specCount, status }], sharedTasks, crossStoryFlags, projectName }
+ *     story-created:          { file, storyId }
  */
 async function send(cfg, { event, storyId, ...extras }) {
   if (cfg.notificationTool === 'none') return { skipped: true };

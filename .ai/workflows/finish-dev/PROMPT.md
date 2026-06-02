@@ -102,7 +102,7 @@ Fill exactly this structure. This is the QA team's starting document.
 | `PERFORMANCE.md` | Yes / No | |
 
 *Any "Yes" rows must be completed before the story moves to Done.*
-*Run `/evyasys:CreateDocs --retrain` or update the specific doc directly.*
+*Run `/evyasys:TrainDocs --retrain` or update the specific doc directly.*
 
 ---
 

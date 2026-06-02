@@ -4,8 +4,8 @@
     "description": "Configure Evyasys for this project — choose PM tool (Local / Azure DevOps / JIRA / GitHub Projects) and notification channel (None / Teams / Slack / WhatsApp / Email), then collect and encrypt credentials. Safe to re-run to update config or rotate secrets."
   },
   {
-    "name": "CreateDocs",
-    "description": "Scan the entire codebase and generate 19 quality-gate documents into .evyasys/docs/ covering architecture, standards, patterns, testing, security, and more. Pass --retrain to regenerate only docs affected by recent git changes."
+    "name": "TrainDocs",
+    "description": "Scan the entire codebase and generate 20 quality-gate documents into .evyasys/docs/ covering architecture, standards, patterns, testing, security, design system, UI/UX standards, and more. Pass --retrain to regenerate only docs affected by recent git changes."
   },
   {
     "name": "CreateStory",
@@ -34,6 +34,10 @@
   {
     "name": "FinishQa",
     "description": "Release sign-off — validates all TC outcomes recorded, no P0/P1 defects open, drafts plain-language release notes. Transitions ADO to Done. Pass StoryID."
+  },
+  {
+    "name": "Update",
+    "description": "Update the Evyasys plugin to the latest version — clears the plugin cache and shows the three reinstall commands. Project config and credentials are not affected."
   },
   {
     "name": "GenerateReleaseNote",

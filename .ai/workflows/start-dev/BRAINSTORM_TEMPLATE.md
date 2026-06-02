@@ -128,7 +128,7 @@ No class names, endpoints, or implementation detail.>
 | `DB_STANDARDS.md` | Yes / No | <New schema or migration convention introduced> |
 | `PERFORMANCE.md` | Yes / No | <New hot path or budget established> |
 
-**If any "Yes" rows exist:** run `/evyasys:CreateDocs --retrain` after the PR merges,
+**If any "Yes" rows exist:** run `/evyasys:TrainDocs --retrain` after the PR merges,
 or update the specific doc directly before the story moves to Done.
 
 ---

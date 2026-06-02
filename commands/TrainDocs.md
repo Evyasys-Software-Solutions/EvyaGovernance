@@ -1,17 +1,17 @@
 ---
-description: Scan the entire project and generate 19 comprehensive quality-gate documents into .evyasys/docs/ — covering architecture, standards, patterns, testing, security, deployment, performance, and more. All new development must follow these documents. Use --retrain to update only docs affected by recent code changes.
+description: Scan the entire project and generate 20 comprehensive quality-gate documents into .evyasys/docs/ — covering architecture, standards, patterns, testing, security, deployment, design system, UI/UX standards, and more. All new development must follow these documents. Use --retrain to update only docs affected by recent code changes.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 argument-hint: [--update | --update <filename> | --retrain]
-skill: evyasys-create-docs
+skill: evyasys-train-docs
 ---
 
-You are running **/evyasys:CreateDocs $ARGUMENTS**.
+You are running **/evyasys:TrainDocs $ARGUMENTS**.
 
 ## Step 0 — Pre-flight
 0a. Check `.evyasys/docs/` for existing files:
-    - No docs → proceed with full generation (all 19 documents).
+    - No docs → proceed with full generation (all 20 documents).
     - Docs exist and `$ARGUMENTS` is empty → ask: "Docs already exist. Regenerate all, update specific, retrain, or abort?"
-    - `$ARGUMENTS` is `--update` → confirm: "Regenerate all 19 documents?"
+    - `$ARGUMENTS` is `--update` → confirm: "Regenerate all 20 documents?"
     - `$ARGUMENTS` is `--update <filename>` → confirm: "Regenerate `.evyasys/docs/<filename>` only?"
     - `$ARGUMENTS` is `--retrain` → switch to retrain mode (see PROMPT.md Step 0-R):
       read last generation date from INDEX.md, detect changed areas via git log, regenerate only affected docs.
@@ -30,7 +30,7 @@ You are running **/evyasys:CreateDocs $ARGUMENTS**.
 6. **Existing docs**: read `README.md`, `CONTRIBUTING.md`, any files under `docs/`.
 
 ## Phase 2 — Generate all documents
-Following `DOC_MANIFEST.md`, generate all 19 documents (or only affected docs in `--retrain` mode) using **actual project findings**.
+Following `DOC_MANIFEST.md`, generate all 20 documents (or only affected docs in `--retrain` mode) using **actual project findings**.
 No placeholder text. Every rule must have a concrete example from this project.
 Wrap each document with `<!-- EVYADOC: FILENAME.md -->` so the hook can parse and write them.
 
@@ -38,4 +38,4 @@ Wrap each document with `<!-- EVYADOC: FILENAME.md -->` so the hook can parse an
 Show a summary table (document name + 1-line description of what was found and documented).
 Wait for explicit user confirmation before the hook writes anything to disk.
 
-Output: 18 documents + `INDEX.md` written to `.evyasys/docs/`.
+Output: 20 documents + `INDEX.md` written to `.evyasys/docs/`.

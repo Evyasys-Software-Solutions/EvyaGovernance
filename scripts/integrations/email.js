@@ -25,6 +25,7 @@ const EVENT_META = {
   'epics-created':         { emoji: '📂', title: 'Epics Overview'         },
   'stories-batch-created': { emoji: '📋', title: 'Stories Created'        },
   'subtasks-created':      { emoji: '📝', title: 'Subtasks Created'       },
+  'subtasks-batch-created':{ emoji: '📝', title: 'Subtasks Created'       },
   'dev-kickoff':           { emoji: '🚀', title: 'Dev Started'            },
   'review-passed':         { emoji: '✅', title: 'Code Review Passed'     },
   'review-no-go':          { emoji: '🚫', title: 'Code Review NO-GO'      },
@@ -97,6 +98,43 @@ function buildStoriesBatchHtml(meta, stories, projectName) {
   return wrapEmail(meta, tableHtml);
 }
 
+function buildSubtasksBatchHtml(meta, stories, sharedTasks, crossStoryFlags, projectName) {
+  const totalTasks = stories.reduce((n, s) => n + (s.taskCount || 0), 0);
+  const header     = projectName ? `<p style="margin:0 0 12px;font-size:15px">Project: <strong>${projectName}</strong></p>` : '';
+  const rows       = stories.map(s => {
+    const icon    = s.status === 'synced' ? '✅' : s.status === 'sync-failed' ? '⚠️' : '💾';
+    const pmStr   = s.pmIds && s.pmIds.length > 0 ? s.pmIds.map(id => '#' + id).join(', ') : '—';
+    return `
+    <tr>
+      <td style="${TD}">${s.storyId}</td>
+      <td style="${TD}">${s.title || '—'}</td>
+      <td style="${TD}">${s.epicId || '—'}</td>
+      <td style="${TD};text-align:center">${s.taskCount || 0}</td>
+      <td style="${TD}">${pmStr}</td>
+      <td style="${TD};text-align:center">${icon}</td>
+    </tr>`;
+  }).join('');
+
+  let crossFlagsHtml = '';
+  if (crossStoryFlags && crossStoryFlags.length > 0) {
+    const items = crossStoryFlags.map(f => `<li style="margin:4px 0;font-size:13px">${f}</li>`).join('');
+    crossFlagsHtml = `
+    <p style="margin:16px 0 6px;font-size:13px;font-weight:600">Cross-Story Notes</p>
+    <ul style="margin:0;padding-left:20px">${items}</ul>`;
+  }
+
+  const tableHtml = `${header}
+    <p style="margin:0 0 12px;font-size:13px">Total tasks: <strong>${totalTasks}</strong> across <strong>${stories.length}</strong> stor${stories.length !== 1 ? 'ies' : 'y'}</p>
+    <table style="border-collapse:collapse;width:100%">
+      <thead><tr>
+        <th style="${TH}">Story</th><th style="${TH}">Title</th><th style="${TH}">Epic</th>
+        <th style="${TH};text-align:center">Tasks</th><th style="${TH}">PM IDs</th><th style="${TH};text-align:center">Status</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>${crossFlagsHtml}`;
+  return wrapEmail(meta, tableHtml);
+}
+
 function buildHtml(event, storyId, extras) {
   const meta    = EVENT_META[event] || { emoji: '📌', title: event };
   const details = Object.entries(extras)
@@ -134,6 +172,11 @@ async function send(cfg, { event, storyId, ...extras }, log) {
     const count = (extras.stories || []).length;
     subject = `[Evyasys] ${meta.emoji} ${meta.title}: ${count} stor${count !== 1 ? 'ies' : 'y'}${extras.projectName ? ' — ' + extras.projectName : ''}`;
     html    = buildStoriesBatchHtml(meta, extras.stories || [], extras.projectName || '');
+  } else if (event === 'subtasks-batch-created') {
+    const storyList  = extras.stories || [];
+    const totalTasks = storyList.reduce((n, s) => n + (s.taskCount || 0), 0);
+    subject = `[Evyasys] ${meta.emoji} ${meta.title}: ${totalTasks} task${totalTasks !== 1 ? 's' : ''} across ${storyList.length} stor${storyList.length !== 1 ? 'ies' : 'y'}${extras.projectName ? ' — ' + extras.projectName : ''}`;
+    html    = buildSubtasksBatchHtml(meta, storyList, extras.sharedTasks || [], extras.crossStoryFlags || [], extras.projectName || '');
   } else {
     subject = `[Evyasys] ${meta.emoji} ${meta.title}: ${storyId}`;
     html    = buildHtml(event, storyId, extras);

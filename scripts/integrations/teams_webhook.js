@@ -344,6 +344,67 @@ async function storiesBatchCreated({ stories, projectName }) {
   ]));
 }
 
+async function subtasksBatchCreated({ stories, sharedTasks, crossStoryFlags, projectName }) {
+  const totalTasks = stories.reduce((n, s) => n + (s.taskCount || 0), 0);
+  const synced     = stories.filter(s => s.status === 'synced').length;
+  const failed     = stories.filter(s => s.status === 'sync-failed').length;
+  const saved      = stories.filter(s => s.status === 'saved').length;
+  const skipped    = stories.filter(s => s.status === 'skipped').length;
+  const count      = stories.length;
+
+  const hasFailures = failed > 0 || skipped > 0;
+  const color       = hasFailures ? 'Attention' : 'Accent';
+  const badgeText   = hasFailures ? 'Action Required' : 'Planning';
+
+  const proj     = projectName ? projectName + ' — ' : '';
+  const subParts = [
+    synced  > 0 ? synced  + ' synced'  : '',
+    saved   > 0 ? saved   + ' local'   : '',
+    failed  > 0 ? failed  + ' failed'  : '',
+    skipped > 0 ? skipped + ' skipped' : '',
+  ].filter(Boolean);
+
+  const summaryPairs = [
+    ['Stories',      count],
+    ['Total tasks',  totalTasks],
+    synced  > 0 ? ['Synced to PM',   synced  + ' stor' + (synced  !== 1 ? 'ies' : 'y')]  : null,
+    saved   > 0 ? ['Saved locally',  saved   + ' stor' + (saved   !== 1 ? 'ies' : 'y')]  : null,
+    failed  > 0 ? ['PM sync failed', failed  + ' stor' + (failed  !== 1 ? 'ies' : 'y')]  : null,
+    (sharedTasks || []).length > 0
+      ? ['Shared tasks', (sharedTasks || []).length + ' task' + ((sharedTasks || []).length !== 1 ? 's' : '') + ' shared across stories']
+      : null,
+  ];
+
+  const storyRows = stories.map(s => {
+    const pmStr     = s.pmIds && s.pmIds.length > 0 ? s.pmIds.map(id => '#' + id).join(', ') : '-';
+    const statusLbl = s.status === 'synced'      ? 'Synced'
+                    : s.status === 'sync-failed'  ? 'PM sync failed'
+                    : s.status === 'saved'         ? 'Saved locally'
+                    :                               'Skipped';
+    return {
+      title: s.storyId,
+      value: (s.title || '-') + ' | ' + (s.taskCount || 0) + ' task' + ((s.taskCount || 0) !== 1 ? 's' : '') +
+             (s.pmIds && s.pmIds.length > 0 ? ' | ' + pmStr : '') +
+             ' | ' + statusLbl,
+    };
+  });
+
+  const blocks = [
+    badge(badgeText, color),
+    cardTitle('📝 ' + totalTasks + ' Task' + (totalTasks !== 1 ? 's' : '') + ' Across ' + count + ' Stor' + (count !== 1 ? 'ies' : 'y'), color),
+    cardSubtitle(proj + (subParts.join(', ') || 'all saved')),
+    summaryFacts(summaryPairs),
+    tableSection('Story Breakdown', storyRows),
+  ];
+
+  if (crossStoryFlags && crossStoryFlags.length > 0) {
+    const flagRows = crossStoryFlags.map((f, i) => ({ title: 'Flag ' + (i + 1), value: f }));
+    blocks.push(tableSection('Cross-Story Notes', flagRows));
+  }
+
+  return post(ac(blocks));
+}
+
 async function releaseGenerated({ storyId, storyCount, version, pdfFile }) {
   const v   = version    ? 'v' + version : '-';
   const n   = storyCount ? storyCount + ' stor' + (storyCount !== 1 ? 'ies' : 'y') : '-';
@@ -368,6 +429,7 @@ const EVENT_MAP = {
   'epics-created':         ({ epics })                                 => epicsCreated({ epics }),
   'stories-batch-created': ({ stories, projectName })                  => storiesBatchCreated({ stories, projectName }),
   'subtasks-created':      ({ storyId, count })                        => subtasksCreated({ storyId, count }),
+  'subtasks-batch-created': ({ stories, sharedTasks, crossStoryFlags, projectName }) => subtasksBatchCreated({ stories, sharedTasks, crossStoryFlags, projectName }),
   'dev-kickoff':           ({ storyId })                               => devKickoff({ storyId }),
   'review-passed':         ({ storyId })                               => reviewPassed({ storyId }),
   'review-no-go':          ({ storyId })                               => reviewNoGo({ storyId }),
@@ -407,13 +469,17 @@ if (require.main === module) {
     process.exit(2);
   }
   fn({
-    storyId:       args.id,
-    file:          args.file,
-    count:         args.count             ? Number(args.count)             : undefined,
-    criticalCount: args['critical-count'] ? Number(args['critical-count']) : undefined,
-    storyCount:    args['story-count']    ? Number(args['story-count'])    : undefined,
-    version:       args.version,
-    pdfFile:       args['pdf-file'],
+    storyId:         args.id,
+    file:            args.file,
+    count:           args.count             ? Number(args.count)             : undefined,
+    criticalCount:   args['critical-count'] ? Number(args['critical-count']) : undefined,
+    storyCount:      args['story-count']    ? Number(args['story-count'])    : undefined,
+    version:         args.version,
+    pdfFile:         args['pdf-file'],
+    stories:         args.stories         ? JSON.parse(args.stories)         : undefined,
+    sharedTasks:     args['shared-tasks'] ? JSON.parse(args['shared-tasks']) : undefined,
+    crossStoryFlags: args['cross-flags']  ? JSON.parse(args['cross-flags'])  : undefined,
+    projectName:     args['project-name'],
   })
     .then(r  => console.log(JSON.stringify(r, null, 2)))
     .catch(e => { console.error(e.message); process.exit(1); });
@@ -422,6 +488,6 @@ if (require.main === module) {
 module.exports = {
   send,
   storyCreated, epicsCreated, storiesBatchCreated,
-  subtasksCreated, devKickoff, reviewPassed, reviewNoGo,
+  subtasksCreated, subtasksBatchCreated, devKickoff, reviewPassed, reviewNoGo,
   devFinished, qaStarted, qaFinished, bugFound, releaseGenerated,
 };

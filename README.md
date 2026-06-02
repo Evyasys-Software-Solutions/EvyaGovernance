@@ -86,11 +86,11 @@ Type `/evya` — you should see 10 commands in autocomplete.
 /evyasys:Setup
 ```
 
-This interactive wizard asks you to choose:
+The wizard starts by **confirming you're in the right project folder**, then guides you through:
 1. **PM Tool** — Local folder only / Azure DevOps / JIRA / GitHub Projects
 2. **Notification Tool** — None / Teams / Slack / WhatsApp / Email
 
-Then collects and **validates credentials live** — you'll get a confirmation before anything is saved. Non-sensitive settings (org names, project keys, webhook URLs) are saved to `.evyasys/project.yaml` and committed so the whole team inherits them via `git pull`. Sensitive credentials (PAT, API tokens, Twilio auth) are saved **encrypted** to `~/.evyasys/credentials` — never committed.
+Setup **automatically creates `.evyasys/`** in the current folder if it doesn't exist — no manual template copy needed. Credentials are **validated live** before saving. Non-sensitive settings (org names, project keys, webhook URLs) are saved to `.evyasys/project.yaml` and committed so the whole team inherits them via `git pull`. Sensitive credentials (PAT, API tokens, Twilio auth) are saved **encrypted** to `~/.evyasys/credentials` — never committed.
 
 **Subsequent team members** only need to run `/evyasys:Setup` to enter their own credentials (the project config is already committed). On Azure DevOps they can also use the legacy scripts:
 
@@ -108,35 +108,12 @@ powershell -ExecutionPolicy Bypass -File "$evyasys\scripts\setup.ps1"
 
 ---
 
-### Step 3 — Configure your project (once per repo)
+Teammates just `git pull` — they only need to run `/evyasys:Setup` once to enter their own personal credentials.
 
-> **Run these commands from your project's root folder.** The template is copied
-> to wherever your terminal is currently open. Confirm your location first, then copy.
-
-**macOS / Linux**
-```bash
-# Confirm you are in your project root
-pwd
-
-# Copy the template (only proceed if the path above is correct)
-evyasys=$(ls -td ~/.claude/plugins/cache/EvyaGovernance/evyasys/*/ | head -1)
-cp -r "${evyasys}project-template/.evyasys" ./.evyasys
-```
-
-**Windows (PowerShell)**
-```powershell
-# Confirm you are in your project root
-Get-Location
-
-# Copy the template (only proceed if the path above is correct)
-$evyasys = (Get-Item "$env:USERPROFILE\.claude\plugins\cache\EvyaGovernance\evyasys\*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
-Copy-Item -Recurse "$evyasys\project-template\.evyasys" ".\.evyasys"
-```
-
-Edit `.evyasys/project.yaml` with your project settings (or let `/evyasys:Setup` write it for you):
+**What `/evyasys:Setup` writes to `.evyasys/project.yaml`** (reference — the wizard fills this for you):
 
 ```yaml
-# Display name shown in notification cards — required
+# Display name shown in notification cards
 name: "Customer Portal"
 
 # PM tool: local | devops | jira | github
@@ -147,26 +124,21 @@ azure_devops:
   org: "YourAzureOrg"
   project: "YourAzureProject"
 
-# Notification tool: none | teams | slack | whatsapp
+# Notification tool: none | teams | slack | whatsapp | email
 notification_tool: "teams"
 
-# Teams webhook (if notification_tool is "teams")
-# Use the HTTP trigger URL from your Power Automate workflow
+# Teams webhook — HTTP trigger URL from your Power Automate workflow
 teams:
   webhook: "https://<env>.environment.api.powerplatform.com/powerautomate/..."
 ```
 
-See `project-template/.evyasys/project.yaml.example` for all tool options (JIRA, GitHub Projects, Slack, WhatsApp, Email).
-
-Commit so every teammate gets the same config:
+Commit the config so every teammate gets it automatically:
 
 ```bash
 git add .evyasys/project.yaml
 git commit -m "Add Evyasys config"
 git push
 ```
-
-Teammates just `git pull` — they only need to run `/evyasys:Setup` (or the legacy PAT script) once to enter their own personal credentials.
 
 **Notifications your channel receives (Teams, Slack, WhatsApp, or Email):**
 
@@ -189,36 +161,26 @@ All notifications fire **after your approval**. Both GO and NO-GO reviews notify
 
 ### Updating to the latest version
 
-**macOS / Linux**
-```bash
-rm -rf ~/.claude/plugins/marketplaces
-rm -rf ~/.claude/plugins/evyasys
+**Inside Claude Code**, run:
+
+```
+/evyasys:Update
 ```
 
-**Windows (PowerShell)**
-```powershell
-Remove-Item -Recurse -Force "$env:USERPROFILE\.claude\plugins\marketplaces" -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force "$env:USERPROFILE\.claude\plugins\evyasys" -ErrorAction SilentlyContinue
-```
-
-Then **inside Claude Code**, run:
-```
-/plugin marketplace remove EvyaGovernance
-```
-
-Then reinstall (Step 1 above).
+This clears the plugin cache automatically and shows the three reinstall commands to run.
+Your project config and credentials are not affected.
 
 ---
 
 ### Troubleshooting a broken install
 
-Run the same cache-clear steps above, **fully close and reopen** Claude Code, then
-run Step 1 again.
+Run `/evyasys:Update` — a clean reinstall fixes most issues. If commands still don't
+appear after reinstalling, fully close and reopen Claude Code, then reinstall once more.
 
 | Symptom | Fix |
 |---|---|
 | `claude` command not found | Install Node.js 18+ then `npm install -g @anthropic-ai/claude-code` |
-| Commands don't appear | Clear cache (see above) and reinstall |
+| Commands don't appear | Run `/evyasys:Update` then reinstall |
 | No PM tool configured | Run `/evyasys:Setup` |
 | Credentials not found | Run `/evyasys:Setup` to re-enter encrypted credentials |
 | 401 / auth error | Credentials expired — run `/evyasys:Setup` and re-enter |
@@ -249,7 +211,7 @@ flowchart TD
       direction LR
       S1["🔧  /evyasys:Setup
       👤 Any team member"]:::setup
-      S2["📚  /evyasys:CreateDocs
+      S2["📚  /evyasys:TrainDocs
       🏗️ Tech Lead"]:::setup
       S1 --> S2
     end
@@ -296,9 +258,9 @@ flowchart TD
 | # | Phase | Command | Role | What the Agent Does | Output | PM State |
 |---|-------|---------|------|---------------------|--------|----------|
 | 1 | Setup | `/evyasys:Setup` | 👤 Any | Choose PM + notification tool; collect + encrypt credentials | `project.yaml` · `credentials` | — |
-| 2 | Setup | `/evyasys:CreateDocs` | 🏗️ Tech Lead | Scan full codebase; generate 19 quality-gate docs | `.evyasys/docs/` (19 files) | — |
+| 2 | Setup | `/evyasys:TrainDocs` | 🏗️ Tech Lead | Scan full codebase; generate 20 quality-gate docs | `.evyasys/docs/` (20 files) | — |
 | 3 | Plan | `/evyasys:CreateStory` | 👔 PO / BA | Resolves/creates epics (Gate 1); plans full story batch (Gate 2); drafts all stories; syncs everything; 2 notifications | `{epicId}_Epic.md` · `{storyId}_UserStory.md` | Epics + Backlog |
-| 4 | Plan | `/evyasys:CreateSubtask EVYA-XXXX` | 🏗️ Architect | Present 3 strategies A/B/C; team approval gate; write dev tasks + QA task | `Subtasks.md` | Tasks created |
+| 4 | Plan | `/evyasys:CreateSubtask EVYA-XXXX EVYA-XXYY` | 🏗️ Architect | Load shared context once; cross-story analysis; single consolidated plan approval; 3–7 dev tasks + QA task per story; 1 batch notification | `{storyId}_Subtasks.md` (per story) | Tasks created |
 | 5 | Dev | `/evyasys:StartDev EVYA-XXXX` | 💻 Dev Lead | Load quality-gate docs; brainstorm 3+ approaches with trade-offs; architecture approval gate | `TechBrainstorm.md` | **In Progress** |
 | 6 | Dev | `/evyasys:ReviewDev EVYA-XXXX` | 🎯 Senior Dev | Independent review: full diff, AC coverage, arch, security, test quality — GO / NO-GO | `CodeReview.md` | — |
 | 7 | Dev | `/evyasys:FinishDev EVYA-XXXX` | 💻 Developer | AC audit; diff scope check; DoD checklist; architect gate (docs-to-update list) | `DevSummary.md` | **Ready for QA** |
@@ -338,21 +300,21 @@ Interactive wizard that configures Evyasys for this project. Run once per projec
 
 ---
 
-### `/evyasys:CreateDocs`
+### `/evyasys:TrainDocs`
 **Who:** Tech Lead — **When:** First time on a new project, then `--retrain` after major changes
 
 Scans the entire codebase — tech stack, source structure, architecture layers, CI/CD,
-tooling config, code sampling — and generates **19 quality-gate documents** into
+tooling config, design system tokens, UI/UX patterns, code sampling — and generates **20 quality-gate documents** into
 `.evyasys/docs/`. These documents are automatically loaded by every downstream command
 before forming any technical opinion: StartDev loads them before brainstorming,
 ReviewDev checks the diff against them, FinishDev verifies compliance before sign-off,
 StartQA uses them to set pass/fail criteria.
 
 **Arguments:**
-- _(no args)_ — Full scan and generate all 19 documents
+- _(no args)_ — Full scan and generate all 20 documents
 - `--update` — Regenerate all documents (re-scan full codebase)
 - `--update FILENAME.md` — Regenerate a single document
-- `--retrain` — Detect which files changed since last run (via `git log`) and regenerate only affected documents
+- `--retrain` — Detect which files changed since last run (via `git log`) and regenerate only affected documents. Use after stack upgrades, schema changes, design system token updates, or component library changes.
 
 | Document | Purpose |
 |---|---|
@@ -367,9 +329,10 @@ StartQA uses them to set pass/fail criteria.
 | `API_STANDARDS.md` | Endpoint conventions, request/response format, error codes |
 | `FRONTEND.md` | Component structure, state, routing, accessibility |
 | `DESIGN_SYSTEM.md` | UI tokens, component library, typography, colour, breakpoints |
+| `UI_UX_STANDARDS.md` | Loading/error/empty states, forms, toast patterns, accessibility baseline |
 | + 8 more | STACK, BACKEND, WORKFLOWS, DEPLOYMENT, ERROR_HANDLING, DECISIONS, ONBOARDING, GLOSSARY |
 
-**Produces:** 19 `.md` files + `INDEX.md` → `.evyasys/docs/`
+**Produces:** 20 `.md` files + `INDEX.md` → `.evyasys/docs/`
 
 ---
 
@@ -399,23 +362,49 @@ first (always safe), then synced to the PM tool.
 
 ---
 
-### `/evyasys:CreateSubtask EVYA-1042`
-**Who:** Tech Lead — **When:** After story approved, before any development
+### `/evyasys:CreateSubtask EVYA-1042 EVYA-1043`
+**Who:** Tech Lead / Architect — **When:** After stories are approved, before any development begins
 
-Reads the full story and maps every AC. Presents **all 3 decomposition strategies**
-with trade-offs and waits for team approval before writing a single task:
+Accepts one or more story IDs and/or epic IDs in a single call. Processes the entire
+batch with a **load-once** architecture — quality-gate docs and source files are read
+once for the whole batch, not once per story. Token usage scales with unique files,
+not with story count.
 
-| Strategy | Description |
-|---|---|
-| **A — Backend-first + Frontend in logical groupings** *(recommended)* | Data/service/API layer first; UI grouped by feature area after |
-| **B — Vertical slices** | Each task delivers one complete AC end-to-end |
-| **C — Layer by layer** | All data → all service → all UI |
+**Input forms:**
+```
+/evyasys:CreateSubtask EVYA-1042                  ← single story
+/evyasys:CreateSubtask EVYA-1042 EVYA-1043        ← multiple stories
+/evyasys:CreateSubtask EP-001                     ← all stories in an epic
+/evyasys:CreateSubtask EP-001 EVYA-1005           ← epic + additional story
+```
 
-Each task has a functional headline readable by non-developers, plus a full Technical
-Analysis (exact file paths, method signatures, DB changes, API contract, edge cases,
-security, performance). The final task is always a dedicated QA task with Playwright spec.
+**Three-phase flow:**
 
-**Produces:** `<id>_Subtasks.md` · ADO child Tasks · 🗂️ Teams
+*Phase 1 — Shared context (once):* Resolves all story/epic IDs, reads every story file,
+loads quality-gate docs based on the **union** of all Impacted Areas across all stories
+(or derives standards from the codebase if no docs exist), runs a unified code analysis
+reading each impacted file exactly once, then performs a **cross-story dependency analysis**
+identifying shared files, shared infrastructure tasks, development sequence, parallelisable
+stories, and merge-conflict risk.
+
+*Phase 2 — Planning:* Asks batch-level clarifying questions only, selects the best strategy
+per story, then presents a **single consolidated approval table** covering all stories with
+cross-story notes and recommended sequence. No task is written before you confirm.
+
+*Phase 3 — Draft:* Writes 3–7 implementation tasks + 1 mandatory QA task per story using
+only the shared context — no additional file reads. Shared tasks (e.g. a DB migration
+needed by multiple stories) are written in full once in the owning story and referenced
+in others. Every task has a functional headline and a full Technical Analysis with exact
+file paths, method signatures, DB changes, API contract, edge cases, security rules,
+and performance decisions.
+
+| Strategy | Description | Best when |
+|---|---|---|
+| **A — Backend-first + Frontend** *(recommended)* | Data/service/API layer first; UI after | Most stories |
+| **B — Vertical slices** | Each task delivers one complete AC end-to-end | Truly independent ACs |
+| **C — Layer by layer** | All data → all service → all UI | Large cross-cutting refactors |
+
+**Produces:** `{storyId}_Subtasks.md` per story · `tests/e2e/{storyId}.spec.ts` (Playwright scaffold) · PM child tasks linked to parent story · 📝 1 batch notification
 
 ---
 
@@ -548,11 +537,11 @@ pdfkit is installed automatically on first run if not already present.
 
 ```
 .evyasys/
-├── docs/                              ← CreateDocs (quality-gate documents)
+├── docs/                              ← TrainDocs (quality-gate documents)
 │   ├── INDEX.md
 │   ├── ARCHITECTURE.md
 │   ├── RULES.md
-│   └── ... (19 documents total)
+│   └── ... (20 documents total)
 │
 ├── board/
 │   ├── epics/
@@ -608,7 +597,7 @@ project repo. Project files always win over plugin defaults.
 
 | To customise | File in your project |
 |---|---|
-| **Quality-gate documents** | Run `/evyasys:CreateDocs` — generates all 19 docs into `.evyasys/docs/` |
+| **Quality-gate documents** | Run `/evyasys:TrainDocs` — generates all 20 docs into `.evyasys/docs/` |
 | Story naming rules | `.evyasys/rules/naming.md` |
 | Definition of Ready | `.evyasys/rules/definition-of-ready.md` |
 | Any workflow prompt | `.evyasys/workflows/<name>/PROMPT.md` |
@@ -622,7 +611,7 @@ project repo. Project files always win over plugin defaults.
 
 **Quality-gate documents** (`.evyasys/docs/`) are project-specific — they are generated
 by scanning your actual codebase and must be regenerated when your architecture changes.
-Run `/evyasys:CreateDocs --retrain` after any PR that introduces new patterns, changes
+Run `/evyasys:TrainDocs --retrain` after any PR that introduces new patterns, changes
 the API contract, updates the security model, or changes a hot path.
 
 ---

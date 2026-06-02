@@ -17,7 +17,7 @@ These rules constrain the valid implementation space — they are not suggestion
 
 Load `.evyasys/docs/ARCHITECTURE.md`, `RULES.md`, `STANDARDS.md`, and `PATTERNS.md`
 if the directory exists. These are the project's highest-priority constraints, generated
-by `/evyasys:CreateDocs` from the actual codebase. Every approach you propose must comply
+by `/evyasys:TrainDocs` from the actual codebase. Every approach you propose must comply
 with them — they override all other guidance where they conflict.
 
 You are the enforcer of these standards. An approach that violates `CLAUDE.md`,

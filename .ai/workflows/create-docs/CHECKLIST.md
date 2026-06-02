@@ -1,4 +1,4 @@
-# CreateDocs Checklist
+# TrainDocs Checklist
 
 ## Phase 1 — Scan completeness
 
@@ -12,6 +12,10 @@
 - [ ] CI/CD pipeline config read (if present)
 - [ ] Container config read (if present)
 - [ ] `README.md` and `CONTRIBUTING.md` read
+- [ ] Design system config read: `tailwind.config.*` / `globals.css` / `src/tokens/**` (if present)
+- [ ] Component library detected and representative files sampled (`src/components/ui/**` or equivalent)
+- [ ] Storybook stories read for documented variants (if present — `*.stories.*`)
+- [ ] i18n config and locale files read (if present)
 - [ ] At least 3 representative source files sampled per layer found in the project
 
 ## Phase 2 — Analysis quality
@@ -21,10 +25,13 @@
 - [ ] Design patterns found in code listed by name and example location
 - [ ] Gaps, inconsistencies, and risks identified and documented in the relevant files
 - [ ] Technology inventory is complete — no framework or tool left unnamed
+- [ ] Design token values extracted: actual colour hex values, spacing scale values, breakpoints — not library defaults
+- [ ] Component library identified by detection signals (shadcn/ui, MUI, Chakra, Ant Design, Radix, custom)
+- [ ] UX patterns detected: loading states, toast/notification library, form library, state management, error boundaries, empty states
 
 ## Phase 3 — Document quality (check every document)
 
-For each of the 18 documents generated:
+For each of the 20 documents generated:
 - [ ] No placeholder text (`[TODO]`, `[TBD]`, `<insert here>`)
 - [ ] Every rule or convention has a concrete example from this project
 - [ ] Sections with no evidence are explicitly marked "Not applicable — [reason]"
@@ -34,7 +41,7 @@ For each of the 18 documents generated:
 ## Phase 4 — Specific document checks
 
 - [ ] **STACK.md** — every framework and tool listed with exact version numbers
-- [ ] **ARCHITECTURE.md** — pattern named, layer boundaries defined, anti-patterns listed
+- [ ] **ARCHITECTURE.md** — pattern named, layer boundaries defined, ASCII folder tree with real directory names, anti-patterns listed
 - [ ] **RULES.md** — every rule uses "must" / "never" — no "consider" or "prefer"
 - [ ] **STANDARDS.md** — naming rules match actual file names found in the scan
 - [ ] **PATTERNS.md** — every pattern has a canonical example referencing a real file path
@@ -48,10 +55,12 @@ For each of the 18 documents generated:
 - [ ] **DEPLOYMENT.md** — real environments named, real pipeline stages documented
 - [ ] **ERROR_HANDLING.md** — real error categories and log format from the codebase
 - [ ] **PERFORMANCE.md** — real performance budgets documented; hot paths named; anti-patterns listed
+- [ ] **DESIGN_SYSTEM.md** — actual token values extracted (hex colours, px/rem spacing, not generic descriptions); component library named with variants listed from real component files; consistent with what UI_UX_STANDARDS.md will reference
+- [ ] **UI_UX_STANDARDS.md** — loading/error/empty states documented from actual patterns in the codebase; toast and form libraries named specifically; tokens used match DESIGN_SYSTEM.md; consistent with ERROR_HANDLING.md error categories
 
 ## Phase 5 — Output format
 
 - [ ] Every document wrapped with `<!-- EVYADOC: FILENAME.md -->` delimiter
-- [ ] All 18 documents present in the output (or explicitly skipped with Not applicable)
+- [ ] All 20 documents present in the output (or explicitly skipped with Not applicable)
 - [ ] Documents generated in the order specified in PROMPT.md (STACK.md first)
 - [ ] Preview summary table shown to user before confirmation

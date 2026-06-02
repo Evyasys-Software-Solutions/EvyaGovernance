@@ -1,10 +1,10 @@
 ---
-name: evyasys-create-docs
-description: Use this skill to scan the entire project and generate comprehensive quality-gate documentation into .evyasys/docs/. Produces 18 documents covering architecture, standards, patterns, testing, security, and deployment. All new development must follow these documents — they are loaded by /evyasys:StartDev at Step 0 before any technical opinion is formed. Triggered by `/evyasys:CreateDocs`.
-trigger: /evyasys:CreateDocs
+name: evyasys-train-docs
+description: Use this skill to scan the entire project and generate comprehensive quality-gate documentation into .evyasys/docs/. Produces 20 documents covering architecture, standards, patterns, testing, security, deployment, design system, and UI/UX standards. All new development must follow these documents — they are loaded by /evyasys:StartDev at Step 0 before any technical opinion is formed. Triggered by `/evyasys:TrainDocs`.
+trigger: /evyasys:TrainDocs
 ---
 
-# Skill: evyasys-create-docs
+# Skill: evyasys-train-docs
 
 ## What it scans
 
@@ -33,6 +33,7 @@ All documents written to `.evyasys/docs/`:
 | `TESTING.md` | Test strategy, coverage requirements, naming, mocking, commands |
 | `SECURITY.md` | Auth/authz model, input validation, secrets, OWASP requirements |
 | `DESIGN_SYSTEM.md` | UI tokens, component library, typography, colour, breakpoints |
+| `UI_UX_STANDARDS.md` | Loading/error/empty states, forms, toast patterns, keyboard nav, accessibility baseline |
 | `WORKFLOWS.md` | Branching, commit format, PR process, merge strategy, release |
 | `DEPLOYMENT.md` | Environments, CI/CD stages, secrets, rollback, health checks |
 | `ERROR_HANDLING.md` | Error taxonomy, log levels, user-facing messages, tracing |

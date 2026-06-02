@@ -62,33 +62,17 @@ Type `/evya` — you should see 10 commands in autocomplete.
 /evyasys:Setup
 ```
 
-The wizard asks you to pick:
+The wizard starts by confirming you're in the right folder, then asks you to pick:
 - **PM Tool:** Local folder only / Azure DevOps / JIRA / GitHub Projects
 - **Notification Tool:** None / Teams / Slack / WhatsApp / Email
 
-Then collects and **validates credentials live** for your chosen tools — you'll see a confirmation before anything is saved. Non-sensitive settings are saved to `.evyasys/project.yaml` (commit this). Personal secrets are encrypted to `~/.evyasys/credentials` (never committed).
+Then collects and **validates credentials live** for your chosen tools — you'll see a confirmation before anything is saved.
 
-**Teammates:** just `git pull` to get the project config, then run `/evyasys:Setup` to enter their own credentials.
+Setup **automatically creates** `.evyasys/` in the current folder if it doesn't exist yet.
+Non-sensitive settings are saved to `.evyasys/project.yaml` (commit this).
+Personal secrets are encrypted to `~/.evyasys/credentials` (never committed).
 
----
-
-## Step 3 — Copy the project template (if .evyasys/ doesn't exist yet)
-
-```bash
-# macOS / Linux
-evyasys=$(ls -td ~/.claude/plugins/cache/EvyaGovernance/evyasys/*/ | head -1)
-cp -r "${evyasys}project-template/.evyasys" ./.evyasys
-```
-
-```powershell
-# Windows
-$evyasys = (Get-Item "$env:USERPROFILE\.claude\plugins\cache\EvyaGovernance\evyasys\*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
-Copy-Item -Recurse "$evyasys\project-template\.evyasys" ".\.evyasys"
-```
-
-Then run `/evyasys:Setup` — it will fill in `.evyasys/project.yaml` for you.
-
-Commit so the whole team shares the config:
+Commit the project config so teammates inherit it:
 
 ```bash
 git add .evyasys/project.yaml
@@ -96,17 +80,20 @@ git commit -m "Add Evyasys config"
 git push
 ```
 
+**Teammates:** just `git pull` to get the project config, then run `/evyasys:Setup` to enter their own credentials.
+
 ---
 
-## Step 4 — Generate project quality-gate docs (once per project)
+## Step 3 — Generate project quality-gate docs (once per project)
 
 ```
-/evyasys:CreateDocs
+/evyasys:TrainDocs
 ```
 
-Scans your codebase and writes 19 quality-gate documents to `.evyasys/docs/`.
+Scans your codebase — tech stack, source structure, design system tokens, UI/UX patterns,
+and CI/CD — and writes 20 quality-gate documents to `.evyasys/docs/`.
 Every downstream command loads these docs before forming any technical opinion.
-Re-run with `--retrain` after major architecture changes.
+Re-run with `--retrain` after major architecture changes, stack upgrades, or design system updates.
 
 ---
 
@@ -125,7 +112,7 @@ flowchart TD
       direction LR
       S1["🔧  /evyasys:Setup
       👤 Any team member"]:::setup
-      S2["📚  /evyasys:CreateDocs
+      S2["📚  /evyasys:TrainDocs
       🏗️ Tech Lead"]:::setup
       S1 --> S2
     end
@@ -134,7 +121,7 @@ flowchart TD
       direction LR
       P1["📖  /evyasys:CreateStory
       👔 PO / BA"]:::plan
-      P2["📝  /evyasys:CreateSubtask
+      P2["📝  /evyasys:CreateSubtask EP-001
       🏗️ Tech Lead · Architect"]:::plan
       P1 --> P2
     end
@@ -170,9 +157,9 @@ flowchart TD
 | Command | Who | PM State After | Notification |
 |---|---|---|---|
 | `/evyasys:Setup` | 👤 Any team member | — | — |
-| `/evyasys:CreateDocs` | 🏗️ Tech Lead | — | — |
+| `/evyasys:TrainDocs` | 🏗️ Tech Lead | — | — |
 | `/evyasys:CreateStory` | 👔 PO / BA | Epics + Backlog | 📂 Epics · 📋 Stories |
-| `/evyasys:CreateSubtask EVYA-1042` | 🏗️ Architect | Tasks created | 📝 Subtasks Ready |
+| `/evyasys:CreateSubtask EP-001` or `EVYA-1042 EVYA-1043` | 🏗️ Architect | Tasks created | 📝 Subtasks Ready |
 | `/evyasys:StartDev EVYA-1042` | 💻 Dev Lead | **In Progress** | 🚀 Dev Started |
 | `/evyasys:ReviewDev EVYA-1042` | 🎯 Senior Dev | — (GO or NO-GO) | ✅ Passed or ❌ NO-GO |
 | `/evyasys:FinishDev EVYA-1042` | 💻 Developer | **Ready for QA** | 🔀 Ready for QA |
@@ -229,10 +216,10 @@ PDFs are saved to `.evyasys/releases/` and release history is tracked in `.evyas
 
 ```
 .evyasys/
-├── docs/                                    ← CreateDocs (quality-gate documents)
+├── docs/                                    ← TrainDocs (quality-gate documents)
 │   ├── INDEX.md
 │   ├── ARCHITECTURE.md
-│   └── ... (19 documents)
+│   └── ... (20 documents)
 └── board/
     └── epics/
         └── EP-001/
@@ -273,18 +260,13 @@ $env:EVYASYS_DRY_RUN = "1"
 
 ## Update or fix the plugin
 
-```powershell
-# Windows — clear cache and reinstall
-Remove-Item -Recurse -Force "$env:USERPROFILE\.claude\plugins\marketplaces" -ErrorAction SilentlyContinue
-Remove-Item -Recurse -Force "$env:USERPROFILE\.claude\plugins\evyasys" -ErrorAction SilentlyContinue
+**Inside Claude Code**, run:
+
+```
+/evyasys:Update
 ```
 
-```bash
-# macOS / Linux
-rm -rf ~/.claude/plugins/marketplaces ~/.claude/plugins/evyasys
-```
-
-Then repeat Step 1 (install the plugin again).
+This clears the plugin cache and shows the three reinstall commands. Your project config and credentials are not affected.
 
 ---
 
@@ -293,7 +275,7 @@ Then repeat Step 1 (install the plugin again).
 | Symptom | Fix |
 |---|---|
 | `claude` command not found | Install Node.js 18+ then `npm install -g @anthropic-ai/claude-code` |
-| Commands don't appear after `/reload-plugins` | Clear cache (see Update section above) and reinstall |
+| Commands don't appear after `/reload-plugins` | Run `/evyasys:Update` then reinstall |
 | No PM tool configured | Run `/evyasys:Setup` |
 | Credentials not found / 401 error | Credentials expired — run `/evyasys:Setup` and re-enter |
 | Webhook missing | Run `/evyasys:Setup` to update the webhook URL |

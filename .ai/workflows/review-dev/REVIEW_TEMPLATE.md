@@ -151,7 +151,7 @@
 | `PERFORMANCE.md` | Yes / No | New hot path identified or performance budget changed |
 
 **If any "Yes" rows exist:** the relevant doc must be updated before or alongside the PR merge.
-Run `/evyasys:CreateDocs --retrain` or update the specific doc directly.
+Run `/evyasys:TrainDocs --retrain` or update the specific doc directly.
 **A GO verdict does not close this gate — the team is accountable for keeping docs current.**
 
 ---
