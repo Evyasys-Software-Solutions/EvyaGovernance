@@ -4,7 +4,8 @@ Configure Evyasys for a project — choose your Project Management tool and noti
 
 ## What it does
 
-- **First run:** walks you through selecting a PM tool (Local / Azure DevOps / JIRA / GitHub Projects) and a notification channel (None / Teams / Slack / WhatsApp), then collects the required credentials.
+- **First run:** walks you through selecting a PM tool (Local / Azure DevOps / JIRA / GitHub Projects) and a notification channel (None / Teams / Slack / WhatsApp / Email), then collects the required credentials.
+- **Validates each credential live** before saving — shows ✅ on success or ❌ with a fix link on failure. You can re-enter or skip.
 - **Re-run:** shows the current config and only asks for values that are missing or that you want to change.
 - Saves non-sensitive settings (tool selection, org names, webhook URLs) to `.evyasys/project.yaml` — safe to commit so teammates inherit the config.
 - Saves sensitive credentials (PAT, API tokens, Twilio auth token) **encrypted** to `~/.evyasys/credentials` — never committed.

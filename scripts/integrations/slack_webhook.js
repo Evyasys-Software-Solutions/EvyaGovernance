@@ -92,6 +92,43 @@ function bugFound({ storyId, count, criticalCount }) {
   return post(buildMessage('🐛', `Bugs Found: ${storyId}`, `${countStr}${criticalStr} found during QA. ${status}`));
 }
 
+function epicsCreated({ epics }) {
+  const newCount = epics.filter(e => e.status === 'New').length;
+  const exCount  = epics.filter(e => e.status === 'Existing').length;
+  const summaryParts = [
+    newCount > 0 ? `${newCount} new`      : '',
+    exCount  > 0 ? `${exCount} existing`  : '',
+  ].filter(Boolean);
+  const lines = epics.map(e => {
+    const icon  = e.status === 'New' ? '🆕' : '✓';
+    const pmStr = e.pmId ? ` | #${e.pmId}` : '';
+    return `${icon} *${e.epicId}* — ${e.title}${pmStr}`;
+  }).join('\n');
+  return post(buildMessage('📂', `Epics: ${summaryParts.join(', ')}`, lines));
+}
+
+function storiesBatchCreated({ stories, projectName }) {
+  const synced = stories.filter(s => s.status === 'synced').length;
+  const failed = stories.filter(s => s.status === 'sync-failed').length;
+  const saved  = stories.filter(s => s.status === 'saved').length;
+  const statusParts = [
+    synced > 0 ? `${synced} synced` : '',
+    saved  > 0 ? `${saved} local`   : '',
+    failed > 0 ? `${failed} failed` : '',
+  ].filter(Boolean);
+  const rows = stories.map(s => {
+    const icon  = s.status === 'synced' ? '✅' : s.status === 'sync-failed' ? '⚠️' : '💾';
+    const pmStr = s.pmId ? `#${s.pmId}` : '—';
+    return `${icon} *${s.storyId}* ${s.title} | ${s.epicId || '—'} | ${s.points || '?'}SP | ${pmStr}`;
+  }).join('\n');
+  const header = projectName ? `*${projectName}*\n` : '';
+  return post(buildMessage(
+    '📋',
+    `${stories.length} Stor${stories.length !== 1 ? 'ies' : 'y'} Created${projectName ? ': ' + projectName : ''}`,
+    `${header}${rows}\n_${statusParts.join(' · ')}_`
+  ));
+}
+
 function releaseGenerated({ storyId, storyCount, version, pdfFile }) {
   const versionStr = version    ? ` · v${version}`                                        : '';
   const countStr   = storyCount ? `${storyCount} stor${storyCount !== 1 ? 'ies' : 'y'}`  : '';
@@ -100,16 +137,18 @@ function releaseGenerated({ storyId, storyCount, version, pdfFile }) {
 }
 
 const EVENT_MAP = {
-  'story-created':     ({ storyId, file })                         => storyCreated({ storyId, file }),
-  'subtasks-created':  ({ storyId, count })                        => subtasksCreated({ storyId, count }),
-  'dev-kickoff':       ({ storyId })                               => devKickoff({ storyId }),
-  'review-passed':     ({ storyId })                               => reviewPassed({ storyId }),
-  'review-no-go':      ({ storyId })                               => reviewNoGo({ storyId }),
-  'dev-finished':      ({ storyId })                               => devFinished({ storyId }),
-  'qa-started':        ({ storyId })                               => qaStarted({ storyId }),
-  'qa-finished':       ({ storyId })                               => qaFinished({ storyId }),
-  'bug-found':         ({ storyId, count, criticalCount })         => bugFound({ storyId, count, criticalCount }),
-  'release-generated': ({ storyId, storyCount, version, pdfFile }) => releaseGenerated({ storyId, storyCount, version, pdfFile }),
+  'story-created':         ({ storyId, file })                              => storyCreated({ storyId, file }),
+  'epics-created':         ({ epics })                                      => epicsCreated({ epics }),
+  'stories-batch-created': ({ stories, projectName })                       => storiesBatchCreated({ stories, projectName }),
+  'subtasks-created':      ({ storyId, count })                             => subtasksCreated({ storyId, count }),
+  'dev-kickoff':           ({ storyId })                                    => devKickoff({ storyId }),
+  'review-passed':         ({ storyId })                                    => reviewPassed({ storyId }),
+  'review-no-go':          ({ storyId })                                    => reviewNoGo({ storyId }),
+  'dev-finished':          ({ storyId })                                    => devFinished({ storyId }),
+  'qa-started':            ({ storyId })                                    => qaStarted({ storyId }),
+  'qa-finished':           ({ storyId })                                    => qaFinished({ storyId }),
+  'bug-found':             ({ storyId, count, criticalCount })              => bugFound({ storyId, count, criticalCount }),
+  'release-generated':     ({ storyId, storyCount, version, pdfFile })      => releaseGenerated({ storyId, storyCount, version, pdfFile }),
 };
 
 /** Called by notify-adapter with { event, storyId, ...extras }. */
@@ -143,4 +182,4 @@ if (require.main === module) {
     .catch(e => { console.error(e); process.exit(1); });
 }
 
-module.exports = { send, storyCreated, subtasksCreated, devKickoff, reviewPassed, reviewNoGo, devFinished, qaStarted, qaFinished, bugFound, releaseGenerated };
+module.exports = { send, storyCreated, epicsCreated, storiesBatchCreated, subtasksCreated, devKickoff, reviewPassed, reviewNoGo, devFinished, qaStarted, qaFinished, bugFound, releaseGenerated };

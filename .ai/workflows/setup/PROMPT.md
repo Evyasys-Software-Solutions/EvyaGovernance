@@ -35,24 +35,54 @@ Wait for the user's answer.
 
 ## Step 1a — PM tool credentials
 
+**If the user chose Local folder only:** no credentials or validation needed — skip directly to Step 2.
+
+For Azure DevOps, JIRA, or GitHub Projects, collect credentials then validate before continuing.
+
+> **Finding the credential validator** (run once, then use `$VALIDATOR` in the commands below):
+> ```bash
+> # bash / macOS / Linux
+> VALIDATOR=$(find ~/.claude -name 'credential-validator.js' 2>/dev/null | grep -i 'EvyaGovernance' | head -1)
+> ```
+> ```powershell
+> # Windows PowerShell
+> $VALIDATOR = (Get-ChildItem "$env:USERPROFILE\.claude" -Recurse -Filter credential-validator.js -ErrorAction SilentlyContinue | Where-Object { $_.FullName -like '*EvyaGovernance*' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+> ```
+
 **If Azure DevOps:**
 - Ask: "Azure DevOps organisation name?" (e.g. `EvyaCorp`)
 - Ask: "Azure DevOps project name?" (e.g. `CustomerPortal`)
 - Ask: "Do you have a Personal Access Token?" — scope needed: Work Items Read & write. Generate at: `https://dev.azure.com/<org>/_usersSettings/tokens`. Collect the token — it will be saved encrypted.
+- **→ Validate immediately:**
+  ```
+  node "$VALIDATOR" ado --org "<org>" --pat "<pat>"
+  ```
+  - `ok: true`  → Show the `message` field verbatim (e.g. "✅ Azure DevOps connected…") and continue.
+  - `ok: false` → Show the `message` field. Ask: "Would you like to **re-enter** the token, or **skip** to proceed without validation?" Re-collect and re-validate if they re-enter.
 
 **If JIRA:**
 - Ask: "JIRA domain?" (e.g. `your-org.atlassian.net`)
 - Ask: "JIRA project key?" (e.g. `PORTAL`)
 - Ask: "Your Atlassian account email?"
 - Ask: "JIRA API token?" — generate at `https://id.atlassian.com/manage-profile/security/api-tokens`. Saved encrypted.
+- **→ Validate immediately:**
+  ```
+  node "$VALIDATOR" jira --domain "<domain>" --email "<email>" --token "<token>"
+  ```
+  - `ok: true`  → Show the `message` field and continue.
+  - `ok: false` → Show the `message` field. Ask to re-enter or skip.
 
 **If GitHub Projects:**
 - Ask: "GitHub owner (user or org)?" (e.g. `acme-corp`)
 - Ask: "Repository name?" (e.g. `customer-portal`)
 - Ask: "GitHub Projects v2 project number?" (the number in the URL: `.../projects/N`)
 - Ask: "GitHub personal access token?" — scopes needed: `repo`, `project`. Generate at `https://github.com/settings/tokens`. Saved encrypted.
-
-**If Local folder only:** skip all PM credential questions.
+- **→ Validate immediately:**
+  ```
+  node "$VALIDATOR" github --token "<token>"
+  ```
+  - `ok: true`  → Show the `message` field and continue.
+  - `ok: false` → Show the `message` field. Ask to re-enter or skip.
 
 ---
 
@@ -75,25 +105,61 @@ Wait for the user's answer.
 
 ## Step 2a — Notification credentials
 
+**If the user chose Not needed:** no credentials or validation needed — skip directly to Step 3.
+
+For Teams, Slack, WhatsApp, or Email, collect credentials then validate before continuing.
+
+> **Finding the credential validator** (only needed if you did not already locate it in Step 1a — e.g. user chose Local folder only for PM tool):
+> ```bash
+> # bash / macOS / Linux
+> VALIDATOR=$(find ~/.claude -name 'credential-validator.js' 2>/dev/null | grep -i 'EvyaGovernance' | head -1)
+> ```
+> ```powershell
+> # Windows PowerShell
+> $VALIDATOR = (Get-ChildItem "$env:USERPROFILE\.claude" -Recurse -Filter credential-validator.js -ErrorAction SilentlyContinue | Where-Object { $_.FullName -like '*EvyaGovernance*' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+> ```
+
 **If Teams:**
 - Ask: "Teams incoming webhook URL for this project's channel?" — Teams channel → ··· → Connectors → Incoming Webhook → copy URL. This URL goes into `project.yaml` (not the credentials file).
+- **→ Validate immediately** (this sends a one-time test card to the channel):
+  ```
+  node "$VALIDATOR" teams --webhook "<url>"
+  ```
+  - `ok: true`  → Show the `message` field. Tell the user: "A test card was posted to the channel — please confirm it appeared."
+  - `ok: false` → Show the `message` field. Ask to re-enter the URL or skip.
 
 **If Slack:**
 - Ask: "Slack incoming webhook URL?" — create at `https://api.slack.com/messaging/webhooks`. Goes into `project.yaml`.
+- **→ Validate immediately** (this sends a one-time test message to the channel):
+  ```
+  node "$VALIDATOR" slack --webhook "<url>"
+  ```
+  - `ok: true`  → Show the `message` field. Tell the user: "A test message was posted to the channel — please confirm it appeared."
+  - `ok: false` → Show the `message` field. Ask to re-enter the URL or skip.
 
 **If WhatsApp:**
 - Ask: "Twilio Account SID?" — from `https://console.twilio.com/`
 - Ask: "Twilio Auth Token?" — saved encrypted.
 - Ask: "WhatsApp sender number?" (e.g. `+14155238886` — from Twilio sandbox or approved number)
 - Ask: "WhatsApp recipient number for the team?" (e.g. `+1234567890`) — goes into `project.yaml`.
+- **→ Validate immediately:**
+  ```
+  node "$VALIDATOR" whatsapp --account-sid "<sid>" --auth-token "<token>"
+  ```
+  - `ok: true`  → Show the `message` field and continue.
+  - `ok: false` → Show the `message` field. Ask to re-enter or skip.
 
 **If Email:**
 - Ask: "Recipient (To) address for notifications?" (team distribution list or individual — e.g. `dev-team@yourcompany.com`) — goes into `project.yaml`. This is the only required field for now.
 - Say: "SMTP server details (host, port, username, password) will be collected the first time a notification is sent — or you can add them now. Would you like to configure SMTP now?"
   - **If yes:** Ask SMTP host, port (default 587), username (saved encrypted), password (saved encrypted), from address (defaults to username).
+    - **→ Validate immediately:**
+      ```
+      node "$VALIDATOR" email --host "<host>" --port "<port>" --user "<user>" --password "<pass>"
+      ```
+      - `ok: true`  → Show the `message` field and continue.
+      - `ok: false` → Show the `message` field. Ask to re-enter SMTP details or skip.
   - **If no / skip:** Save just the recipient. The system will prompt for SMTP details the first time it needs to send an email.
-
-**If Not needed:** skip all notification credential questions.
 
 ---
 

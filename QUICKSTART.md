@@ -31,19 +31,24 @@ claude
 
 ## Step 1 — Install the Evyasys plugin (once per machine)
 
-**Inside Claude Code**, run:
+**Inside Claude Code**, run each command individually — copy and paste one at a time:
 
+**1 of 3 — Register the plugin source**
 ```
 /plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git
 ```
 
+**2 of 3 — Install the plugin**
 ```
 /plugin install evyasys@EvyaGovernance
 ```
 
+**3 of 3 — Reload so the commands appear**
 ```
 /reload-plugins
 ```
+
+> ⚠️ Run them in order. Wait for each to complete before running the next.
 
 Type `/evya` — you should see 10 commands in autocomplete.
 
@@ -61,7 +66,7 @@ The wizard asks you to pick:
 - **PM Tool:** Local folder only / Azure DevOps / JIRA / GitHub Projects
 - **Notification Tool:** None / Teams / Slack / WhatsApp / Email
 
-Then collects credentials for your chosen tools. Non-sensitive settings are saved to `.evyasys/project.yaml` (commit this). Personal secrets are encrypted to `~/.evyasys/credentials` (never committed).
+Then collects and **validates credentials live** for your chosen tools — you'll see a confirmation before anything is saved. Non-sensitive settings are saved to `.evyasys/project.yaml` (commit this). Personal secrets are encrypted to `~/.evyasys/credentials` (never committed).
 
 **Teammates:** just `git pull` to get the project config, then run `/evyasys:Setup` to enter their own credentials.
 
@@ -166,14 +171,14 @@ flowchart TD
 |---|---|---|---|
 | `/evyasys:Setup` | 👤 Any team member | — | — |
 | `/evyasys:CreateDocs` | 🏗️ Tech Lead | — | — |
-| `/evyasys:CreateStory` | 👔 PO / BA | Backlog | 📋 Story Created |
+| `/evyasys:CreateStory` | 👔 PO / BA | Epics + Backlog | 📂 Epics · 📋 Stories |
 | `/evyasys:CreateSubtask EVYA-1042` | 🏗️ Architect | Tasks created | 📝 Subtasks Ready |
 | `/evyasys:StartDev EVYA-1042` | 💻 Dev Lead | **In Progress** | 🚀 Dev Started |
 | `/evyasys:ReviewDev EVYA-1042` | 🎯 Senior Dev | — (GO or NO-GO) | ✅ Passed or ❌ NO-GO |
-| `/evyasys:FinishDev EVYA-1042` | 💻 Developer | **Ready for QA** | 🏁 Dev Finished |
+| `/evyasys:FinishDev EVYA-1042` | 💻 Developer | **Ready for QA** | 🔀 Ready for QA |
 | `/evyasys:StartQa EVYA-1042` | 🔬 QA Engineer | **In QA** | 🧪 QA Started |
 | `/evyasys:FinishQa EVYA-1042` | 📦 Release Manager | **Done** ✅ | 🚢 Released |
-| `/evyasys:GenerateReleaseNote EVYA-1042 EVYA-1043` | 📦 Release Manager | — | 📄 PDF emailed |
+| `/evyasys:GenerateReleaseNote EVYA-1042 EVYA-1043` | 📦 Release Manager | — | 📄 Release Notes |
 
 **Nothing touches your PM tool or notification channel until you explicitly approve.**
 
@@ -213,7 +218,7 @@ PDFs are saved to `.evyasys/releases/` and release history is tracked in `.evyas
 | Tool | How |
 |---|---|
 | `none` | Not needed — no notifications |
-| `teams` | Incoming webhook card to a Teams channel |
+| `teams` | Adaptive Card posted to a Teams channel via Power Automate HTTP workflow |
 | `slack` | Incoming webhook message to a Slack channel |
 | `whatsapp` | Twilio API WhatsApp message |
 | `email` | HTML email via SMTP — Gmail, Outlook, SendGrid, or any SMTP server |
@@ -231,6 +236,7 @@ PDFs are saved to `.evyasys/releases/` and release history is tracked in `.evyas
 └── board/
     └── epics/
         └── EP-001/
+            ├── EP-001_Epic.md                        ← CreateStory (new epics only)
             └── stories/
                 └── EVYA-1042/
                     ├── EVYA-1042_UserStory.md        ← CreateStory

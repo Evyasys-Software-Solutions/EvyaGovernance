@@ -4,7 +4,8 @@
  * Routes team notifications to whichever channel the project has configured:
  * none | teams | slack | whatsapp | email
  *
- * Events: story-created | subtasks-created | dev-kickoff | review-passed |
+ * Events: story-created | epics-created | stories-batch-created |
+ *         subtasks-created | dev-kickoff | review-passed |
  *         review-no-go | dev-finished | qa-started | qa-finished |
  *         bug-found | release-generated
  */
@@ -41,10 +42,14 @@ async function ensureCredentials(cfg) {
  * Send a notification for the given event.
  * @param {object} cfg — loaded config
  * @param {object} params — { event, storyId, ...extras }
- *   event: 'story-created' | 'subtasks-created' | 'dev-kickoff' | 'review-passed' |
+ *   event: 'story-created' | 'epics-created' | 'stories-batch-created' |
+ *          'subtasks-created' | 'dev-kickoff' | 'review-passed' |
  *          'review-no-go' | 'dev-finished' | 'qa-started' | 'qa-finished' |
  *          'bug-found' | 'release-generated'
- *   extras: event-specific (e.g. file, count, version, pdfFile)
+ *   extras: event-specific
+ *     epics-created:         { epics: [{ epicId, title, status, pmId, pmLabel }] }
+ *     stories-batch-created: { stories: [{ storyId, title, epicId, points, pmId, status }], projectName, pmLabel }
+ *     story-created:         { file, storyId }
  */
 async function send(cfg, { event, storyId, ...extras }) {
   if (cfg.notificationTool === 'none') return { skipped: true };

@@ -54,13 +54,25 @@ cd your-project; claude
 
 ### Step 1 — Install Evyasys plugin (once per machine)
 
-**Inside Claude Code**, run these three commands:
+**Inside Claude Code**, run each of these three commands one at a time — copy and paste them individually:
 
+**1 of 3 — Register the plugin source**
 ```
 /plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git
+```
+
+**2 of 3 — Install the plugin**
+```
 /plugin install evyasys@EvyaGovernance
+```
+
+**3 of 3 — Reload so the commands appear**
+```
 /reload-plugins
 ```
+
+> ⚠️ Run them in order. Wait for each to complete before running the next.  
+> The first command registers the GitHub source. The second downloads and installs it. The third makes the commands available in autocomplete.
 
 Type `/evya` — you should see 10 commands in autocomplete.
 
@@ -78,7 +90,7 @@ This interactive wizard asks you to choose:
 1. **PM Tool** — Local folder only / Azure DevOps / JIRA / GitHub Projects
 2. **Notification Tool** — None / Teams / Slack / WhatsApp / Email
 
-Then collects credentials for your chosen tools. Non-sensitive settings (org names, project keys, webhook URLs) are saved to `.evyasys/project.yaml` and committed so the whole team inherits them via `git pull`. Sensitive credentials (PAT, API tokens, Twilio auth) are saved **encrypted** to `~/.evyasys/credentials` — never committed.
+Then collects and **validates credentials live** — you'll get a confirmation before anything is saved. Non-sensitive settings (org names, project keys, webhook URLs) are saved to `.evyasys/project.yaml` and committed so the whole team inherits them via `git pull`. Sensitive credentials (PAT, API tokens, Twilio auth) are saved **encrypted** to `~/.evyasys/credentials` — never committed.
 
 **Subsequent team members** only need to run `/evyasys:Setup` to enter their own credentials (the project config is already committed). On Azure DevOps they can also use the legacy scripts:
 
@@ -139,8 +151,9 @@ azure_devops:
 notification_tool: "teams"
 
 # Teams webhook (if notification_tool is "teams")
+# Use the HTTP trigger URL from your Power Automate workflow
 teams:
-  webhook: "https://your-org.webhook.office.com/webhookb2/..."
+  webhook: "https://<env>.environment.api.powerplatform.com/powerautomate/..."
 ```
 
 See `project-template/.evyasys/project.yaml.example` for all tool options (JIRA, GitHub Projects, Slack, WhatsApp, Email).
@@ -159,7 +172,8 @@ Teammates just `git pull` — they only need to run `/evyasys:Setup` (or the leg
 
 | Event | Message |
 |---|---|
-| Story pushed to board | 📋 New Story Ready |
+| Epics created (batch) | 📂 Epics Ready — table of all epics with New/Existing status and PM IDs |
+| Stories created (batch) | 📋 Stories Ready — table of all stories with Epic, SP, PM ID, and sync status |
 | Subtasks created | 🗂️ Subtasks Ready |
 | Dev started | 🚀 Dev Started |
 | Code review passed | ✅ Code Review Passed |
@@ -283,7 +297,7 @@ flowchart TD
 |---|-------|---------|------|---------------------|--------|----------|
 | 1 | Setup | `/evyasys:Setup` | 👤 Any | Choose PM + notification tool; collect + encrypt credentials | `project.yaml` · `credentials` | — |
 | 2 | Setup | `/evyasys:CreateDocs` | 🏗️ Tech Lead | Scan full codebase; generate 19 quality-gate docs | `.evyasys/docs/` (19 files) | — |
-| 3 | Plan | `/evyasys:CreateStory` | 👔 PO / BA | Interview one question at a time; DoR self-review; sets Impacted Area flags | `UserStory.md` | Backlog |
+| 3 | Plan | `/evyasys:CreateStory` | 👔 PO / BA | Resolves/creates epics (Gate 1); plans full story batch (Gate 2); drafts all stories; syncs everything; 2 notifications | `{epicId}_Epic.md` · `{storyId}_UserStory.md` | Epics + Backlog |
 | 4 | Plan | `/evyasys:CreateSubtask EVYA-XXXX` | 🏗️ Architect | Present 3 strategies A/B/C; team approval gate; write dev tasks + QA task | `Subtasks.md` | Tasks created |
 | 5 | Dev | `/evyasys:StartDev EVYA-XXXX` | 💻 Dev Lead | Load quality-gate docs; brainstorm 3+ approaches with trade-offs; architecture approval gate | `TechBrainstorm.md` | **In Progress** |
 | 6 | Dev | `/evyasys:ReviewDev EVYA-XXXX` | 🎯 Senior Dev | Independent review: full diff, AC coverage, arch, security, test quality — GO / NO-GO | `CodeReview.md` | — |
@@ -315,7 +329,7 @@ Interactive wizard that configures Evyasys for this project. Run once per projec
 | Tool | How |
 |---|---|
 | `none` | Not needed — no notifications sent |
-| `teams` | Incoming webhook card to a Teams channel |
+| `teams` | Adaptive Card posted to a Teams channel via Power Automate HTTP workflow |
 | `slack` | Incoming webhook message to a Slack channel |
 | `whatsapp` | Twilio API WhatsApp message |
 | `email` | HTML email via SMTP (Gmail, Outlook, SendGrid, or any SMTP server) |
@@ -360,20 +374,28 @@ StartQA uses them to set pass/fail criteria.
 ---
 
 ### `/evyasys:CreateStory`
-**Who:** BA / Product Owner — **When:** Start of every story
+**Who:** BA / Product Owner — **When:** Start of every feature
 
-Scans the repository for context, asks clarifying questions **one at a time** (never
-an overwhelming list), and drafts a board-ready business story in pure business
-language — zero class names, endpoints, or implementation detail. Sets **Impacted Areas
-domain flags** (Security / DB / Frontend / API / Performance) so every downstream
-command knows which quality-gate documents to load. Self-reviews against the
-Definition-of-Ready checklist and rewrites automatically if anything fails.
+**One command creates everything** — Epics AND Stories in a single run.
 
-If the story belongs to an Epic, files the story under
-`.evyasys/board/epics/<epic-id>/stories/<id>/` and links the ADO work item to the
-parent Epic.
+Requirements can be provided inline (describe here) or via a reference document. Reference
+documents are analysed from four perspectives (BA, Architect, Quality, Scope Decomposition)
+before structured Q&A fills the gaps. The analysis and Q&A are archived to
+`.evyasys/board/referencedoc/{date}/` for permanent team traceability.
 
-**Produces:** `<id>_UserStory.md` · ADO User Story (linked to Epic if set) · 📋 Teams
+**Two gates keep the team in control:**
+- **Gate 1** — confirms new epics (ID, title, goal) before anything is created. If all epics already exist, this gate is skipped.
+- **Gate 2** — approves the full story plan table (ID, Epic, SP, key ACs) in one go. User can remove, rename, or adjust before drafting begins.
+
+Each story is drafted in pure business language, self-reviewed against the DoR checklist,
+and cross-checked for Impacted Areas consistency across the batch. Stories are saved locally
+first (always safe), then synced to the PM tool.
+
+**Notifications (exactly 2):**
+1. 📂 Epics table — all epics with New/Existing status and PM IDs
+2. 📋 Stories table — all stories with Epic, SP, PM ID, and sync status; failures highlighted when they occur
+
+**Produces:** `{epicId}_Epic.md` (new epics) · `{storyId}_UserStory.md` (all stories) · PM work items · 2 notifications
 
 ---
 
@@ -535,6 +557,7 @@ pdfkit is installed automatically on first run if not already present.
 ├── board/
 │   ├── epics/
 │   │   └── EP-001/
+│   │       ├── EP-001_Epic.md                        ← CreateStory (new epics only)
 │   │       └── stories/
 │   │           └── EVYA-1042/
 │   │               ├── EVYA-1042_UserStory.md        ← CreateStory

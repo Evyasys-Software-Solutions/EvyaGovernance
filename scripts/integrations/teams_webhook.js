@@ -1,163 +1,381 @@
 /**
- * Microsoft Teams incoming-webhook integration (Node.js).
- * Default mode is LIVE; set EVYASYS_DRY_RUN=1 to preview without HTTP.
+ * Microsoft Teams Power Automate workflow integration.
+ *
+ * Posts Adaptive Cards (v1.2) to a Power Automate HTTP trigger webhook.
+ * The flow passes the entire body to "Post Adaptive Card to Teams".
+ *
+ * ── CARD TEMPLATE ────────────────────────────────────────────────────────────
+ *
+ *  [BADGE]        Small all-caps stage label, coloured text       — always
+ *  [TITLE]        Large bold heading, same colour as badge         — always
+ *  [SUBTITLE]     Small subtle context line                        — always
+ *  ─────────────────────────────────────────────────────
+ *  [SUMMARY]      Key / Value FactSet (2–4 pairs)                  — always
+ *  ╔══════════════════════════════════════════════════╗
+ *  ║  TABLE SECTION (light grey Container)            ║  — batch events only
+ *  ║  Section label                                   ║
+ *  ║  ID   Detail | Column | Column | Status          ║
+ *  ╚══════════════════════════════════════════════════╝
+ *
+ * ── STAGE COLOUR MAP ─────────────────────────────────────────────────────────
+ *  Accent     (blue)   → Planning   : epics, stories, subtasks
+ *  Warning    (amber)  → In-flight  : dev started, dev finished, QA started
+ *  Good       (green)  → Success    : review passed, QA released, release notes
+ *  Attention  (red)    → Blocked    : review NO-GO, critical bugs, sync failures
+ *
+ * Design rule: text colour is always dark/semantic — never Light — so cards
+ * are readable in all Teams themes (light, dark, high contrast).
  *
  * CLI:
- *   node teams_webhook.js story-created    --file <path>  [--id <id>]
- *   node teams_webhook.js subtasks-created --id <id>      [--count <N>]
- *   node teams_webhook.js dev-kickoff      --id <id>
- *   node teams_webhook.js review-passed    --id <id>
- *   node teams_webhook.js review-no-go     --id <id>
- *   node teams_webhook.js dev-finished     --id <id>
- *   node teams_webhook.js qa-started       --id <id>
- *   node teams_webhook.js qa-finished      --id <id>
+ *   node teams_webhook.js <event> [--id <storyId>] [--file <path>] [--count <N>]
  */
 const fs = require('fs');
 const { loadConfig } = require('../lib/config');
 
-function buildCard({ title, summary, sections, link }) {
-  const card = {
-    contentType: 'application/vnd.microsoft.teams.card.o365connector',
-    content: {
-      '@type': 'MessageCard',
-      '@context': 'http://schema.org/extensions',
-      summary, title, sections,
-    },
+// ── Template primitives ───────────────────────────────────────────────────────
+
+/** Wrap body items into a valid Adaptive Card v1.2 envelope. */
+function ac(body) {
+  return {
+    type:    'AdaptiveCard',
+    $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+    version: '1.2',
+    body:    body.filter(Boolean),
   };
-  if (link) {
-    card.content.potentialAction = [{
-      '@type': 'OpenUri',
-      name: 'Open in Azure DevOps',
-      targets: [{ os: 'default', uri: link }],
-    }];
-  }
-  return card;
 }
 
-async function post(card) {
+/**
+ * Stage badge — small ALL-CAPS label, coloured text.
+ * @param {string} text   e.g. 'Planning', 'In Progress', 'Passed', 'Action Required'
+ * @param {string} color  'Accent' | 'Warning' | 'Good' | 'Attention'
+ */
+function badge(text, color) {
+  return {
+    type: 'TextBlock', text: text.toUpperCase(),
+    color, weight: 'Bolder', size: 'Small', spacing: 'None',
+  };
+}
+
+/**
+ * Event title — large bold, same colour as badge.
+ * @param {string} text
+ * @param {string} color  same as badge
+ */
+function cardTitle(text, color) {
+  return {
+    type: 'TextBlock', text,
+    color, weight: 'Bolder', size: 'Large', wrap: true, spacing: 'Small',
+  };
+}
+
+/** Subtitle — small subtle line below the title. */
+function cardSubtitle(text) {
+  return {
+    type: 'TextBlock', text,
+    isSubtle: true, size: 'Small', wrap: true, spacing: 'None',
+  };
+}
+
+/**
+ * Summary FactSet — key / value pairs, separated from the header.
+ * @param {Array<[string, string]>} pairs  e.g. [['Status', 'In Progress']]
+ */
+function summaryFacts(pairs) {
+  return {
+    type: 'FactSet', spacing: 'Medium', separator: true,
+    facts: pairs.filter(Boolean).map(([t, v]) => ({ title: t, value: String(v) })),
+  };
+}
+
+/**
+ * Table section — light grey container with a label and a FactSet of rows.
+ * Used for batch events (epics list, stories list).
+ * @param {string}  label   Section heading e.g. 'Story Details'
+ * @param {Array}   rows    [{ title: id, value: detailString }]
+ */
+function tableSection(label, rows) {
+  return {
+    type: 'Container', style: 'emphasis', spacing: 'Medium',
+    items: [
+      { type: 'TextBlock', text: label, weight: 'Bolder', size: 'Small', isSubtle: true, spacing: 'Small' },
+      { type: 'FactSet', facts: rows, spacing: 'Small' },
+    ],
+  };
+}
+
+// ── Core POST ─────────────────────────────────────────────────────────────────
+
+async function post(adaptiveCard) {
   const cfg = await loadConfig();
   if (cfg.dryRun) {
-    console.log('[evyasys:dry-run] Teams card:\n' + JSON.stringify(card, null, 2));
+    console.log('[evyasys:dry-run] Teams Adaptive Card:\n' + JSON.stringify(adaptiveCard, null, 2));
     return { dryRun: true };
   }
-  if (!cfg.teams.webhook) {
-    throw new Error('No Teams webhook configured. Add teams.webhook to .evyasys/project.yaml or set TEAMS_WEBHOOK env var.');
+  if (!cfg.teams || !cfg.teams.webhook) {
+    throw new Error('No Teams webhook configured. Run /evyasys:Setup to add the Teams workflow URL.');
   }
   const fetchFn = typeof fetch !== 'undefined' ? fetch : require('node-fetch');
   const res = await fetchFn(cfg.teams.webhook, {
-    method: 'POST',
+    method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(card),
+    body:    JSON.stringify(adaptiveCard),
   });
-  if (!res.ok) throw new Error('Teams POST failed: ' + res.status + ' ' + (await res.text()));
+  if (!res.ok) {
+    throw new Error('Teams POST failed: ' + res.status + ' ' + (await res.text()));
+  }
   return { ok: true };
 }
 
+// ── Helper ────────────────────────────────────────────────────────────────────
+
 const snippet = (t, max) => {
-  if (!t) return '';
-  max = max || 600;
+  if (!t) return null;
+  max = max || 500;
   return t.length > max ? t.slice(0, max) + '...' : t;
 };
 
+// ── Event handlers ────────────────────────────────────────────────────────────
+
 async function storyCreated({ storyId, file }) {
-  const md = file ? fs.readFileSync(file, 'utf8') : '';
-  return post(buildCard({
-    title:    '📋 New Story Ready: ' + storyId,
-    summary:  'Story ' + storyId + ' created and pushed to the board.',
-    sections: [{ title: 'Preview', text: snippet(md) }],
-  }));
+  const preview = file ? snippet(fs.readFileSync(file, 'utf8')) : null;
+  return post(ac([
+    badge('Planning', 'Accent'),
+    cardTitle('📋 New Story Ready', 'Accent'),
+    cardSubtitle(storyId + ' — pushed to board'),
+    summaryFacts([
+      ['Story',  storyId],
+      ['Status', 'Pushed to board — ready for subtask planning'],
+    ]),
+    preview && tableSection('Story Preview', [
+      { title: 'Preview', value: preview },
+    ]),
+  ]));
 }
 
 async function subtasksCreated({ storyId, count }) {
-  const countStr = count ? count + ' task' + (count !== 1 ? 's' : '') : 'tasks';
-  return post(buildCard({
-    title:    '🗂️ Subtasks Ready: ' + storyId,
-    summary:  storyId + ' broken into ' + countStr + ' — ready for development.',
-    sections: [{ title: 'Status', text: countStr + ' created in Azure DevOps' }],
-  }));
+  const n = count ? count + ' task' + (count !== 1 ? 's' : '') : 'tasks';
+  return post(ac([
+    badge('Planning', 'Accent'),
+    cardTitle('🗂️ Subtasks Ready', 'Accent'),
+    cardSubtitle(storyId + ' — ' + n + ' created'),
+    summaryFacts([
+      ['Story',         storyId],
+      ['Tasks created', n],
+      ['Status',        'Ready for development'],
+    ]),
+  ]));
 }
 
 async function devKickoff({ storyId }) {
-  return post(buildCard({
-    title:    '🚀 Dev Started: ' + storyId,
-    summary:  'Development kicked off for ' + storyId + '.',
-    sections: [{ title: 'Status', text: 'In Progress — technical approach agreed' }],
-  }));
+  return post(ac([
+    badge('In Progress', 'Warning'),
+    cardTitle('🚀 Development Started', 'Warning'),
+    cardSubtitle(storyId),
+    summaryFacts([
+      ['Story',     storyId],
+      ['Status',    'In Progress'],
+      ['Next step', 'Technical approach agreed — development begun'],
+    ]),
+  ]));
 }
 
 async function reviewPassed({ storyId }) {
-  return post(buildCard({
-    title:    '✅ Code Review Passed: ' + storyId,
-    summary:  storyId + ' passed independent code review.',
-    sections: [{ title: 'Status', text: 'Review passed — no Critical issues remaining' }],
-  }));
+  return post(ac([
+    badge('Passed', 'Good'),
+    cardTitle('✅ Code Review Passed', 'Good'),
+    cardSubtitle(storyId + ' — no critical issues'),
+    summaryFacts([
+      ['Story',  storyId],
+      ['Result', 'GO — all acceptance criteria met'],
+      ['Next',   'Ready for /evyasys:FinishDev'],
+    ]),
+  ]));
 }
 
 async function reviewNoGo({ storyId }) {
-  return post(buildCard({
-    title:    '❌ Code Review NO-GO: ' + storyId,
-    summary:  storyId + ' did not pass code review — Critical items require fixes.',
-    sections: [{ title: 'Action Required', text: 'Fix all Critical findings and run /evyasys:ReviewDev again.' }],
-  }));
+  return post(ac([
+    badge('Action Required', 'Attention'),
+    cardTitle('❌ Code Review NO-GO', 'Attention'),
+    cardSubtitle(storyId + ' — critical findings require fixes'),
+    summaryFacts([
+      ['Story',  storyId],
+      ['Result', 'NO-GO'],
+      ['Action', 'Fix all Critical findings then re-run /evyasys:ReviewDev'],
+    ]),
+  ]));
 }
 
 async function devFinished({ storyId }) {
-  return post(buildCard({
-    title:    '🔀 Ready for QA: ' + storyId,
-    summary:  'Development complete for ' + storyId + ' — handed off to QA.',
-    sections: [{ title: 'Status', text: 'Ready for QA — Dev Summary committed to repo' }],
-  }));
+  return post(ac([
+    badge('In Progress', 'Warning'),
+    cardTitle('🔀 Ready for QA', 'Warning'),
+    cardSubtitle(storyId + ' — development complete'),
+    summaryFacts([
+      ['Story',       storyId],
+      ['Status',      'Awaiting QA'],
+      ['Dev summary', 'Committed to repo'],
+    ]),
+  ]));
 }
 
 async function qaStarted({ storyId }) {
-  return post(buildCard({
-    title:    '🧪 QA Started: ' + storyId,
-    summary:  'QA test plan ready for ' + storyId + '.',
-    sections: [{ title: 'Status', text: 'In QA — test plan committed to repo' }],
-  }));
+  return post(ac([
+    badge('In Progress', 'Warning'),
+    cardTitle('🧪 QA Started', 'Warning'),
+    cardSubtitle(storyId + ' — test plan ready'),
+    summaryFacts([
+      ['Story',     storyId],
+      ['Status',    'In QA'],
+      ['Test plan', 'Committed to repo'],
+    ]),
+  ]));
 }
 
 async function qaFinished({ storyId }) {
-  return post(buildCard({
-    title:    '🚢 Released: ' + storyId,
-    summary:  storyId + ' has passed QA and is marked Done.',
-    sections: [{ title: 'Status', text: 'Done — release notes committed to repo' }],
-  }));
+  return post(ac([
+    badge('Released', 'Good'),
+    cardTitle('🚢 Story Released', 'Good'),
+    cardSubtitle(storyId + ' — QA passed'),
+    summaryFacts([
+      ['Story',         storyId],
+      ['Status',        'Done'],
+      ['Release notes', 'Committed to repo'],
+    ]),
+  ]));
 }
 
 async function bugFound({ storyId, count, criticalCount }) {
-  const countStr    = count         ? count + ' bug' + (count !== 1 ? 's' : '')                     : 'bugs';
-  const criticalStr = criticalCount ? criticalCount + ' critical/high'                              : '';
-  const detail      = criticalStr   ? countStr + ' (' + criticalStr + ') — story remains In QA'    : countStr + ' logged — story marked Done';
-  return post(buildCard({
-    title:    '🐛 Bugs Found: ' + storyId,
-    summary:  'QA found ' + countStr + ' in ' + storyId + '.',
-    sections: [{ title: 'Status', text: detail }],
+  const hasCritical = criticalCount && criticalCount > 0;
+  const color       = hasCritical ? 'Attention' : 'Warning';
+  const badgeText   = hasCritical ? 'Action Required' : 'QA Finding';
+  const n           = count ? count + ' bug' + (count !== 1 ? 's' : '') : 'bugs';
+  const critical    = hasCritical ? criticalCount + ' critical/high' : 'none critical';
+  const outcome     = hasCritical ? 'Story remains In QA' : 'Story marked Done';
+  return post(ac([
+    badge(badgeText, color),
+    cardTitle('🐛 Bugs Found in QA', color),
+    cardSubtitle(storyId + (hasCritical ? ' — action required' : ' — minor issues only')),
+    summaryFacts([
+      ['Story',         storyId],
+      ['Bugs found',    n],
+      ['Critical/High', critical],
+      ['Status',        outcome],
+    ]),
+  ]));
+}
+
+async function epicsCreated({ epics }) {
+  // epics: [{ epicId, title, status, pmId }]
+  const newCount = epics.filter(e => e.status === 'New').length;
+  const exCount  = epics.filter(e => e.status === 'Existing').length;
+  const parts    = [
+    newCount > 0 ? newCount + ' new'      : '',
+    exCount  > 0 ? exCount  + ' existing' : '',
+  ].filter(Boolean);
+
+  const rows = epics.map(e => ({
+    title: e.epicId || '-',
+    value: (e.title || '-') +
+           ' | ' + (e.status === 'New' ? 'New' : 'Existing') +
+           (e.pmId ? ' | PM #' + e.pmId : ' | not yet synced'),
   }));
+
+  return post(ac([
+    badge('Planning', 'Accent'),
+    cardTitle('📂 Epics Ready', 'Accent'),
+    cardSubtitle(epics.length + ' epic' + (epics.length !== 1 ? 's' : '') + ' — ' + (parts.join(', ') || 'all existing')),
+    summaryFacts([
+      ['New epics',      newCount],
+      ['Existing epics', exCount],
+      ['Total',          epics.length],
+    ]),
+    tableSection('Epic Details', rows),
+  ]));
+}
+
+async function storiesBatchCreated({ stories, projectName }) {
+  // stories: [{ storyId, title, epicId, points, pmId, status }]
+  const synced  = stories.filter(s => s.status === 'synced').length;
+  const failed  = stories.filter(s => s.status === 'sync-failed').length;
+  const saved   = stories.filter(s => s.status === 'saved').length;
+  const skipped = stories.filter(s => s.status === 'skipped').length;
+  const count   = stories.length;
+
+  const hasFailures = failed > 0 || skipped > 0;
+  const allSynced   = synced === count;
+  const color       = hasFailures ? 'Attention' : allSynced ? 'Good' : 'Accent';
+  const badgeText   = hasFailures ? 'Action Required' : allSynced ? 'Complete' : 'Planning';
+
+  const proj     = projectName ? projectName + ' — ' : '';
+  const subParts = [
+    synced  > 0 ? synced  + ' synced'  : '',
+    saved   > 0 ? saved   + ' local'   : '',
+    failed  > 0 ? failed  + ' failed'  : '',
+    skipped > 0 ? skipped + ' skipped' : '',
+  ].filter(Boolean);
+
+  const rows = stories.map(s => {
+    const statusLabel = s.status === 'synced'      ? 'Synced'
+                      : s.status === 'sync-failed'  ? 'PM sync failed'
+                      : s.status === 'saved'         ? 'Saved locally'
+                      : 'Skipped';
+    const pmId = s.pmId ? 'PM #' + s.pmId : statusLabel;
+    const sp   = s.points ? s.points + ' SP' : '-';
+    return {
+      title: s.storyId,
+      value: (s.title || '-') + ' | ' + (s.epicId || '-') + ' | ' + sp + ' | ' + pmId,
+    };
+  });
+
+  const summaryPairs = [
+    ['Total', count + ' stories'],
+    synced  > 0 ? ['Synced to PM',   synced]                                               : null,
+    saved   > 0 ? ['Saved locally',  saved + ' (local-only mode)']                         : null,
+    failed  > 0 ? ['PM sync failed', failed + ' — saved locally, will sync when resolved'] : null,
+    skipped > 0 ? ['Skipped',        skipped + ' — content block missing']                 : null,
+  ];
+
+  return post(ac([
+    badge(badgeText, color),
+    cardTitle('📋 ' + count + ' Stor' + (count !== 1 ? 'ies' : 'y') + ' Created', color),
+    cardSubtitle(proj + subParts.join(', ')),
+    summaryFacts(summaryPairs),
+    tableSection('Story Details', rows),
+  ]));
 }
 
 async function releaseGenerated({ storyId, storyCount, version, pdfFile }) {
-  const versionStr = version  ? ' · v' + version           : '';
-  const countStr   = storyCount ? storyCount + ' stor' + (storyCount !== 1 ? 'ies' : 'y') : '';
-  const detail     = [countStr, pdfFile ? 'PDF saved to ' + pdfFile : ''].filter(Boolean).join(' · ') || 'Release notes generated.';
-  return post(buildCard({
-    title:    '📄 Release Notes: ' + storyId + versionStr,
-    summary:  'Release notes generated for ' + storyId + versionStr + '.',
-    sections: [{ title: 'Status', text: detail }],
-  }));
+  const v   = version    ? 'v' + version : '-';
+  const n   = storyCount ? storyCount + ' stor' + (storyCount !== 1 ? 'ies' : 'y') : '-';
+  const pdf = pdfFile    ? [['PDF', pdfFile]] : [];
+  return post(ac([
+    badge('Released', 'Good'),
+    cardTitle('📄 Release Notes Generated', 'Good'),
+    cardSubtitle('Version ' + v),
+    summaryFacts([
+      ['Story ID', storyId || '-'],
+      ['Version',  v],
+      ['Stories',  n],
+      ...pdf,
+    ]),
+  ]));
 }
 
+// ── Event dispatch ────────────────────────────────────────────────────────────
+
 const EVENT_MAP = {
-  'story-created':      ({ storyId, file })                        => storyCreated({ storyId, file }),
-  'subtasks-created':   ({ storyId, count })                       => subtasksCreated({ storyId, count }),
-  'dev-kickoff':        ({ storyId })                              => devKickoff({ storyId }),
-  'review-passed':      ({ storyId })                              => reviewPassed({ storyId }),
-  'review-no-go':       ({ storyId })                              => reviewNoGo({ storyId }),
-  'dev-finished':       ({ storyId })                              => devFinished({ storyId }),
-  'qa-started':         ({ storyId })                              => qaStarted({ storyId }),
-  'qa-finished':        ({ storyId })                              => qaFinished({ storyId }),
-  'bug-found':          ({ storyId, count, criticalCount })        => bugFound({ storyId, count, criticalCount }),
-  'release-generated':  ({ storyId, storyCount, version, pdfFile }) => releaseGenerated({ storyId, storyCount, version, pdfFile }),
+  'story-created':         ({ storyId, file })                         => storyCreated({ storyId, file }),
+  'epics-created':         ({ epics })                                 => epicsCreated({ epics }),
+  'stories-batch-created': ({ stories, projectName })                  => storiesBatchCreated({ stories, projectName }),
+  'subtasks-created':      ({ storyId, count })                        => subtasksCreated({ storyId, count }),
+  'dev-kickoff':           ({ storyId })                               => devKickoff({ storyId }),
+  'review-passed':         ({ storyId })                               => reviewPassed({ storyId }),
+  'review-no-go':          ({ storyId })                               => reviewNoGo({ storyId }),
+  'dev-finished':          ({ storyId })                               => devFinished({ storyId }),
+  'qa-started':            ({ storyId })                               => qaStarted({ storyId }),
+  'qa-finished':           ({ storyId })                               => qaFinished({ storyId }),
+  'bug-found':             ({ storyId, count, criticalCount })         => bugFound({ storyId, count, criticalCount }),
+  'release-generated':     ({ storyId, storyCount, version, pdfFile }) => releaseGenerated({ storyId, storyCount, version, pdfFile }),
 };
 
 /** Called by notify-adapter with { event, storyId, ...extras }. */
@@ -166,6 +384,8 @@ function send({ event, storyId, ...extras }) {
   if (!fn) return Promise.resolve({ skipped: true, reason: 'Unknown event: ' + event });
   return fn({ storyId, ...extras });
 }
+
+// ── CLI entry ─────────────────────────────────────────────────────────────────
 
 function parseArgs(argv) {
   const out = { _: [] };
@@ -186,9 +406,22 @@ if (require.main === module) {
     console.error('Valid: ' + Object.keys(EVENT_MAP).join(', '));
     process.exit(2);
   }
-  fn({ storyId: args.id, file: args.file, count: args.count ? Number(args.count) : undefined, criticalCount: args['critical-count'] ? Number(args['critical-count']) : undefined, storyCount: args['story-count'] ? Number(args['story-count']) : undefined, version: args.version, pdfFile: args['pdf-file'] })
-    .then(function(r) { console.log(JSON.stringify(r, null, 2)); })
-    .catch(function(e) { console.error(e); process.exit(1); });
+  fn({
+    storyId:       args.id,
+    file:          args.file,
+    count:         args.count             ? Number(args.count)             : undefined,
+    criticalCount: args['critical-count'] ? Number(args['critical-count']) : undefined,
+    storyCount:    args['story-count']    ? Number(args['story-count'])    : undefined,
+    version:       args.version,
+    pdfFile:       args['pdf-file'],
+  })
+    .then(r  => console.log(JSON.stringify(r, null, 2)))
+    .catch(e => { console.error(e.message); process.exit(1); });
 }
 
-module.exports = { send, storyCreated, subtasksCreated, devKickoff, reviewPassed, reviewNoGo, devFinished, qaStarted, qaFinished, bugFound, releaseGenerated };
+module.exports = {
+  send,
+  storyCreated, epicsCreated, storiesBatchCreated,
+  subtasksCreated, devKickoff, reviewPassed, reviewNoGo,
+  devFinished, qaStarted, qaFinished, bugFound, releaseGenerated,
+};
