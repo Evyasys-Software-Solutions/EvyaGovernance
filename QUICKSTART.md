@@ -255,7 +255,7 @@ $env:EVYASYS_DRY_RUN = "1"
 
 ## Update or fix the plugin
 
-`/evyasys:Update` does **two things**: cleans the old install, then shows you the three commands to reinstall. It cannot reinstall itself — you must run those commands after it finishes.
+`/evyasys:Update` handles the full cleanup **and** clones the latest source from GitHub automatically. After it finishes, only 2 commands are needed to complete the reinstall.
 
 **Step 1 — Run the cleanup (inside Claude Code):**
 
@@ -263,15 +263,17 @@ $env:EVYASYS_DRY_RUN = "1"
 /evyasys:Update
 ```
 
-Confirm when prompted. This automatically clears the plugin cache and removes the plugin entry from all Claude Code settings files. Your `.evyasys/project.yaml` and credentials are never touched.
+Confirm when prompted. This automatically:
+- Clears the plugin cache
+- Removes the plugin entry from all Claude Code settings files
+- Clones the latest plugin source from GitHub (replaces `/plugin marketplace add`)
 
-**Step 2 — Reinstall (three commands, in order, inside Claude Code):**
+Your `.evyasys/project.yaml` and credentials are never touched.
+
+**Step 2 — Reinstall (two commands, in order, inside Claude Code):**
 
 ```
 /reload-plugins
-```
-```
-/plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git
 ```
 ```
 /plugin install evyasys@EvyaGovernance
@@ -282,6 +284,8 @@ When prompted, choose **Install for you (user scope)**.
 **Step 3 — Fully quit Claude Code and reopen it.**
 
 All 11 commands will appear. Your project config and credentials are unchanged.
+
+> **If the auto-clone failed** (git not installed or no network), the Update command will tell you and show a 3-command fallback that includes `/plugin marketplace add`.
 
 ---
 

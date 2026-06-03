@@ -5,14 +5,19 @@
  * 2. Clears plugin cache directories (cache/EvyaGovernance, marketplaces/EvyaGovernance).
  * 3. Removes the evyasys plugin entry from all Claude Code settings files so no
  *    manual /plugin uninstall is needed.
- * 4. Shows the three reinstall commands.
+ * 4. Git-clones the latest source to the marketplaces directory automatically —
+ *    so the user never needs to run /plugin marketplace add.
+ * 5. Shows the reinstall commands (2 if the clone succeeded, 3 if it failed).
  *
  * Project config (.evyasys/project.yaml) and credentials (~/.evyasys/credentials)
  * are never touched.
  */
-const fs   = require('fs');
-const path = require('path');
-const os   = require('os');
+const fs                   = require('fs');
+const path                 = require('path');
+const os                   = require('os');
+const { execFileSync }     = require('child_process');
+
+const REPO_URL = 'https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git';
 
 module.exports = async function (ctx) {
   const output = ctx.agentResult || '';
@@ -85,7 +90,7 @@ module.exports = async function (ctx) {
 
   const cleanedSettings = settingsFiles.filter(removeFromSettings);
 
-  // ── 3. Report what was done ─────────────────────────────────────────────────
+  // ── 3. Report cleanup ───────────────────────────────────────────────────────
   if (cleared.length > 0)
     ctx.send('Cleared:\n' + cleared.map(p => `  • ${p}`).join('\n'));
   if (skipped.length > 0)
@@ -93,23 +98,66 @@ module.exports = async function (ctx) {
   if (cleanedSettings.length > 0)
     ctx.send('Removed plugin entry from settings:\n' + cleanedSettings.map(p => `  • ${p}`).join('\n'));
 
-  // ── 4. Show reinstall steps ─────────────────────────────────────────────────
-  ctx.send(
-    '✅ **Fully cleaned. Run these three commands inside Claude Code — in order:**\n\n' +
-    '**1 of 3 — Refresh plugin state**\n' +
-    '```\n' +
-    '/reload-plugins\n' +
-    '```\n\n' +
-    '**2 of 3 — Re-register the source**\n' +
-    '```\n' +
-    '/plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git\n' +
-    '```\n\n' +
-    '**3 of 3 — Install the latest version**\n' +
-    '```\n' +
-    '/plugin install evyasys@EvyaGovernance\n' +
-    '```\n\n' +
-    'When prompted, choose **Install for you (user scope)**.\n\n' +
-    'Then **fully quit Claude Code and reopen it** — all 11 commands will appear.\n\n' +
-    '> Your project config and credentials were not changed.'
-  );
+  // ── 4. Clone latest source to marketplaces directory ───────────────────────
+  // This replaces the manual "/plugin marketplace add" step — the directory
+  // just needs to exist for "/plugin install evyasys@EvyaGovernance" to work.
+  const marketplacesDir = path.join(pluginsDir, 'marketplaces');
+  const marketplaceDir  = path.join(marketplacesDir, 'EvyaGovernance');
+
+  let cloneOk = false;
+  try {
+    fs.mkdirSync(marketplacesDir, { recursive: true });
+    // execFileSync bypasses the shell entirely — no quoting needed, works on
+    // Windows (any username/path), macOS, and Linux without modification.
+    execFileSync('git', ['clone', '--depth', '1', REPO_URL, marketplaceDir], {
+      stdio: 'pipe',
+      timeout: 60_000,
+    });
+    cloneOk = true;
+    ctx.send(`Cloned latest plugin source → ${marketplaceDir}`);
+  } catch (err) {
+    const detail = ((err.stderr || err.message || '').toString()).slice(0, 300);
+    ctx.send(
+      `⚠️  Auto-clone failed — git may not be in your PATH or the network is unavailable.\n` +
+      `Detail: ${detail}\n\n` +
+      `You will need to run "/plugin marketplace add ${REPO_URL}" manually (step 2 of 3 below).`
+    );
+  }
+
+  // ── 5. Show reinstall steps ─────────────────────────────────────────────────
+  if (cloneOk) {
+    ctx.send(
+      '✅ **Fully cleaned and updated. Run these two commands inside Claude Code — in order:**\n\n' +
+      '**1 of 2 — Refresh plugin state**\n' +
+      '```\n' +
+      '/reload-plugins\n' +
+      '```\n\n' +
+      '**2 of 2 — Install the latest version**\n' +
+      '```\n' +
+      '/plugin install evyasys@EvyaGovernance\n' +
+      '```\n\n' +
+      'When prompted, choose **Install for you (user scope)**.\n\n' +
+      'Then **fully quit Claude Code and reopen it** — all 11 commands will appear.\n\n' +
+      '> Your project config and credentials were not changed.'
+    );
+  } else {
+    ctx.send(
+      '✅ **Cache cleaned. Run these three commands inside Claude Code — in order:**\n\n' +
+      '**1 of 3 — Refresh plugin state**\n' +
+      '```\n' +
+      '/reload-plugins\n' +
+      '```\n\n' +
+      '**2 of 3 — Re-register the source**\n' +
+      '```\n' +
+      `/plugin marketplace add ${REPO_URL}\n` +
+      '```\n\n' +
+      '**3 of 3 — Install the latest version**\n' +
+      '```\n' +
+      '/plugin install evyasys@EvyaGovernance\n' +
+      '```\n\n' +
+      'When prompted, choose **Install for you (user scope)**.\n\n' +
+      'Then **fully quit Claude Code and reopen it** — all 11 commands will appear.\n\n' +
+      '> Your project config and credentials were not changed.'
+    );
+  }
 };
