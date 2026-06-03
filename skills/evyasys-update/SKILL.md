@@ -1,3 +1,9 @@
+---
+name: evyasys-update
+description: Updates or repairs the Evyasys plugin — clears the plugin cache directories and shows the three reinstall commands. Project config (.evyasys/project.yaml) and credentials (~/.evyasys/credentials) are never touched.
+trigger: /evyasys:Update
+---
+
 # evyasys:Update
 
 Updates or repairs the Evyasys plugin installation.

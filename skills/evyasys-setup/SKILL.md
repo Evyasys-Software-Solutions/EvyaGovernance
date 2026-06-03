@@ -1,3 +1,9 @@
+---
+name: evyasys-setup
+description: One-time (or update) configuration wizard — confirms project folder, checks existing config, validates PM tool credentials live, collects notification credentials, and persists non-sensitive config to .evyasys/project.yaml with encrypted credentials to ~/.evyasys/credentials.
+trigger: /evyasys:Setup
+---
+
 # evyasys:Setup
 
 One-time (or update) configuration wizard for a project.

@@ -1,3 +1,9 @@
+---
+description: Configure Evyasys for this project — choose PM tool (Local / Azure DevOps / JIRA / GitHub Projects) and notification channel (None / Teams / Slack / WhatsApp / Email), then collect and validate credentials. Safe to re-run to update config or rotate secrets.
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
+skill: evyasys-setup
+---
+
 # /evyasys:Setup
 
 Configure Evyasys for a project — choose your Project Management tool and notification channel.
