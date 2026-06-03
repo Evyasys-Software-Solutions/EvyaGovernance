@@ -261,7 +261,7 @@ $env:EVYASYS_DRY_RUN = "1"
 /evyasys:Update
 ```
 
-This clears the plugin cache and shows the three reinstall commands. Your project config and credentials are not affected.
+This clears the plugin cache, removes the plugin entry from all Claude Code settings files automatically (no manual `/plugin uninstall` needed), and shows the three reinstall commands. Your project config and credentials are not affected.
 
 ---
 

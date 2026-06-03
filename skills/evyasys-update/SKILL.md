@@ -11,8 +11,9 @@ Updates or repairs the Evyasys plugin installation.
 ## What it does
 
 1. Asks for confirmation before touching anything.
-2. Clears the two plugin directories: `~/.claude/plugins/cache/EvyaGovernance` and `~/.claude/plugins/marketplaces/EvyaGovernance`.
-3. Shows the exact reinstall steps for Mac/Linux and Windows.
+2. Clears plugin cache directories: `~/.claude/plugins/cache/EvyaGovernance` and `~/.claude/plugins/marketplaces/EvyaGovernance`.
+3. Removes the evyasys plugin entry from all Claude Code settings files (user, project, local) — so no manual `/plugin uninstall` is needed.
+4. Shows the three reinstall commands.
 
 Project config (`.evyasys/project.yaml`) and credentials (`~/.evyasys/credentials`) are **never touched**.
 
@@ -24,14 +25,13 @@ Project config (`.evyasys/project.yaml`) and credentials (`~/.evyasys/credential
 
 ## What happens after
 
-Run these four commands inside Claude Code — in order:
+Run these three commands inside Claude Code — in order:
 
 | Step | Command |
 |---|---|
-| 1 | `/plugin uninstall evyasys@EvyaGovernance` |
-| 2 | `/reload-plugins` |
-| 3 | `/plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git` |
-| 4 | `/plugin install evyasys@EvyaGovernance` |
+| 1 | `/reload-plugins` |
+| 2 | `/plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git` |
+| 3 | `/plugin install evyasys@EvyaGovernance` |
 
 When prompted choose **Install for you (user scope)**, then **fully quit Claude Code and reopen it**.
 

@@ -158,7 +158,7 @@ All notifications fire **after your approval**. Both GO and NO-GO reviews notify
 /evyasys:Update
 ```
 
-This clears the plugin cache automatically and shows the three reinstall commands to run.
+This clears the plugin cache, removes the plugin entry from all Claude Code settings files automatically (no manual `/plugin uninstall` needed), and shows the three reinstall commands.
 Your project config and credentials are not affected.
 
 ---
