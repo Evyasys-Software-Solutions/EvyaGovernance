@@ -21,7 +21,10 @@ module.exports = async function (ctx) {
   }
 
   const pluginsDir = path.join(os.homedir(), '.claude', 'plugins');
-  const targets    = ['marketplaces', 'evyasys'];
+  const targets    = [
+    path.join('cache', 'EvyaGovernance'),
+    path.join('marketplaces', 'EvyaGovernance'),
+  ];
   const cleared    = [];
   const skipped    = [];
 
@@ -47,20 +50,17 @@ module.exports = async function (ctx) {
   }
 
   ctx.send(
-    '✅ **Cache cleared. Now run these three commands inside Claude Code — in order:**\n\n' +
-    '**1 of 3 — Re-register the plugin source**\n' +
+    '✅ **Cache cleared. Run these two commands inside Claude Code — in order:**\n\n' +
+    '**1 of 2**\n' +
     '```\n' +
     '/plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git\n' +
     '```\n\n' +
-    '**2 of 3 — Re-install the plugin**\n' +
+    '**2 of 2**\n' +
     '```\n' +
     '/plugin install evyasys@EvyaGovernance\n' +
     '```\n\n' +
-    '**3 of 3 — Reload so the updated commands appear**\n' +
-    '```\n' +
-    '/reload-plugins\n' +
-    '```\n\n' +
-    '> Wait for each command to complete before running the next.\n' +
+    'When prompted, choose **Install for you (user scope)**.\n\n' +
+    'Then **fully quit Claude Code and reopen it** — all 11 commands will appear.\n\n' +
     '> Your project config and credentials were not changed.'
   );
 };

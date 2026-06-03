@@ -7,7 +7,7 @@ skill: evyasys-update
 You are running **/evyasys:Update**.
 
 1. Tell the user clearly what will happen:
-   - The plugin cache will be cleared (`~/.claude/plugins/marketplaces` and `~/.claude/plugins/evyasys`)
+   - The plugin cache will be cleared (`~/.claude/plugins/cache/EvyaGovernance` and `~/.claude/plugins/marketplaces/EvyaGovernance`)
    - Three reinstall commands will be shown to run after the cleanup
    - `.evyasys/project.yaml` and `~/.evyasys/credentials` are **not touched** — all project config and credentials stay intact
 

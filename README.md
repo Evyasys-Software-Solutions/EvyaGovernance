@@ -54,27 +54,20 @@ cd your-project; claude
 
 ### Step 1 — Install Evyasys plugin (once per machine)
 
-**Inside Claude Code**, run each of these three commands one at a time — copy and paste them individually:
+Open Claude Code and run these two commands — one at a time:
 
-**1 of 3 — Register the plugin source**
 ```
 /plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git
 ```
-
-**2 of 3 — Install the plugin**
 ```
 /plugin install evyasys@EvyaGovernance
 ```
 
-**3 of 3 — Reload so the commands appear**
-```
-/reload-plugins
-```
+When prompted, choose **Install for you (user scope)** so it works in every project.
 
-> ⚠️ Run them in order. Wait for each to complete before running the next.  
-> The first command registers the GitHub source. The second downloads and installs it. The third makes the commands available in autocomplete.
+Then **fully quit Claude Code and reopen it** — commands appear after a fresh start.
 
-Type `/evya` — you should see 10 commands in autocomplete.
+Type `/evya` — you should see 11 commands in autocomplete.
 
 ---
 
@@ -96,14 +89,12 @@ Setup **automatically creates `.evyasys/`** in the current folder if it doesn't 
 
 ```bash
 # macOS / Linux (Azure DevOps only)
-evyasys=$(ls -td ~/.claude/plugins/cache/EvyaGovernance/evyasys/*/ | head -1)
-bash "${evyasys}scripts/login.sh"
+bash ~/.claude/plugins/marketplaces/EvyaGovernance/scripts/login.sh
 ```
 
 ```powershell
 # Windows (Azure DevOps only)
-$evyasys = (Get-Item "$env:USERPROFILE\.claude\plugins\cache\EvyaGovernance\evyasys\*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
-powershell -ExecutionPolicy Bypass -File "$evyasys\scripts\setup.ps1"
+powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.claude\plugins\marketplaces\EvyaGovernance\scripts\login.ps1"
 ```
 
 ---

@@ -31,26 +31,20 @@ claude
 
 ## Step 1 — Install the Evyasys plugin (once per machine)
 
-**Inside Claude Code**, run each command individually — copy and paste one at a time:
+Open Claude Code and run these two commands — one at a time:
 
-**1 of 3 — Register the plugin source**
 ```
 /plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git
 ```
-
-**2 of 3 — Install the plugin**
 ```
 /plugin install evyasys@EvyaGovernance
 ```
 
-**3 of 3 — Reload so the commands appear**
-```
-/reload-plugins
-```
+When prompted, choose **Install for you (user scope)** so it works in every project.
 
-> ⚠️ Run them in order. Wait for each to complete before running the next.
+Then **fully quit Claude Code and reopen it** — commands appear after a fresh start.
 
-Type `/evya` — you should see 10 commands in autocomplete.
+Type `/evya` — you should see 11 commands in autocomplete.
 
 ---
 
@@ -97,7 +91,7 @@ Re-run with `--retrain` after major architecture changes, stack upgrades, or des
 
 ---
 
-## The 10 commands — full delivery pipeline
+## The 11 commands — full delivery pipeline
 
 Open Claude Code from **inside your project folder**, then:
 
@@ -166,6 +160,7 @@ flowchart TD
 | `/evyasys:StartQa EVYA-1042` | 🔬 QA Engineer | **In QA** | 🧪 QA Started |
 | `/evyasys:FinishQa EVYA-1042` | 📦 Release Manager | **Done** ✅ | 🚢 Released |
 | `/evyasys:GenerateReleaseNote EVYA-1042 EVYA-1043` | 📦 Release Manager | — | 📄 Release Notes |
+| `/evyasys:Update` | 👤 Any team member | — | — |
 
 **Nothing touches your PM tool or notification channel until you explicitly approve.**
 
@@ -275,7 +270,7 @@ This clears the plugin cache and shows the three reinstall commands. Your projec
 | Symptom | Fix |
 |---|---|
 | `claude` command not found | Install Node.js 18+ then `npm install -g @anthropic-ai/claude-code` |
-| Commands don't appear after `/reload-plugins` | Run `/evyasys:Update` then reinstall |
+| Commands don't appear after install | Run `/evyasys:Update`, then follow the reinstall steps it shows |
 | No PM tool configured | Run `/evyasys:Setup` |
 | Credentials not found / 401 error | Credentials expired — run `/evyasys:Setup` and re-enter |
 | Webhook missing | Run `/evyasys:Setup` to update the webhook URL |
@@ -287,8 +282,9 @@ This clears the plugin cache and shows the three reinstall commands. Your projec
 
 | Location | What | In git? |
 |---|---|---|
-| `~/.claude/plugins/cache/EvyaGovernance/` | Plugin (auto-installed) | ✅ EvyaGovernance repo |
+| `~/.claude/plugins/cache/EvyaGovernance/evyasys/` | Installed plugin (loaded by Claude Code) | ✅ EvyaGovernance repo |
+| `~/.claude/plugins/marketplaces/EvyaGovernance/` | Plugin source (cloned from GitHub) | ✅ EvyaGovernance repo |
 | `<project>/.evyasys/project.yaml` | PM tool + notification tool config | ✅ project repo |
-| `<project>/.evyasys/docs/` | Quality-gate documents (19 files) | ✅ project repo |
+| `<project>/.evyasys/docs/` | Quality-gate documents (20 files) | ✅ project repo |
 | `<project>/.evyasys/board/` | All story artefacts | ✅ project repo |
 | `~/.evyasys/credentials` | Your personal credentials (encrypted) | ❌ never committed |
