@@ -44,35 +44,27 @@ foreach ($f in $required) {
     else { Ok "OK: $f" }
 }
 
-$cred = Join-Path $HOME '.evyasys\credentials'
-if (Test-Path $cred) {
-    if ((Get-Content $cred) -match '^AZURE_PAT=') { Ok "PAT already saved at $cred" }
-    else { Say "PAT not yet saved. Run: powershell -ExecutionPolicy Bypass -File $root\scripts\login.ps1" }
-} else {
-    Say "PAT not yet saved. Run: powershell -ExecutionPolicy Bypass -File $root\scripts\login.ps1"
-}
-
 Ok 'Plugin scaffold validated.'
 Write-Host ''
-Write-Host 'Next steps:' -ForegroundColor White
+Write-Host '  Next steps:' -ForegroundColor White
 Write-Host ''
-Write-Host '  1) Register the plugin in your AI agent:' -ForegroundColor White
-Write-Host "       /plugin marketplace add $root" -ForegroundColor White
-Write-Host '       /plugin install evyasys' -ForegroundColor White
+Write-Host '  1) Register the plugin in Claude Code:' -ForegroundColor White
+Write-Host "       /plugin marketplace add $root" -ForegroundColor Gray
+Write-Host '       /plugin install evyasys@EvyaGovernance' -ForegroundColor Gray
+Write-Host '     Then fully quit and reopen Claude Code.' -ForegroundColor Gray
 Write-Host ''
-Write-Host '  2) Save your PAT once per machine:' -ForegroundColor White
-Write-Host "       powershell -ExecutionPolicy Bypass -File $root\scripts\login.ps1" -ForegroundColor White
+Write-Host '  2) For each project, open Claude Code from within that project folder and run:' -ForegroundColor White
+Write-Host '       /evyasys:Setup' -ForegroundColor Gray
 Write-Host ''
-Write-Host '  3) For each project, drop a .evyasys/ folder:' -ForegroundColor White
-Write-Host "       Copy-Item -Recurse $root\project-template\.evyasys <your-project>\.evyasys" -ForegroundColor White
-Write-Host '       # Edit <your-project>\.evyasys\project.yaml, then git commit it.' -ForegroundColor White
+Write-Host '  3) Commands:' -ForegroundColor White
+Write-Host '       /evyasys:TrainDocs                  — scan codebase, generate 20 quality-gate docs' -ForegroundColor Gray
+Write-Host '       /evyasys:CreateStory                — draft a user story (handles epics)' -ForegroundColor Gray
+Write-Host '       /evyasys:CreateSubtask <StoryID>    — decompose story into developer tasks' -ForegroundColor Gray
+Write-Host '       /evyasys:StartDev <StoryID>         — technical brainstorm + kick off development' -ForegroundColor Gray
+Write-Host '       /evyasys:ReviewDev <StoryID>        — independent code review' -ForegroundColor Gray
+Write-Host '       /evyasys:FinishDev <StoryID>        — AC audit + hand off to QA' -ForegroundColor Gray
+Write-Host '       /evyasys:StartQa <StoryID>          — generate comprehensive test plan' -ForegroundColor Gray
+Write-Host '       /evyasys:FinishQa <StoryID>         — QA sign-off + release notes' -ForegroundColor Gray
+Write-Host '       /evyasys:GenerateReleaseNote <IDs>  — compile branded PDF release notes' -ForegroundColor Gray
+Write-Host '       /evyasys:Update                     — update plugin to latest version' -ForegroundColor Gray
 Write-Host ''
-Write-Host '  4) From inside that project, run any command:' -ForegroundColor White
-Write-Host '       /EvyaCreateStory            — draft a user story' -ForegroundColor White
-Write-Host '       /EvyaCreateSubtask EVYA-id  — decompose into dev tasks' -ForegroundColor White
-Write-Host '       /EvyaStartDev EVYA-id       — kick off development' -ForegroundColor White
-Write-Host '       /EvyaFinishDev EVYA-id      — hand off to QA' -ForegroundColor White
-Write-Host '       /EvyaStartQa EVYA-id        — generate test plan' -ForegroundColor White
-Write-Host '       /EvyaFinishQa EVYA-id       — release sign-off + notes' -ForegroundColor White
-Write-Host ''
-Write-Host '  TIP: set $env:EVYASYS_DRY_RUN=1 to preview without touching ADO or Teams.' -ForegroundColor DarkGray

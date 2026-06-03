@@ -111,7 +111,7 @@ To change how any command behaves for your project (without touching the plugin)
 1. Create the file at `.evyasys/workflows/<command-name>/PROMPT.md`
 2. Write your override — the project file wins over the plugin default.
 
-Available command names: `setup`, `train-docs`, `create-story`, `create-subtask`,  
+Available command names: `setup`, `create-docs`, `create-story`, `create-subtask`,  
 `start-dev`, `review-dev`, `finish-dev`, `start-qa`, `finish-qa`, `generate-release-note`
 
 Example: add a custom AC format requirement to CreateStory:

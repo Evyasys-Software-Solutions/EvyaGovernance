@@ -101,80 +101,19 @@ done
 
 [ "$ALL_OK" -eq 0 ] && warn "Some files are missing — the plugin may not work correctly."
 
-# ── 5. Register plugin in AI agent (before asking for credentials) ────────────
+# ── 5. Register plugin ────────────────────────────────────────────────────────
 hr
 say "Registering Evyasys plugin ..."
 if command -v claude >/dev/null 2>&1; then
   claude --plugin marketplace add "$INSTALL_DIR" 2>/dev/null && \
-  claude --plugin install evyasys 2>/dev/null && \
+  claude --plugin install evyasys@EvyaGovernance 2>/dev/null && \
   ok "Plugin registered via CLI" || \
   warn "Auto-registration failed — see Step 1 in the summary below."
 else
   warn "AI agent CLI not found — register manually (see Step 1 below)."
 fi
 
-# ── 6. Azure DevOps PAT ───────────────────────────────────────────────────────
-hr
-say "Azure DevOps Personal Access Token"
-CRED="${HOME}/.evyasys/credentials"
-if [ -f "$CRED" ] && grep -q '^AZURE_PAT=' "$CRED" 2>/dev/null; then
-  ok "PAT already saved at $CRED"
-else
-  say "The PAT lets Evyasys create and update work items in your Azure DevOps project."
-  say "Generate one at: https://dev.azure.com/<your-org>/_usersSettings/tokens"
-  say "Scope needed: Work Items (Read & write)"
-  echo ""
-  read -r -s -p "  Paste your PAT (hidden) — or press Enter to skip: " PAT
-  echo ""
-  if [ -n "${PAT:-}" ]; then
-    mkdir -p "${HOME}/.evyasys"
-    chmod 700 "${HOME}/.evyasys"
-    # Preserve any existing entries, replace or append AZURE_PAT
-    if [ -f "$CRED" ]; then
-      TMP="${CRED}.tmp.$$"
-      grep -v '^AZURE_PAT=' "$CRED" > "$TMP" 2>/dev/null || true
-      echo "AZURE_PAT=${PAT}" >> "$TMP"
-      mv "$TMP" "$CRED"
-    else
-      echo "AZURE_PAT=${PAT}" > "$CRED"
-    fi
-    chmod 600 "$CRED"
-    ok "PAT saved to $CRED (mode 600)"
-  else
-    warn "Skipped — run 'bash $INSTALL_DIR/scripts/login.sh' before using live commands."
-  fi
-fi
-
-# ── 7. Microsoft Teams webhook ───────────────────────────────────────────────
-hr
-say "Microsoft Teams Webhook (optional default)"
-if [ -f "$CRED" ] && grep -q '^TEAMS_WEBHOOK=' "$CRED" 2>/dev/null; then
-  ok "Teams webhook already saved in $CRED"
-else
-  say "Evyasys can post cards to a Teams channel when stories are created or status changes."
-  say "To get a webhook: open your Teams channel → Connectors → Incoming Webhook → copy the URL."
-  say "(You can also set this per-project in .evyasys/project.yaml — press Enter to skip for now.)"
-  echo ""
-  read -r -p "  Paste your Teams webhook URL (or press Enter to skip): " WEBHOOK
-  if [ -n "${WEBHOOK:-}" ]; then
-    mkdir -p "${HOME}/.evyasys"
-    chmod 700 "${HOME}/.evyasys"
-    if [ -f "$CRED" ]; then
-      TMP="${CRED}.tmp.$$"
-      grep -v '^TEAMS_WEBHOOK=' "$CRED" > "$TMP" 2>/dev/null || true
-      echo "TEAMS_WEBHOOK=${WEBHOOK}" >> "$TMP"
-      mv "$TMP" "$CRED"
-    else
-      echo "TEAMS_WEBHOOK=${WEBHOOK}" > "$CRED"
-    fi
-    chmod 600 "$CRED"
-    ok "Teams webhook saved to $CRED"
-  else
-    warn "Skipped — Evyasys will prompt for the webhook the first time a command needs it."
-  fi
-fi
-
-# ── 8. Done ──────────────────────────────────────────────────────────────────
+# ── 6. Done ───────────────────────────────────────────────────────────────────
 hr
 ok "Evyasys installed at: $INSTALL_DIR"
 hr
@@ -182,27 +121,24 @@ cat << EOF
 
   Next steps:
 
-  1) If plugin auto-registration above failed, open your AI agent and run:
+  1) If plugin auto-registration above failed, open Claude Code and run:
        /plugin marketplace add $INSTALL_DIR
-       /plugin install evyasys
+       /plugin install evyasys@EvyaGovernance
+     Then fully quit and reopen Claude Code.
 
-  2) For each project repo, drop the config folder:
-       cp -r $INSTALL_DIR/project-template/.evyasys <your-project>/.evyasys
-       # Edit .evyasys/project.yaml — fill in name, ADO org/project
-       git add .evyasys/project.yaml && git commit -m "Add Evyasys config"
+  2) For each project, open Claude Code from within that project folder and run:
+       /evyasys:Setup
 
-  3) From inside the project, run your first command:
-       /EvyaCreateStory
-
-  Commands:
-    /EvyaCreateStory            — draft a user story (asks save folder, handles epics)
-    /EvyaCreateSubtask EVYA-id  — decompose into dev tasks
-    /EvyaStartDev EVYA-id       — brainstorm + kick off development
-    /EvyaFinishDev EVYA-id      — AC audit + hand off to QA
-    /EvyaStartQa EVYA-id        — generate test plan
-    /EvyaFinishQa EVYA-id       — release sign-off + notes
-
-  Dry-run (preview — no ADO/Teams changes):
-    EVYASYS_DRY_RUN=1 /EvyaCreateStory
+  3) Commands:
+       /evyasys:TrainDocs                  — scan codebase, generate 20 quality-gate docs
+       /evyasys:CreateStory                — draft a user story (handles epics)
+       /evyasys:CreateSubtask <StoryID>    — decompose story into developer tasks
+       /evyasys:StartDev <StoryID>         — technical brainstorm + kick off development
+       /evyasys:ReviewDev <StoryID>        — independent code review
+       /evyasys:FinishDev <StoryID>        — AC audit + hand off to QA
+       /evyasys:StartQa <StoryID>          — generate comprehensive test plan
+       /evyasys:FinishQa <StoryID>         — QA sign-off + release notes
+       /evyasys:GenerateReleaseNote <IDs>  — compile branded PDF release notes
+       /evyasys:Update                     — update plugin to latest version
 
 EOF
