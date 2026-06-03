@@ -152,26 +152,44 @@ All notifications fire **after your approval**. Both GO and NO-GO reviews notify
 
 ### Updating to the latest version
 
-**Inside Claude Code**, run:
+`/evyasys:Update` does **two things**: cleans the old install, then shows you the three commands to reinstall. It cannot reinstall itself — you must run those commands after it finishes.
+
+**Step 1 — Run the cleanup (inside Claude Code):**
 
 ```
 /evyasys:Update
 ```
 
-This clears the plugin cache, removes the plugin entry from all Claude Code settings files automatically (no manual `/plugin uninstall` needed), and shows the three reinstall commands.
-Your project config and credentials are not affected.
+Confirm when prompted. This automatically clears the plugin cache and removes the plugin entry from all Claude Code settings files. Your `.evyasys/project.yaml` and credentials are never touched.
+
+**Step 2 — Reinstall (three commands, in order, inside Claude Code):**
+
+```
+/reload-plugins
+```
+```
+/plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git
+```
+```
+/plugin install evyasys@EvyaGovernance
+```
+
+When prompted, choose **Install for you (user scope)**.
+
+**Step 3 — Fully quit Claude Code and reopen it.**
+
+All 11 commands will appear. Your project config and credentials are unchanged.
 
 ---
 
 ### Troubleshooting a broken install
 
-Run `/evyasys:Update` — a clean reinstall fixes most issues. If commands still don't
-appear after reinstalling, fully close and reopen Claude Code, then reinstall once more.
+Run `/evyasys:Update` and follow the three reinstall steps it shows. If commands still don't appear after reinstalling, fully close and reopen Claude Code, then reinstall once more.
 
 | Symptom | Fix |
 |---|---|
 | `claude` command not found | Install Node.js 18+ then `npm install -g @anthropic-ai/claude-code` |
-| Commands don't appear | Run `/evyasys:Update` then reinstall |
+| Commands don't appear | Run `/evyasys:Update` then follow the 3 reinstall steps it shows |
 | No PM tool configured | Run `/evyasys:Setup` |
 | Credentials not found | Run `/evyasys:Setup` to re-enter encrypted credentials |
 | 401 / auth error | Credentials expired — run `/evyasys:Setup` and re-enter |

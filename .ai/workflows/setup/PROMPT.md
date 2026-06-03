@@ -208,7 +208,7 @@ Ask: "Save this configuration?"
 
 ---
 
-## Step 4 — Output the config block
+## Step 5 — Output the config block
 
 Output **exactly one** block in this format. All fields are required even if empty:
 
