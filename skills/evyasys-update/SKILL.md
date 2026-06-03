@@ -24,12 +24,14 @@ Project config (`.evyasys/project.yaml`) and credentials (`~/.evyasys/credential
 
 ## What happens after
 
-Run these two commands inside Claude Code — in order:
+Run these four commands inside Claude Code — in order:
 
 | Step | Command |
 |---|---|
-| 1 | `/plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git` |
-| 2 | `/plugin install evyasys@EvyaGovernance` |
+| 1 | `/plugin uninstall evyasys@EvyaGovernance` |
+| 2 | `/reload-plugins` |
+| 3 | `/plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git` |
+| 4 | `/plugin install evyasys@EvyaGovernance` |
 
 When prompted choose **Install for you (user scope)**, then **fully quit Claude Code and reopen it**.
 

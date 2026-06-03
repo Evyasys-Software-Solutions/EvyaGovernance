@@ -50,12 +50,20 @@ module.exports = async function (ctx) {
   }
 
   ctx.send(
-    '✅ **Cache cleared. Run these two commands inside Claude Code — in order:**\n\n' +
-    '**1 of 2**\n' +
+    '✅ **Cache cleared. Run these four commands inside Claude Code — in order:**\n\n' +
+    '**1 of 4 — Uninstall the old version**\n' +
+    '```\n' +
+    '/plugin uninstall evyasys@EvyaGovernance\n' +
+    '```\n\n' +
+    '**2 of 4 — Clear the stale marketplace state**\n' +
+    '```\n' +
+    '/reload-plugins\n' +
+    '```\n\n' +
+    '**3 of 4 — Re-register the source**\n' +
     '```\n' +
     '/plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git\n' +
     '```\n\n' +
-    '**2 of 2**\n' +
+    '**4 of 4 — Install the latest version**\n' +
     '```\n' +
     '/plugin install evyasys@EvyaGovernance\n' +
     '```\n\n' +
