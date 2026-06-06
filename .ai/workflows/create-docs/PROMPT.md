@@ -39,10 +39,10 @@ Check `.evyasys/docs/` for existing files. Report the status before proceeding:
 
 | State | Action |
 |---|---|
-| Directory missing or empty | Proceed: full generation of all 20 documents |
+| Directory missing or empty | Proceed: full generation of all 25 documents |
 | Partial (some files exist) | List what exists; ask if user wants to overwrite or skip existing |
 | All present, no flag | Ask: "Regenerate all, update specific, retrain, or abort?" |
-| `--update` flag | Confirm "Regenerate all 20 documents?" before proceeding |
+| `--update` flag | Confirm "Regenerate all 25 documents?" before proceeding |
 | `--update <filename>` | Confirm "Regenerate `.evyasys/docs/<filename>` only?" |
 | `--retrain` flag | Switch to Retrain mode (Step 0-R below) |
 
@@ -76,9 +76,14 @@ Group changed files into areas using this map:
 | `.github/workflows/**`, `azure-pipelines.yml` | `DEPLOYMENT.md`, `WORKFLOWS.md` |
 | `Dockerfile*`, `docker-compose.yml` | `DEPLOYMENT.md`, `STACK.md` |
 | `.ai/rules/`, `.evyasys/rules/`, `CLAUDE.md` | `RULES.md`, `STANDARDS.md`, `ARCHITECTURE.md` |
-| `tailwind.config.*`, `src/styles/**`, `src/tokens/**` | `DESIGN_SYSTEM.md`, `UI_UX_STANDARDS.md` |
+| `tailwind.config.*`, `src/styles/**`, `src/tokens/**` | `DESIGN_SYSTEM.md`, `UI_UX_STANDARDS.md`, `fe/STYLING_MICRO_STANDARDS.md` |
 | Loading/error/empty state components, toast/form library | `UI_UX_STANDARDS.md`, `FRONTEND.md` |
 | Folder layout restructure | `ARCHITECTURE.md`, `PATTERNS.md`, all layer docs |
+| CSS token file, icon system, spacing changes | `fe/STYLING_MICRO_STANDARDS.md`, `DESIGN_SYSTEM.md` |
+| Hook patterns or memoization changes | `fe/HOOKS_DEEP_RULES.md`, `FRONTEND.md` |
+| `package.json` dependencies changed | `fe/DEPENDENCIES_WORKFLOW.md`, `STACK.md`, `ONBOARDING.md` |
+| Test config, coverage thresholds, factory/MSW changes | `UNIT_TESTING_COMPLETE.md`, `TESTING.md` |
+| Controller/service/repository pattern changes | `be/MICRO_STANDARDS_BE.md`, `BACKEND.md`, `PATTERNS.md` |
 
 If git history is unavailable, ask: "Which area of the codebase changed?" and map the answer.
 
@@ -227,6 +232,13 @@ Generate documents in this order — STACK.md first so other docs can reference 
 18. `PERFORMANCE.md`
 19. `ONBOARDING.md`
 20. `GLOSSARY.md`
+21. `fe/STYLING_MICRO_STANDARDS.md`
+22. `fe/HOOKS_DEEP_RULES.md`
+23. `fe/DEPENDENCIES_WORKFLOW.md`
+24. `UNIT_TESTING_COMPLETE.md`
+25. `be/MICRO_STANDARDS_BE.md`
+
+Documents 21–25 are supplementary micro-level documents. They add depth to the core docs and follow the same quality rules — if the project has no evidence for a document (e.g. no frontend layer), output the delimiter and write `> Not applicable — [specific reason].` at the top, exactly as you would for any other document.
 
 ### Quality rules for every document
 
@@ -276,7 +288,7 @@ Before the hook writes anything, show a summary table:
 | `UI_UX_STANDARDS.md` | [e.g. shadcn/ui + Tailwind — loading: skeleton, error: toast (sonner), form: react-hook-form + zod] |
 | ... | ... |
 
-Ask: **"Ready to write these 20 documents to `.evyasys/docs/`?"** (or N documents in retrain mode)
+Ask: **"Ready to write these 25 documents to `.evyasys/docs/`?"** (or N documents in retrain mode)
 
 Wait for explicit confirmation. Do not write anything before it.
 

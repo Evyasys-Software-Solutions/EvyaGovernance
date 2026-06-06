@@ -1,6 +1,6 @@
 ---
 name: evyasys-train-docs
-description: Use this skill to scan the entire project and generate comprehensive quality-gate documentation into .evyasys/docs/. Produces 20 documents covering architecture, standards, patterns, testing, security, deployment, design system, and UI/UX standards. All new development must follow these documents — they are loaded by /evyasys:StartDev at Step 0 before any technical opinion is formed. Triggered by `/evyasys:TrainDocs`.
+description: Use this skill to scan the entire project and generate comprehensive quality-gate documentation into .evyasys/docs/. Produces 25 documents covering architecture, standards, patterns, testing, security, deployment, design system, UI/UX standards, styling tokens, hook rules, dependency governance, complete unit testing standards, and backend micro-contracts. All new development must follow these documents — they are loaded by /evyasys:StartDev at Step 0 before any technical opinion is formed. Triggered by `/evyasys:TrainDocs`.
 trigger: /evyasys:TrainDocs
 ---
 
@@ -41,6 +41,11 @@ All documents written to `.evyasys/docs/`:
 | `PERFORMANCE.md` | Performance budgets, hot paths, caching, profiling, anti-patterns |
 | `ONBOARDING.md` | New dev guide — from `git clone` to first PR in one hour |
 | `GLOSSARY.md` | Domain and technical terms specific to this project |
+| `fe/STYLING_MICRO_STANDARDS.md` | Complete token catalogue, icon size matrix, spacing anatomy, 7 CSS architecture rules |
+| `fe/HOOKS_DEEP_RULES.md` | 8-rule hook contract, useEffect rules, memoization decision trees, anti-patterns, testing |
+| `fe/DEPENDENCIES_WORKFLOW.md` | Approved libraries, new-dep checklist, bundle limits, feature workflow, review contract |
+| `UNIT_TESTING_COMPLETE.md` | Coverage requirements, FE + BE test patterns, factories, MSW mocking, naming rules |
+| `be/MICRO_STANDARDS_BE.md` | Controller/Service/Repository micro-contract, error flow, logging rules, transaction ownership |
 | `INDEX.md` | Navigation hub — generated automatically by the hook |
 
 ## Quality bar

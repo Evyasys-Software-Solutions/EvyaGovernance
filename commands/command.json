@@ -5,7 +5,7 @@
   },
   {
     "name": "TrainDocs",
-    "description": "Scan the entire codebase and generate 20 quality-gate documents into .evyasys/docs/ covering architecture, standards, patterns, testing, security, design system, UI/UX standards, and more. Pass --retrain to regenerate only docs affected by recent git changes."
+    "description": "Scan the entire codebase and generate 25 quality-gate documents into .evyasys/docs/ covering architecture, standards, patterns, testing, security, design system, UI/UX standards, styling tokens, hook rules, dependency governance, and more. Pass --retrain to regenerate only docs affected by recent git changes."
   },
   {
     "name": "CreateStory",

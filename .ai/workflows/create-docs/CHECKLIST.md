@@ -31,7 +31,7 @@
 
 ## Phase 3 — Document quality (check every document)
 
-For each of the 20 documents generated:
+For each of the 25 documents generated:
 - [ ] No placeholder text (`[TODO]`, `[TBD]`, `<insert here>`)
 - [ ] Every rule or convention has a concrete example from this project
 - [ ] Sections with no evidence are explicitly marked "Not applicable — [reason]"
@@ -57,10 +57,15 @@ For each of the 20 documents generated:
 - [ ] **PERFORMANCE.md** — real performance budgets documented; hot paths named; anti-patterns listed
 - [ ] **DESIGN_SYSTEM.md** — actual token values extracted (hex colours, px/rem spacing, not generic descriptions); component library named with variants listed from real component files; consistent with what UI_UX_STANDARDS.md will reference
 - [ ] **UI_UX_STANDARDS.md** — loading/error/empty states documented from actual patterns in the codebase; toast and form libraries named specifically; tokens used match DESIGN_SYSTEM.md; consistent with ERROR_HANDLING.md error categories
+- [ ] **fe/STYLING_MICRO_STANDARDS.md** — token file path identified; complete colour/typography/spacing/z-index/motion token catalogue extracted from real config; icon size matrix covers all UI contexts; spacing anatomy table covers all component relationships; all 7 CSS architecture rules stated; dark mode coverage documented if applicable. If no frontend layer: marked Not applicable.
+- [ ] **fe/HOOKS_DEEP_RULES.md** — all 8 hook contract rules documented with examples from real codebase; useEffect rules include when-to-use and when-not-to-use with examples; memoization decision tree documented (measure first rule); data fetching patterns reference the project's actual library; banned anti-patterns listed with code examples. If no React frontend: marked Not applicable.
+- [ ] **fe/DEPENDENCIES_WORKFLOW.md** — approved library table extracted from actual `package.json`; 6-question checklist documented; banned patterns listed; bundle size limits documented; feature workflow steps match project conventions; review contract protocol stated. If no frontend layer: marked Not applicable.
+- [ ] **UNIT_TESTING_COMPLETE.md** — coverage table uses actual thresholds from test config (or flags gap); test file structure matches real test files found in codebase; FE and BE examples reference real entity names from the project; factory pattern documented for a real entity; MSW handler structure shown
+- [ ] **be/MICRO_STANDARDS_BE.md** — controller/service/repository contracts each documented with ✅ correct and ❌ wrong code examples from real patterns in the codebase; error flow cross-references ERROR_HANDLING.md; logging micro-rules state what each layer logs (and never logs); transaction ownership rule stated. If no backend layer: marked Not applicable.
 
 ## Phase 5 — Output format
 
 - [ ] Every document wrapped with `<!-- EVYADOC: FILENAME.md -->` delimiter
-- [ ] All 20 documents present in the output (or explicitly skipped with Not applicable)
+- [ ] All 25 documents present in the output (or explicitly skipped with Not applicable)
 - [ ] Documents generated in the order specified in PROMPT.md (STACK.md first)
 - [ ] Preview summary table shown to user before confirmation

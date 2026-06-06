@@ -85,7 +85,7 @@ git push
 ```
 
 Scans your codebase — tech stack, source structure, design system tokens, UI/UX patterns,
-and CI/CD — and writes 20 quality-gate documents to `.evyasys/docs/`.
+and CI/CD — and writes 25 quality-gate documents to `.evyasys/docs/`.
 Every downstream command loads these docs before forming any technical opinion.
 Re-run with `--retrain` after major architecture changes, stack upgrades, or design system updates.
 
@@ -214,7 +214,14 @@ PDFs are saved to `.evyasys/releases/` and release history is tracked in `.evyas
 ├── docs/                                    ← TrainDocs (quality-gate documents)
 │   ├── INDEX.md
 │   ├── ARCHITECTURE.md
-│   └── ... (20 documents)
+│   ├── ... (20 core documents)
+│   ├── fe/                                  ← Micro-level FE standards
+│   │   ├── STYLING_MICRO_STANDARDS.md
+│   │   ├── HOOKS_DEEP_RULES.md
+│   │   └── DEPENDENCIES_WORKFLOW.md
+│   ├── be/                                  ← Micro-level BE standards
+│   │   └── MICRO_STANDARDS_BE.md
+│   └── UNIT_TESTING_COMPLETE.md             ← Complete FE+BE test standards
 └── board/
     └── epics/
         └── EP-001/
@@ -309,6 +316,6 @@ All 11 commands will appear. Your project config and credentials are unchanged.
 | `~/.claude/plugins/cache/EvyaGovernance/evyasys/` | Installed plugin (loaded by Claude Code) | ✅ EvyaGovernance repo |
 | `~/.claude/plugins/marketplaces/EvyaGovernance/` | Plugin source (cloned from GitHub) | ✅ EvyaGovernance repo |
 | `<project>/.evyasys/project.yaml` | PM tool + notification tool config | ✅ project repo |
-| `<project>/.evyasys/docs/` | Quality-gate documents (20 files) | ✅ project repo |
+| `<project>/.evyasys/docs/` | Quality-gate documents (25 files) | ✅ project repo |
 | `<project>/.evyasys/board/` | All story artefacts | ✅ project repo |
 | `~/.evyasys/credentials` | Your personal credentials (encrypted) | ❌ never committed |

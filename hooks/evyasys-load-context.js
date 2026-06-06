@@ -74,7 +74,7 @@ module.exports = async function (ctx) {
         `    Choose your Project Management tool (Local / Azure DevOps / JIRA / GitHub)\n` +
         `    and notification channel (Not needed / Teams / Slack / WhatsApp).\n\n` +
         `  **Step 2:** \`/evyasys:TrainDocs\`\n` +
-        `    Scan your codebase and generate 20 quality-gate documents.\n` +
+        `    Scan your codebase and generate 25 quality-gate documents.\n` +
         `    All delivery commands (CreateStory → FinishQa) depend on these.\n\n` +
         `Both steps together take under 5 minutes.`
       );
@@ -108,7 +108,7 @@ module.exports = async function (ctx) {
         ctx.send(
           `Evyasys — **${projName}** | PM: ${pmLabel} | Notifications: ${notifLabel}\n\n` +
           `📚 Quality-gate documents not generated yet.\n` +
-          `Run \`/evyasys:TrainDocs\` to scan your codebase and generate the 20 docs that all delivery commands depend on.`
+          `Run \`/evyasys:TrainDocs\` to scan your codebase and generate the 25 docs that all delivery commands depend on.`
         );
       } else {
         // Everything is ready — normal status line.

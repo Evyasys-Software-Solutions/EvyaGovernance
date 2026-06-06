@@ -257,6 +257,6 @@ After outputting the block, tell the user:
 > - PM tool: [tool name]
 > - Notifications: [tool name]
 >
-> **Next step:** Run `/evyasys:TrainDocs` to scan your codebase and generate the 20 quality-gate documents that all delivery commands depend on.
+> **Next step:** Run `/evyasys:TrainDocs` to scan your codebase and generate the 25 quality-gate documents that all delivery commands depend on.
 >
 > Once done, the full pipeline is available: `/evyasys:CreateStory` → `/evyasys:CreateSubtask` → `/evyasys:StartDev` → `/evyasys:ReviewDev` → `/evyasys:FinishDev` → `/evyasys:StartQa` → `/evyasys:FinishQa` → `/evyasys:GenerateReleaseNote`

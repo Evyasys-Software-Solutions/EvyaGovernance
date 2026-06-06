@@ -62,7 +62,7 @@ cat <<EOF
        /evyasys:Setup
 
   3) Commands:
-       /evyasys:TrainDocs                  — scan codebase, generate 20 quality-gate docs
+       /evyasys:TrainDocs                  — scan codebase, generate 25 quality-gate docs
        /evyasys:CreateStory                — draft a user story (handles epics)
        /evyasys:CreateSubtask <StoryID>    — decompose story into developer tasks
        /evyasys:StartDev <StoryID>         — technical brainstorm + kick off development

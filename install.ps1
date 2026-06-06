@@ -113,7 +113,7 @@ Write-Host "  2) For each project, open Claude Code from within that project fol
 Write-Host "       /evyasys:Setup" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  3) Commands:" -ForegroundColor White
-Write-Host "       /evyasys:TrainDocs                  — scan codebase, generate 20 quality-gate docs" -ForegroundColor Gray
+Write-Host "       /evyasys:TrainDocs                  — scan codebase, generate 25 quality-gate docs" -ForegroundColor Gray
 Write-Host "       /evyasys:CreateStory                — draft a user story (handles epics)" -ForegroundColor Gray
 Write-Host "       /evyasys:CreateSubtask <StoryID>    — decompose story into developer tasks" -ForegroundColor Gray
 Write-Host "       /evyasys:StartDev <StoryID>         — technical brainstorm + kick off development" -ForegroundColor Gray

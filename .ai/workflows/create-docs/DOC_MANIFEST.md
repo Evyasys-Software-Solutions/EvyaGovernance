@@ -536,6 +536,131 @@ Quality bar: product, QA, and dev use the same word to mean the same thing.
 
 ---
 
+---
+
+## fe/STYLING_MICRO_STANDARDS.md
+**Purpose:** The single source of truth for every visual token, icon size, and CSS rule. Zero raw values anywhere outside the token file.
+Write "Not applicable" at top if no frontend layer exists.
+
+Required sections:
+- **Token file location** — the single file where all raw values live (e.g. `src/styles/tokens.css`, `tailwind.config.ts`, `globals.css`). Quote the exact path found during the scan. State the rule: raw values appear in this file only — nowhere else.
+- **Complete token catalogue** — extract every CSS custom property or Tailwind `theme.extend` entry actually defined in the project:
+  - *Colour scale* — primary, secondary, neutral, plus semantic aliases (bg-page, bg-card, text-primary, text-secondary, border-default, border-focus, interactive states, disabled)
+  - *Typography* — font families, font sizes (every step in the scale), font weights, line heights, letter spacing
+  - *Spacing* — the spacing scale with px equivalents (4px base grid)
+  - *Border radius* — every step with semantic usage (input, card, modal, pill)
+  - *Shadows* — every step with semantic usage (card, dropdown, modal, sticky)
+  - *Z-index scale* — every named z-index with its semantic layer (dropdown, sticky, overlay, drawer, modal, toast, tooltip)
+  - *Motion tokens* — duration values, easing curves, composite transition tokens
+  - *Component tokens* — per-component computed tokens (input heights, button heights, card padding, nav height, sidebar widths, modal padding)
+- **Typography micro-rules** — complete style → token mapping table. Every text style in the product (H1–H6, Body Large/Default/Small, Caption, Label, Helper Text, Error Text, Badge, Button SM/MD/LG, Nav Item, Tab, Table Header, Table Cell, Tooltip, Empty State Title/Body) maps to exact font-size, font-weight, and line-height tokens
+- **Icon size matrix** — every UI context maps to an exact icon size and Tailwind class. Cover: button icons (sm/md/lg), icon-only buttons, form field adornments, error/success field icons, sidebar nav, top nav, breadcrumb separator, table row actions, table sort/checkbox, dropdown items, tab icons, badge icons, avatar placeholders, empty state illustrations, alert/banner icons, toast icons, modal close button, card action icons, stat card icons, loading spinners (button/inline/page), notification bell, profile avatar
+- **Spacing anatomy** — component-level spacing table: label→input gap, input→helper/error gap, field→field gap, section→section gap, card padding (default + compact), modal padding, table cell padding, page section gaps, nav item height and padding, badge padding, avatar→name gap, dropdown item padding, tooltip offset, toast padding
+- **CSS architecture rules** — 7 rules:
+  1. *No inline styles* — `style={{}}` is banned except for setting CSS custom property values for dynamic data (e.g. `--progress: ${pct}%`)
+  2. *No hardcoded values* — no raw hex, px, rem, or arbitrary Tailwind `[]` values in components; always use a named token
+  3. *No `!important`* — fix specificity instead
+  4. *CSS scoping* — raw values live in `:root` in the token file only; component styles use CSS Modules or Tailwind utilities; never style another component's internals from a parent stylesheet
+  5. *State classes use tokens* — `:hover`, `:active`, `:focus-visible`, `:disabled` all reference token variables; never remove focus outline without providing an accessible replacement
+  6. *Responsive is mobile-first, named breakpoints only* — no magic pixel values in `@media` queries; use Tailwind responsive prefixes or named breakpoint variables only
+  7. *No duplicate styles* — same CSS in two components = extract shared class or component; three or more = definitely a token or utility
+- **Dark mode** — if dark mode is implemented: which tokens change (semantic aliases only, never scale tokens), how the mode is toggled (class, `data-theme` attribute, or `prefers-color-scheme` media query), why components must use semantic aliases not scale tokens
+
+Quality bar: ESLint + Stylelint can mechanically verify every rule. A developer can add a new component using only token names — zero raw values needed.
+
+---
+
+## fe/HOOKS_DEEP_RULES.md
+**Purpose:** The complete behavioural contract for every custom hook. Prevents the most common React hook bugs — stale closures, memory leaks, unnecessary re-renders, misused memoization.
+Write "Not applicable" at top if no frontend React layer exists.
+
+Required sections:
+- **The 8-rule hook contract** — every custom hook must satisfy all eight rules. State each rule explicitly with a concrete example drawn from the actual codebase:
+  1. Single Responsibility — one hook, one concern
+  2. Deterministic Return — typed return shape, consistent regardless of internal state
+  3. Safe Cleanup — every side effect has a corresponding cleanup (subscription, timer, listener)
+  4. Error Surface — throws or returns an error field; never silently swallows exceptions
+  5. Dependency Honesty — every `useEffect`/`useCallback`/`useMemo` dep is in the array or its exclusion is justified with a comment
+  6. SSR Safety — no `window`/`document` access without existence check
+  7. Composability — can be consumed by another hook without modification
+  8. Test Isolation — all external dependencies injectable or mockable via arguments
+- **useEffect rules** — when `useEffect` IS appropriate (subscribing to external data sources, syncing non-React state like DOM/localStorage/third-party libraries, post-render focus management) vs when it is NOT (data fetching — use React Query; deriving state from props — compute during render; attaching event handlers directly to elements — use library hooks). Dependency array rules: every dep listed, or the omission must have an `// eslint-disable-next-line react-hooks/exhaustive-deps` comment with a one-line explanation; suppressing the rule without explanation is banned
+- **Memoization decision rules** — `useMemo`: only for expensive computations (>1ms measured) or values used as deps in another hook; never for primitive values or simple concatenation. `useCallback`: only for functions passed as props to `React.memo`-wrapped children or functions used inside `useEffect` deps; never for closures that have no downstream impact. `React.memo`: apply to pure display components (list rows, table cells), expensive renders, components whose props change rarely; skip for components that always receive new or primitive props. **Decision rule: measure first. Default to no memoization — add only with evidence.**
+- **Data fetching hook patterns** — use the project's data fetching library (React Query or equivalent) for all server state. Document the standard patterns: query hook (queryKey array convention, staleTime/gcTime, retry logic that skips 401/403), mutation hook (onSuccess invalidation + cache preload, onError toast), optimistic update hook (cancelQueries + setQueryData rollback on onError), infinite scroll hook (getNextPageParam convention). State the rule: `useState` + `useEffect` for server data is banned
+- **Hook composition pattern** — compose primitive hooks (useDebounce, usePagination, useFilters) and data hooks (useUsers) into feature hooks (useUserList). The component layer consumes only the feature hook — it knows nothing about fetching, pagination, or debounce logic. Document the real composition hierarchy found in the codebase
+- **Banned anti-patterns** — document each with a code example showing the wrong and correct version: hooks inside conditionals or loops, calling hooks from event handlers, giant multi-concern hooks (split rule: if hook has >3 independent state concerns it must be split), business logic in `shared/hooks/` (only in `features/<name>/hooks/`), returning JSX from hooks
+- **Hook testing patterns** — `renderHook` + `act` + `waitFor`. State hook tests: all state transitions. Data hook tests: loading state (initially true), success state (data shape), error state (isError true). Wrap with the project's `QueryClientWrapper` test helper. Mock external services, never mock React internals
+
+Quality bar: a code reviewer can evaluate any hook against the 8-rule contract in under 2 minutes.
+
+---
+
+## fe/DEPENDENCIES_WORKFLOW.md
+**Purpose:** Dependency governance, feature development workflow, and code review contract. Prevents undiscussed dependencies and inconsistent PR quality.
+Write "Not applicable" at top if no frontend layer exists.
+
+Required sections:
+- **Approved core libraries** — extracted from the actual `package.json`: one table row per library category (UI framework, routing, data fetching, form management, schema validation, global state, styling, component library, icons, HTTP client, date utilities, testing, E2E, API mocking, linting, formatting, bundler). Columns: Category | Library | Purpose | Version policy (locked major/minor/latest)
+- **New dependency evaluation checklist** — every PR that adds a package must answer all six questions in the PR description:
+  1. WHY — what problem does it solve that existing approved libraries cannot?
+  2. BUNDLE — what is the minified + gzipped size impact? (rule: >50KB gzipped requires team approval)
+  3. MAINTENANCE — last commit date, weekly downloads, open issues (rule: <10k weekly downloads or last commit >1 year = reject)
+  4. SECURITY — `npm audit` result, known CVEs (rule: zero high/critical)
+  5. TREE SHAKING — does it export ESM? (rule: CJS-only packages need explicit justification)
+  6. ALTERNATIVE — is there an approved library that partially covers this? (rule: extend first, new package second)
+- **Banned package patterns** — packages and patterns that are explicitly prohibited (with reason): full `lodash` import, `moment.js`, `jquery`, multiple CSS-in-JS solutions, multiple router libraries, multiple HTTP clients, multiple icon sets, `@types/*` packages that shadow existing types
+- **Bundle size limits** — initial JS bundle, total initial load, per-route lazy chunk (extract from CI configuration or vite-bundle-reporter if present). Command to measure locally
+- **Feature development workflow** — numbered steps: BRANCH (from main only, naming convention), PLAN (read relevant docs before coding), BUILD ORDER (types → service function → hook → component → styles → tests — always this sequence), SELF-REVIEW CHECKLIST (no hardcoded values, no inline styles, icons follow matrix, loading/empty/error states handled, RBAC guards present, TypeScript clean, no console.log, tests passing, PR <400 lines), PR (title format, body requirements, screenshots mandatory for UI changes, self-review checklist included)
+- **Code review contract** — what reviewers check and in what order: architecture (patterns followed, shared code actually shared, new deps justified), design system (only tokens used, correct component from library, no re-implementations), security (RBAC on destructive actions, user input validated, no sensitive data in storage), quality (TypeScript complete, tests cover happy + error + loading + edge cases, no TODOs without ticket), performance (lists >50 items virtualized, memoization justified, route lazy-loaded). Review response protocol: `❌ Blocking:` must fix before merge; `💡 Suggestion:` optional improvement; `❓ Question:` needs clarification; `✅ Nice:` acknowledge good patterns
+
+Quality bar: every PR has a complete PR description. A reviewer can process any PR against a written checklist without personal preference.
+
+---
+
+## UNIT_TESTING_COMPLETE.md
+**Purpose:** Complete testing standards for both frontend and backend. The definitive reference for what to test, how to structure tests, and what coverage is required.
+
+Required sections:
+- **Coverage requirements table** — minimum branch and statement coverage per file type: utility functions (100%/100%), validation schemas (100%/100%), pure hooks/UI state (90%/95%), data fetching hooks (85%/90%), service functions (85%/90%), shared UI components (80%/85%), feature components (70%/80%), BE controllers (80%/85%), BE services (90%/95%), BE middleware (90%/95%), DB repository functions (80%/85%). Extract actual configured thresholds from `jest.config.*` or `vitest.config.*` if present; flag gaps where configured thresholds are lower than these targets
+- **Standard test file structure** — every test file follows: outer `describe('[Unit Under Test]')` → `beforeEach(vi.clearAllMocks())` → `afterEach(cleanup())` → nested `describe('when [condition]')` → `it('should [verb] [result]')`. Show a real example from the codebase
+- **Frontend test patterns** — four subsections with real examples:
+  - *Utility function tests* — all branches (positive, negative, edge, invalid input), boundary values (0, max, max+1), error throwing
+  - *Validation schema tests* — valid payload passes, every invalid field fails independently, normalisation (trim, lowercase) verified
+  - *Component tests (complete coverage)* — initial render (all elements present, pre-fill behaviour), form validation (errors shown, submit blocked, errors cleared on correction), submission (correct payload, disabled during submit, spinner shown), loading state (all inputs disabled), accessibility (`axe` no violations, `aria-describedby` wired), RBAC/permission states (buttons present/absent per permission)
+  - *RBAC/permission states* — `renderWithPermissions` wrapper, show and hide based on permissions
+- **Backend test patterns** — four subsections with real examples:
+  - *Service layer* — business rule enforcement, side effects called/not-called per path, non-critical side effect failure handled, password never exposed in return
+  - *Controller/route integration* — unauthenticated (401), insufficient permissions (403), valid request (201 + correct body), conflict (409), validation failure (400), requestId in response meta
+  - *Middleware tests* — no auth header, malformed scheme, valid token (user attached), expired token
+  - *Repository tests* — real test DB with transaction-per-test, rolled back after; found/not-found/soft-deleted variants
+- **Test data factories** — factory pattern using `faker`: `build` (in-memory object), `buildMany` (array), `create` (DB insert with optional transaction). Location: `test/factories/`. Example for a real entity from the codebase
+- **API mocking with MSW** — handler file structure, success + pagination handlers, error handler overrides (`errorHandlers` map), usage pattern: `server.use(errorHandlers.xxx)` in `beforeEach`
+- **Test naming rule** — `it should [verb] [what] [when/given condition]`. List 5 good examples and 5 bad examples. Rule: the test name must be a complete behaviour statement readable without the surrounding describe blocks
+- **What NOT to test** — implementation details, third-party library internals, CSS classes or Tailwind classes, snapshot tests for logic-heavy components, private functions, TypeScript types/interfaces, trivial property getters, `console.log` calls unless the log is a required audit event
+
+Quality bar: a failing test message tells you exactly what broke without reading the source code.
+
+---
+
+## be/MICRO_STANDARDS_BE.md
+**Purpose:** The micro-contract for Controller, Service, and Repository layers. Eliminates layer confusion — every line of code belongs in exactly one place.
+Write "Not applicable" at top if no backend layer exists.
+
+Required sections:
+- **Controller contract** — a controller has exactly 3 jobs: (1) parse and validate request input using the schema library, (2) call exactly one service method, (3) format and return the response. Nothing else. Show a ✅ correct thin controller and a ❌ wrong controller with business logic, both drawn from real patterns in this codebase
+- **Service contract** — a service has exactly 4 jobs: (1) enforce all business rules, (2) orchestrate repository calls and other services, (3) own and manage transactions when multiple writes are needed, (4) throw specific typed errors for every failure case. Show a ✅ correct service method: business rule check, delegated data access, non-critical side effect with catch-and-log, sanitised DTO return (no password field)
+- **Repository contract** — a repository has exactly 4 jobs: (1) execute SQL queries or ORM calls, (2) map DB rows to domain objects, (3) handle DB-specific errors (unique violation → ConflictError, no rows → return null), (4) absolutely no business logic. Show a ✅ correct repository method with row mapping and a unique-violation catch; show a ❌ wrong repository with conditional business logic
+- **Error flow** — how typed errors bubble through layers: repository catches DB errors and throws typed application errors (ConflictError, NotFoundError) → service catches expected errors and rethrows, or lets unexpected ones bubble → global error middleware catches everything and maps to HTTP status + error envelope (cross-reference ERROR_HANDLING.md for the full taxonomy and status mapping)
+- **Logging micro-rules** — what each layer logs and at what level:
+  - *Controller*: logs nothing — request/response logging is handled by middleware
+  - *Service*: `info` for major state transitions (user created, order placed); `warn` for non-critical failures (welcome email failed, cache miss); `error` for unexpected failures; NEVER logs PII (passwords, raw tokens, full card numbers, SSNs)
+  - *Repository*: `debug` only for query timing (development/staging only); never logs query parameters that contain PII
+- **Transaction ownership rule** — transactions are owned by the service layer only. Repository methods accept an optional transaction context parameter and use it when provided. Controllers never open, commit, or rollback transactions
+
+Quality bar: a reviewer can determine which layer a piece of code belongs in within 5 seconds of reading it.
+
+---
+
 ## Document update triggers
 
 | Trigger event | Documents to regenerate |

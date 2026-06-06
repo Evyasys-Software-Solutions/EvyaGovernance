@@ -103,7 +103,9 @@ module.exports = async function (ctx) {
 
   const written = [];
   for (const [name, content] of Object.entries(docs)) {
-    fs.writeFileSync(path.join(docsDir, name), content + '\n', 'utf8');
+    const docPath = path.join(docsDir, name);
+    fs.mkdirSync(path.dirname(docPath), { recursive: true });
+    fs.writeFileSync(docPath, content + '\n', 'utf8');
     written.push(name);
   }
 

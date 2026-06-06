@@ -271,7 +271,7 @@ flowchart TD
 | # | Phase | Command | Role | What the Agent Does | Output | PM State |
 |---|-------|---------|------|---------------------|--------|----------|
 | 1 | Setup | `/evyasys:Setup` | 👤 Any | Choose PM + notification tool; collect + encrypt credentials | `project.yaml` · `credentials` | — |
-| 2 | Setup | `/evyasys:TrainDocs` | 🏗️ Tech Lead | Scan full codebase; generate 20 quality-gate docs | `.evyasys/docs/` (20 files) | — |
+| 2 | Setup | `/evyasys:TrainDocs` | 🏗️ Tech Lead | Scan full codebase; generate 25 quality-gate docs | `.evyasys/docs/` (25 files) | — |
 | 3 | Plan | `/evyasys:CreateStory` | 👔 PO / BA | Resolves/creates epics (Gate 1); plans full story batch (Gate 2); drafts all stories; syncs everything; 2 notifications | `{epicId}_Epic.md` · `{storyId}_UserStory.md` | Epics + Backlog |
 | 4 | Plan | `/evyasys:CreateSubtask EVYA-XXXX EVYA-XXYY` | 🏗️ Architect | Load shared context once; cross-story analysis; single consolidated plan approval; 3–7 dev tasks + QA task per story; 1 batch notification | `{storyId}_Subtasks.md` (per story) | Tasks created |
 | 5 | Dev | `/evyasys:StartDev EVYA-XXXX` | 💻 Dev Lead | Load quality-gate docs; brainstorm 3+ approaches with trade-offs; architecture approval gate | `TechBrainstorm.md` | **In Progress** |
@@ -317,14 +317,14 @@ Interactive wizard that configures Evyasys for this project. Run once per projec
 **Who:** Tech Lead — **When:** First time on a new project, then `--retrain` after major changes
 
 Scans the entire codebase — tech stack, source structure, architecture layers, CI/CD,
-tooling config, design system tokens, UI/UX patterns, code sampling — and generates **20 quality-gate documents** into
+tooling config, design system tokens, UI/UX patterns, code sampling — and generates **25 quality-gate documents** into
 `.evyasys/docs/`. These documents are automatically loaded by every downstream command
 before forming any technical opinion: StartDev loads them before brainstorming,
 ReviewDev checks the diff against them, FinishDev verifies compliance before sign-off,
 StartQA uses them to set pass/fail criteria.
 
 **Arguments:**
-- _(no args)_ — Full scan and generate all 20 documents
+- _(no args)_ — Full scan and generate all 25 documents
 - `--update` — Regenerate all documents (re-scan full codebase)
 - `--update FILENAME.md` — Regenerate a single document
 - `--retrain` — Detect which files changed since last run (via `git log`) and regenerate only affected documents. Use after stack upgrades, schema changes, design system token updates, or component library changes.
@@ -343,9 +343,14 @@ StartQA uses them to set pass/fail criteria.
 | `FRONTEND.md` | Component structure, state, routing, accessibility |
 | `DESIGN_SYSTEM.md` | UI tokens, component library, typography, colour, breakpoints |
 | `UI_UX_STANDARDS.md` | Loading/error/empty states, forms, toast patterns, accessibility baseline |
+| `fe/STYLING_MICRO_STANDARDS.md` | Complete token catalogue, icon size matrix, spacing anatomy, CSS architecture rules |
+| `fe/HOOKS_DEEP_RULES.md` | 8-rule hook contract, useEffect rules, memoization decision trees, banned anti-patterns |
+| `fe/DEPENDENCIES_WORKFLOW.md` | Approved libraries, new-dep checklist, bundle limits, feature workflow, review contract |
+| `UNIT_TESTING_COMPLETE.md` | Coverage requirements, FE + BE test patterns, factories, MSW, naming rules |
+| `be/MICRO_STANDARDS_BE.md` | Controller/Service/Repository micro-contracts, error flow, logging rules |
 | + 8 more | STACK, BACKEND, WORKFLOWS, DEPLOYMENT, ERROR_HANDLING, DECISIONS, ONBOARDING, GLOSSARY |
 
-**Produces:** 20 `.md` files + `INDEX.md` → `.evyasys/docs/`
+**Produces:** 25 `.md` files + `INDEX.md` → `.evyasys/docs/` (micro docs in `fe/` and `be/` subdirectories)
 
 ---
 
@@ -554,7 +559,14 @@ pdfkit is installed automatically on first run if not already present.
 │   ├── INDEX.md
 │   ├── ARCHITECTURE.md
 │   ├── RULES.md
-│   └── ... (20 documents total)
+│   ├── ... (20 core documents)
+│   ├── fe/                            ← Micro-level FE standards
+│   │   ├── STYLING_MICRO_STANDARDS.md
+│   │   ├── HOOKS_DEEP_RULES.md
+│   │   └── DEPENDENCIES_WORKFLOW.md
+│   ├── be/                            ← Micro-level BE standards
+│   │   └── MICRO_STANDARDS_BE.md
+│   └── UNIT_TESTING_COMPLETE.md       ← Complete FE+BE test standards
 │
 ├── board/
 │   ├── epics/
@@ -610,7 +622,7 @@ project repo. Project files always win over plugin defaults.
 
 | To customise | File in your project |
 |---|---|
-| **Quality-gate documents** | Run `/evyasys:TrainDocs` — generates all 20 docs into `.evyasys/docs/` |
+| **Quality-gate documents** | Run `/evyasys:TrainDocs` — generates all 25 docs into `.evyasys/docs/` |
 | Story naming rules | `.evyasys/rules/naming.md` |
 | Definition of Ready | `.evyasys/rules/definition-of-ready.md` |
 | Any workflow prompt | `.evyasys/workflows/<name>/PROMPT.md` |
