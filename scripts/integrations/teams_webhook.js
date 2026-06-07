@@ -405,21 +405,68 @@ async function subtasksBatchCreated({ stories, sharedTasks, crossStoryFlags, pro
   return post(ac(blocks));
 }
 
-async function releaseGenerated({ storyId, storyCount, version, pdfFile }) {
-  const v   = version    ? 'v' + version : '-';
-  const n   = storyCount ? storyCount + ' stor' + (storyCount !== 1 ? 'ies' : 'y') : '-';
-  const pdf = pdfFile    ? [['PDF', pdfFile]] : [];
-  return post(ac([
+async function releaseGenerated({ storyId, storyCount, version, pdfFile, executiveSummary, epicGroups, qualityGates, knownIssues }) {
+  const v      = version    ? 'v' + version : '—';
+  const n      = storyCount ? storyCount + ' stor' + (storyCount !== 1 ? 'ies' : 'y') : '—';
+  const gq     = qualityGates || {};
+  const gIcon  = (val) => {
+    const u = String(val || '').toUpperCase();
+    return u === 'PASS' ? '✅' : u === 'FAIL' ? '❌' : '➖';
+  };
+  const gateStr = [
+    `Security ${gIcon(gq.security)}`,
+    `Performance ${gIcon(gq.performance)}`,
+    `Accessibility ${gIcon(gq.accessibility)}`,
+    `Data Integrity ${gIcon(gq.dataIntegrity)}`,
+  ].join('  ·  ');
+
+  // Story rows per epic
+  const storyRows = (epicGroups || []).flatMap(eg =>
+    (eg.stories || []).map(s => ({
+      title: `${s.id}`,
+      value: `${s.title}${s.storyPoints ? '  ·  ' + s.storyPoints + ' SP' : ''}  —  ${s.summary || ''}`,
+    }))
+  );
+
+  const blocks = [
     badge('Released', 'Good'),
-    cardTitle('📄 Release Notes Generated', 'Good'),
-    cardSubtitle('Version ' + v),
+    cardTitle('🚀 Release Notes Ready', 'Good'),
+    cardSubtitle(`${storyId}  ·  ${n}`),
     summaryFacts([
-      ['Story ID', storyId || '-'],
-      ['Version',  v],
-      ['Stories',  n],
-      ...pdf,
-    ]),
-  ]));
+      ['Version',    v],
+      ['Stories',    n],
+      ['Gates',      gateStr],
+      pdfFile ? ['PDF saved', pdfFile] : null,
+    ].filter(Boolean)),
+  ];
+
+  if (executiveSummary) {
+    blocks.push({
+      type: 'TextBlock',
+      text: executiveSummary,
+      wrap: true,
+      size: 'Small',
+      isSubtle: true,
+      spacing: 'Medium',
+    });
+  }
+
+  if (storyRows.length > 0) {
+    blocks.push(tableSection('What\'s in This Release', storyRows));
+  }
+
+  if ((knownIssues || []).length > 0) {
+    blocks.push({
+      type: 'TextBlock',
+      text: '⚠️ Known Issues: ' + knownIssues.join(' · '),
+      wrap: true,
+      size: 'Small',
+      color: 'Attention',
+      spacing: 'Medium',
+    });
+  }
+
+  return post(ac(blocks));
 }
 
 // ── Event dispatch ────────────────────────────────────────────────────────────
@@ -437,7 +484,7 @@ const EVENT_MAP = {
   'qa-started':            ({ storyId })                               => qaStarted({ storyId }),
   'qa-finished':           ({ storyId })                               => qaFinished({ storyId }),
   'bug-found':             ({ storyId, count, criticalCount })         => bugFound({ storyId, count, criticalCount }),
-  'release-generated':     ({ storyId, storyCount, version, pdfFile }) => releaseGenerated({ storyId, storyCount, version, pdfFile }),
+  'release-generated':     ({ storyId, storyCount, version, pdfFile, executiveSummary, epicGroups, qualityGates, knownIssues }) => releaseGenerated({ storyId, storyCount, version, pdfFile, executiveSummary, epicGroups, qualityGates, knownIssues }),
 };
 
 /** Called by notify-adapter with { event, storyId, ...extras }. */

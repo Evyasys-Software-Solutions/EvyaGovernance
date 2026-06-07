@@ -48,6 +48,14 @@ Run every item before showing output. Fix silently if any fail.
 - [ ] Playwright spec file path named (`tests/e2e/<storyId>.spec.ts`).
 - [ ] Locator strategy stated (data-testid or ARIA role).
 
+## EVYASUBTASKBATCH manifest
+
+- [ ] `inputMode` is `"story"` or `"epic"` — not missing or null.
+- [ ] When `inputMode` is `"epic"`, `epicGroups` is a non-empty array and every story ID in `stories` appears in exactly one epic group (use `"_standalone"` for standalone story IDs in a mixed invocation).
+- [ ] When `inputMode` is `"story"`, `epicGroups` is an empty array `[]`.
+- [ ] Every story object has `storyId`, `title`, `epicId`, `taskCount`, and `keyAreas` (2–4 items, short identifiers only).
+- [ ] `taskCount` in each story matches the number of `## Task N` headers emitted in the corresponding `EVYA_SUBTASKS` block.
+
 ## No business language in tasks
 
 - [ ] No task body contains business context that belongs in the story (roles, business rules, workflow descriptions).

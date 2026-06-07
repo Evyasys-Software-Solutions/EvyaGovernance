@@ -1,10 +1,11 @@
 ---
 name: evyasys-generate-release-note
 description: >
-  Use this skill to compile a professional, branded PDF release notes document from one or more
-  completed stories. Reads each story's FinishQa artefacts, groups them by Epic, consolidates
-  quality gates, and generates a versioned PDF saved to .evyasys/releases/. Triggered by
-  /evyasys:GenerateReleaseNote EVYA-1042 EVYA-1043 ...
+  Use this skill to compile a short, beautiful, branded PDF release notes document from one or more
+  completed stories. Accepts multiple story IDs as arguments or asks for them if none are provided.
+  Reads each story's FinishQa artefacts, groups them by Epic, consolidates quality gates with emoji
+  status icons, and generates a compact versioned PDF saved to .evyasys/releases/. Triggered by
+  /evyasys:GenerateReleaseNote [EVYA-1042 EVYA-1043 ...]
 trigger: /evyasys:GenerateReleaseNote
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---

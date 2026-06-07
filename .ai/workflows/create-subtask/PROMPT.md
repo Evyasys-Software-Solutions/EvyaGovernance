@@ -302,6 +302,8 @@ One entry per row in the QA test scenarios table. Emit `[]` if no Playwright tes
 <!-- EVYASUBTASKBATCH
 {
   "projectName": "",
+  "inputMode": "story",
+  "epicGroups": [],
   "stories": [
     {
       "storyId": "EVYA-1001",
@@ -328,6 +330,22 @@ One entry per row in the QA test scenarios table. Emit `[]` if no Playwright tes
 }
 -->
 ```
+
+**`inputMode`** — controls when PM sync and notifications fire:
+- `"story"` — user provided individual story IDs (e.g. `EVYA-1001 EVYA-1002`). The hook will save → PM sync → notify immediately after **each story**.
+- `"epic"` — user provided one or more epic IDs (e.g. `EP-001 EP-002`). The hook will save all stories in an epic to local first, then PM sync all, then notify **once per epic**. A mixed input (`EP-001 EVYA-1005`) uses `"epic"` mode; the standalone story ID is placed in its own single-story epicGroup.
+
+**`epicGroups`** — required when `inputMode` is `"epic"`; empty array `[]` when `inputMode` is `"story"`.
+
+```json
+"epicGroups": [
+  { "epicId": "EP-001", "storyIds": ["EVYA-1001", "EVYA-1002"] },
+  { "epicId": "EP-002", "storyIds": ["EVYA-1003"] },
+  { "epicId": "_standalone", "storyIds": ["EVYA-1005"] }
+]
+```
+
+Use `"_standalone"` as the epicId for individual story IDs supplied alongside epic IDs in a mixed invocation.
 
 `keyAreas`: 2–4 items maximum — file names, service names, or `DB:{table}`. No full paths — short identifiers only.
 `sharedTasks`: empty array `[]` if none.

@@ -1,10 +1,11 @@
 ---
 description: >
-  Compile a professional, branded PDF release notes document from one or more completed stories.
+  Compile short, beautiful, branded PDF release notes from one or more completed stories.
+  Pass story IDs as arguments, or run with no arguments and the agent will ask.
   Reads FinishQa artefacts, groups by Epic, consolidates quality gates, proposes version number
-  from release history, and generates a PDF saved to .evyasys/releases/.
+  from release history, and generates a compact PDF saved to .evyasys/releases/.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
-argument-hint: <StoryID> [StoryID ...] — space-separated story IDs (min 1, e.g. EVYA-1042 EVYA-1043)
+argument-hint: "[StoryID ...] — space-separated story IDs (optional, e.g. EVYA-1042 EVYA-1043). Omit to be prompted."
 skill: evyasys-generate-release-note
 ---
 
@@ -12,7 +13,7 @@ You are running **/evyasys:GenerateReleaseNote**.
 
 ## Quick summary
 
-1. Parse the story IDs from `$ARGUMENTS`. If none provided, ask for them.
+1. Parse story IDs from `$ARGUMENTS`. If none provided, ask: "Which story IDs should I include in this release? (e.g. EVYA-1042 EVYA-1043)"
 
 2. Read the workflow files:
    - `.ai/workflows/generate-release-note/{AGENT,PROMPT,CHECKLIST,RELEASE_DOC_TEMPLATE}.md`
@@ -56,4 +57,4 @@ Configure branding in `.evyasys/project.yaml` under `release_notes:` or run `/ev
 - `output_dir`   — where PDFs are saved (default: .evyasys/releases/)
 - `naming_convention` — e.g. `v{version}`, `Sprint-{N}`, `{date}`
 
-Output: release name · markdown path · PDF path · release history entry.
+Output: short, visually formatted release note · release name · markdown path · PDF path · release history entry.

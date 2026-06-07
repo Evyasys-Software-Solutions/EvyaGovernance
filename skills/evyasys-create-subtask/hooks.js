@@ -1,16 +1,16 @@
 /**
  * Post-agent hook for evyasys-create-subtask (batch mode).
  *
- * Flow:
- *  1. Parse EVYASUBTASKBATCH manifest
- *  2. Parse EVYA_SUBTASKS content blocks (one per story)
- *  3. Parse EVYASPEC:{storyId} blocks (one per story)
- *  4. Single confirmation gate (covers all stories)
- *  5. Per story (sequential):
- *       save file → lookup parent PM ID → create subtasks (linked to parent)
- *       → back-write PM IDs → scaffold Playwright spec
- *  6. Single subtasks-batch-created notification with full results
+ * Two processing modes driven by EVYASUBTASKBATCH.inputMode:
  *
+ *   "story" — user passed individual story IDs.
+ *             For each story: save local → PM sync → notify immediately.
+ *
+ *   "epic"  — user passed epic IDs (or a mix).
+ *             For each epic group: save all stories local → PM sync all → notify once.
+ *             Stories not in any epic group fall back to story-wise processing.
+ *
+ * Single confirmation gate covers the whole batch regardless of mode.
  * On any PM sync failure: local file is always saved, user notified inline — batch continues.
  */
 const path = require('path');
@@ -40,7 +40,6 @@ function parseSubtasksBlocks(text) {
     const endTag = `=== END_EVYA_SUBTASKS: ${id} ===`;
     const endIdx = after.indexOf('\n' + endTag);
     if (endIdx !== -1) {
-      // strip the leading newline after the start tag
       out[id] = after.slice(1, endIdx);
     }
   }
@@ -77,15 +76,28 @@ module.exports = async function (ctx) {
   const subtasksBlocks = parseSubtasksBlocks(output);
   const specBlocks     = parseSpecBlocks(output);
 
+  const inputMode  = batch.inputMode || 'story';
+  const epicGroups = (inputMode === 'epic' && Array.isArray(batch.epicGroups) && batch.epicGroups.length > 0)
+                       ? batch.epicGroups
+                       : null;
+
   const pmLabel     = pm.toolLabel(cfg);
   const notifyLabel = notify.toolLabel(cfg);
   const hasNotify   = cfg.notificationTool !== 'none';
   const storyCount  = batch.stories.length;
-  const notifyLine  = hasNotify ? ` · 1 notification via ${notifyLabel}` : '';
+
+  const modeDesc   = epicGroups
+    ? `${epicGroups.length} epic${epicGroups.length !== 1 ? 's' : ''} (${storyCount} stor${storyCount !== 1 ? 'ies' : 'y'})`
+    : `${storyCount} stor${storyCount !== 1 ? 'ies' : 'y'}`;
+  const notifyLine = hasNotify
+    ? (epicGroups
+        ? ` · 1 notification per epic via ${notifyLabel}`
+        : ` · 1 notification per story via ${notifyLabel}`)
+    : '';
 
   // ── Single confirmation gate ─────────────────────────────────────────────────
   if (!(await ctx.confirm(
-    `Create subtasks for ${storyCount} stor${storyCount !== 1 ? 'ies' : 'y'} in ${pmLabel}?${notifyLine}`
+    `Create subtasks for ${modeDesc} in ${pmLabel}?${notifyLine}`
   ))) {
     ctx.send('Batch subtask creation cancelled. All drafts are preserved in this session.');
     return;
@@ -94,33 +106,36 @@ module.exports = async function (ctx) {
   if (cfg.pmTool !== 'local') {
     await pm.ensureCredentials(cfg);
   }
+  if (hasNotify) {
+    await notify.ensureCredentials(cfg);
+  }
 
-  // ── Per-story processing (sequential) ────────────────────────────────────────
   const storyResults = [];
 
-  for (const story of batch.stories) {
+  // ── Helpers ───────────────────────────────────────────────────────────────────
+
+  /** Save one story's subtasks to disk and scaffold its Playwright spec.
+   *  Returns a partial result object (status='saved', pmIds=[]) + the filePath used. */
+  function saveStoryLocal(story) {
     const { storyId, title, epicId } = story;
 
     const subtasksContent = subtasksBlocks[storyId];
     if (!subtasksContent) {
       ctx.send(`⚠️  Story ${storyId} content block not found in agent output — skipped.`);
-      storyResults.push({ storyId, title, epicId, taskCount: 0, pmIds: [], specCount: 0, status: 'skipped', error: 'Content block missing' });
-      continue;
+      return { result: { storyId, title, epicId, taskCount: 0, pmIds: [], specCount: 0, status: 'skipped', error: 'Content block missing' }, filePath: null };
     }
 
-    // Resolve subtasks directory — prefer adoMap dir, then epic-based, then flat
-    const storyDir   = adoMap.lookupDir(cfg.repoRoot, storyId)
-                    || (epicId
-                          ? path.join(cfg.repoRoot, '.evyasys', 'board', 'epics', epicId, 'stories', storyId)
-                          : path.join(cfg.repoRoot, '.evyasys', 'board', 'stories', storyId));
+    const storyDir    = adoMap.lookupDir(cfg.repoRoot, storyId)
+                      || (epicId
+                            ? path.join(cfg.repoRoot, '.evyasys', 'board', 'epics', epicId, 'stories', storyId)
+                            : path.join(cfg.repoRoot, '.evyasys', 'board', 'stories', storyId));
     const subtasksDir = path.join(storyDir, 'subtasks');
     fs.mkdirSync(subtasksDir, { recursive: true });
-    const filePath  = path.join(subtasksDir, `${storyId}_Subtasks.md`);
+    const filePath    = path.join(subtasksDir, `${storyId}_Subtasks.md`);
     fs.writeFileSync(filePath, subtasksContent, 'utf8');
 
     const taskCount = (subtasksContent.match(/^##\s+Task\s+\d+/gim) || []).length || 0;
 
-    // Scaffold Playwright specs first so specCount is known before building the result object
     const testCases = specBlocks[storyId];
     let specCount   = 0;
     if (Array.isArray(testCases) && testCases.length > 0) {
@@ -133,76 +148,150 @@ module.exports = async function (ctx) {
       }
     }
 
-    if (cfg.pmTool === 'local') {
-      storyResults.push({ storyId, title, epicId, taskCount, pmIds: [], specCount, status: 'saved' });
-    } else {
-      // Look up parent story PM ID for hierarchy linking
-      const storyPmId = adoMap.lookup(cfg.repoRoot, storyId);
-      if (!storyPmId) {
-        ctx.send(
-          `⚠️  PM ID for ${storyId} not found in map — subtasks will be created without a parent story link. ` +
-          'Run /evyasys:CreateStory first to sync the parent story.'
-        );
-      }
+    return { result: { storyId, title, epicId, taskCount, pmIds: [], specCount, status: 'saved' }, filePath };
+  }
 
-      const subtaskResults = await runIntegration({
-        name: `${cfg.pmTool}:create-subtasks`, cfg,
-        args: { storyId, file: filePath, storyAdoId: storyPmId },
-        live: () => pm.createSubtasks(cfg, { storyId, file: filePath, storyAdoId: storyPmId }),
+  /** PM-sync one story's saved subtask file. Mutates result.status and result.pmIds in place. */
+  async function syncStoryToPm(result, filePath) {
+    if (cfg.pmTool === 'local' || result.status === 'skipped') return;
+
+    const { storyId } = result;
+    const storyPmId   = adoMap.lookup(cfg.repoRoot, storyId);
+    if (!storyPmId) {
+      ctx.send(
+        `⚠️  PM ID for ${storyId} not found in map — subtasks will be created without a parent story link. ` +
+        'Run /evyasys:CreateStory first to sync the parent story.'
+      );
+    }
+
+    const subtaskResults = await runIntegration({
+      name: `${cfg.pmTool}:create-subtasks`, cfg,
+      args: { storyId, file: filePath, storyAdoId: storyPmId },
+      live: () => pm.createSubtasks(cfg, { storyId, file: filePath, storyAdoId: storyPmId }),
+    });
+
+    const pmIds = [];
+    if (!cfg.dryRun && Array.isArray(subtaskResults) && subtaskResults.some(r => r && r.id)) {
+      let md  = fs.readFileSync(filePath, 'utf8');
+      let idx = 0;
+      md = md.replace(/^(##\s+Task\s+\d+[^\n]*)/gim, (match) => {
+        const r = subtaskResults[idx++];
+        if (r && r.id) {
+          pmIds.push(r.id);
+          return (!match.includes(`${pmLabel} #`)) ? `${match} · ${pmLabel} #${r.id}` : match;
+        }
+        return match;
       });
+      fs.writeFileSync(filePath, md, 'utf8');
+    }
 
-      const pmIds = [];
+    const hasError = !Array.isArray(subtaskResults) || subtaskResults.some(r => r && r.error);
+    if (hasError) {
+      const errMsg = (Array.isArray(subtaskResults) && subtaskResults[0] && subtaskResults[0].error) || 'PM sync failed';
+      ctx.send(`⚠️  ${storyId} subtasks saved locally — ${pmLabel} sync failed: ${errMsg}.`);
+      result.status = 'sync-failed';
+      result.error  = errMsg;
+    } else {
+      result.status = 'synced';
+      result.pmIds  = pmIds;
+    }
+  }
 
-      if (!cfg.dryRun && Array.isArray(subtaskResults) && subtaskResults.some(r => r && r.id)) {
-        let md  = fs.readFileSync(filePath, 'utf8');
-        let idx = 0;
-        md = md.replace(/^(##\s+Task\s+\d+[^\n]*)/gim, (match) => {
-          const result = subtaskResults[idx++];
-          if (result && result.id) {
-            pmIds.push(result.id);
-            return (!match.includes(`${pmLabel} #`))
-              ? `${match} · ${pmLabel} #${result.id}`
-              : match;
-          }
-          return match;
-        });
-        fs.writeFileSync(filePath, md, 'utf8');
-      }
+  /** Fire a subtasks-batch-created notification for a slice of story results. */
+  async function notifyGroup(groupResults, projectName, groupCrossFlags, groupSharedTasks) {
+    await runIntegration({
+      name: `${cfg.notificationTool}:subtasks-batch-created`, cfg,
+      args: {
+        stories:         groupResults,
+        sharedTasks:     groupSharedTasks || [],
+        crossStoryFlags: groupCrossFlags  || [],
+        projectName:     projectName      || '',
+      },
+      live: () => notify.send(cfg, {
+        event:           'subtasks-batch-created',
+        stories:         groupResults,
+        sharedTasks:     groupSharedTasks || [],
+        crossStoryFlags: groupCrossFlags  || [],
+        projectName:     projectName      || '',
+      }),
+    }).catch((err) => {
+      ctx.send(`⚠️  Notification failed: ${err.message}`);
+    });
+  }
 
-      const hasError = !Array.isArray(subtaskResults) || subtaskResults.some(r => r && r.error);
-      if (hasError) {
-        const errMsg = (Array.isArray(subtaskResults) && subtaskResults[0] && subtaskResults[0].error)
-          || 'PM sync failed';
-        ctx.send(`⚠️  ${storyId} subtasks saved locally — ${pmLabel} sync failed: ${errMsg}.`);
-        storyResults.push({ storyId, title, epicId, taskCount, pmIds: [], specCount, status: 'sync-failed', error: errMsg });
-      } else {
-        storyResults.push({ storyId, title, epicId, taskCount, pmIds, specCount, status: 'synced' });
+  // ── Story-wise: save → PM sync → notify, one story at a time ─────────────────
+
+  async function processStoriesOneByOne(stories) {
+    for (const story of stories) {
+      const { result, filePath } = saveStoryLocal(story);
+      await syncStoryToPm(result, filePath);
+      storyResults.push(result);
+
+      if (hasNotify) {
+        await notifyGroup(
+          [result],
+          batch.projectName || '',
+          [],
+          []
+        );
       }
     }
   }
 
-  // ── Single notification ───────────────────────────────────────────────────────
-  if (hasNotify) {
-    await notify.ensureCredentials(cfg);
-    await runIntegration({
-      name: `${cfg.notificationTool}:subtasks-batch-created`, cfg,
-      args: {
-        stories:         storyResults,
-        sharedTasks:     batch.sharedTasks     || [],
-        crossStoryFlags: batch.crossStoryFlags || [],
-        projectName:     batch.projectName     || '',
-      },
-      live: () => notify.send(cfg, {
-        event:           'subtasks-batch-created',
-        stories:         storyResults,
-        sharedTasks:     batch.sharedTasks     || [],
-        crossStoryFlags: batch.crossStoryFlags || [],
-        projectName:     batch.projectName     || '',
-      }),
-    }).catch(() => {});
+  // ── Epic-wise: save all in epic → PM sync all → notify once per epic ──────────
+
+  async function processEpicGroups(groups) {
+    const allEpicStoryIds = new Set(groups.flatMap(eg => eg.storyIds || []));
+
+    for (const epicGroup of groups) {
+      const epicStories = batch.stories.filter(s => (epicGroup.storyIds || []).includes(s.storyId));
+      if (!epicStories.length) continue;
+
+      // Phase 1 — save all stories in this epic to local
+      const epicEntries = epicStories.map(s => saveStoryLocal(s));
+
+      const localCount = epicEntries.filter(e => e.result.status !== 'skipped').length;
+      ctx.send(`Epic ${epicGroup.epicId}: ${localCount} stor${localCount !== 1 ? 'ies' : 'y'} saved locally. Syncing to ${pmLabel}…`);
+
+      // Phase 2 — PM sync all stories in this epic
+      for (const { result, filePath } of epicEntries) {
+        await syncStoryToPm(result, filePath);
+      }
+
+      const epicResults = epicEntries.map(e => e.result);
+      storyResults.push(...epicResults);
+
+      // Phase 3 — one notification for this epic
+      if (hasNotify) {
+        const epicIds      = new Set(epicStories.map(s => s.storyId));
+        const epicCrossFlags  = (batch.crossStoryFlags || []).filter(f => epicStories.some(s => f.includes(s.storyId)));
+        const epicSharedTasks = (batch.sharedTasks     || []).filter(t => (t.linkedStories || []).some(id => epicIds.has(id)));
+        await notifyGroup(
+          epicResults,
+          batch.projectName || (epicGroup.epicId !== '_standalone' ? epicGroup.epicId : ''),
+          epicCrossFlags,
+          epicSharedTasks
+        );
+      }
+    }
+
+    // Any stories not in an epic group fall back to story-wise
+    const ungrouped = batch.stories.filter(s => !allEpicStoryIds.has(s.storyId));
+    if (ungrouped.length) {
+      await processStoriesOneByOne(ungrouped);
+    }
   }
 
-  // ── Session summary ───────────────────────────────────────────────────────────
+  // ── Dispatch ──────────────────────────────────────────────────────────────────
+
+  if (epicGroups) {
+    await processEpicGroups(epicGroups);
+  } else {
+    await processStoriesOneByOne(batch.stories);
+  }
+
+  // ── Final text summary ────────────────────────────────────────────────────────
+
   const synced     = storyResults.filter(s => s.status === 'synced').length;
   const savedLocal = storyResults.filter(s => s.status === 'saved').length;
   const failed     = storyResults.filter(s => s.status === 'sync-failed').length;
@@ -211,9 +300,9 @@ module.exports = async function (ctx) {
 
   ctx.send(
     `✅ Batch complete — ${totalTasks} task${totalTasks !== 1 ? 's' : ''} across ${storyResults.length} stor${storyResults.length !== 1 ? 'ies' : 'y'}.\n` +
-    (synced     > 0 ? `  • ${synced} stor${synced !== 1 ? 'ies' : 'y'} synced to ${pmLabel}\n`                  : '') +
+    (synced     > 0 ? `  • ${synced} stor${synced !== 1 ? 'ies' : 'y'} synced to ${pmLabel}\n`                   : '') +
     (savedLocal > 0 ? `  • ${savedLocal} stor${savedLocal !== 1 ? 'ies' : 'y'} saved locally (local-only mode)\n` : '') +
-    (failed     > 0 ? `  ⚠️  ${failed} PM sync failed — saved locally, sync when resolved\n`                    : '') +
-    (skipped    > 0 ? `  ⚠️  ${skipped} skipped — content block missing, re-run if needed\n`                    : '')
+    (failed     > 0 ? `  ⚠️  ${failed} PM sync failed — saved locally, sync when resolved\n`                      : '') +
+    (skipped    > 0 ? `  ⚠️  ${skipped} skipped — content block missing, re-run if needed\n`                      : '')
   );
 };

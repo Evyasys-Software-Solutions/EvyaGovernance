@@ -1,58 +1,34 @@
-# {{RELEASE_NAME}} — Release Notes
+# 🚀 {{RELEASE_NAME}}
 
-> **Version:** {{VERSION}}
-> **Release Date:** {{RELEASE_DATE}}
-> **Prepared by:** {{PREPARED_BY}}
-> **Stories:** {{STORY_IDS}}
-
----
-
-## Executive Summary
+> **📅** {{RELEASE_DATE}}  ·  **📦** {{STORY_COUNT}} {{#if STORY_COUNT_PLURAL}}stories{{else}}story{{/if}}  ·  **⚡** {{TOTAL_SP}} sp  ·  **👤** {{PREPARED_BY}}
 
 {{EXECUTIVE_SUMMARY}}
 
 ---
 
-## What's in This Release
+## ✨ What's New
 
 {{#each EPIC_GROUPS}}
-### {{EPIC_TITLE}} ({{EPIC_ID}})
-
+**{{EPIC_TITLE}}**
 {{#each STORIES}}
-#### {{STORY_ID}} — {{STORY_TITLE}}
-
-{{STORY_SUMMARY}}
-
-**What changed:**
-{{#each CHANGELOG}}
-- {{this}}
+- {{STORY_SUMMARY}}
 {{/each}}
 
-{{#if LIMITATIONS}}
-**Known limitations for this story:**
-{{#each LIMITATIONS}}
-- {{this}}
 {{/each}}
-{{/if}}
-
-**QA outcome:** {{TEST_OUTCOME}}
-
----
-{{/each}}
-{{/each}}
-
-## Quality Gate Summary
-
-| Gate | Result | Scope |
-|---|---|---|
-| Security | {{GATE_SECURITY}} | Auth, input validation, PII handling |
-| Performance | {{GATE_PERFORMANCE}} | Response time budgets, load scenarios |
-| Accessibility | {{GATE_ACCESSIBILITY}} | Keyboard nav, ARIA labels, colour contrast |
-| Data Integrity | {{GATE_DATA_INTEGRITY}} | FK constraints, migration up/down |
 
 ---
 
-## Known Issues & Limitations
+## 🔍 Quality Gates
+
+| Security | Performance | Accessibility | Data Integrity |
+|:---:|:---:|:---:|:---:|
+| {{GATE_SECURITY_ICON}} {{GATE_SECURITY}} | {{GATE_PERFORMANCE_ICON}} {{GATE_PERFORMANCE}} | {{GATE_ACCESSIBILITY_ICON}} {{GATE_ACCESSIBILITY}} | {{GATE_DATA_INTEGRITY_ICON}} {{GATE_DATA_INTEGRITY}} |
+
+> Gate legend: ✅ PASS · ❌ FAIL · ➖ N/A
+
+---
+
+## ⚠️ Known Issues
 
 {{#if KNOWN_ISSUES}}
 {{#each KNOWN_ISSUES}}
@@ -64,24 +40,21 @@ None identified at release time.
 
 ---
 
-## Deployment Notes
+## 🚀 Deployment
 
 {{DEPLOYMENT_NOTES}}
 
 ---
 
-## Rollback Procedure
+## ↩️ Rollback
 
 {{ROLLBACK}}
 
 ---
 
-## Appendix — Story & Work Item References
+## 📎 Stories
 
-{{#each EPIC_GROUPS}}
-**{{EPIC_ID}}: {{EPIC_TITLE}}**
-{{#each STORIES}}
-- `{{STORY_ID}}` — {{STORY_TITLE}}{{#if PM_ID}} · Work Item #{{PM_ID}}{{/if}}
-  - Test plan: `.evyasys/board/**/{{STORY_ID}}/{{STORY_ID}}_TestPlan.md`
-{{/each}}
-{{/each}}
+| Story | Title | QA Outcome |{{#if HAS_PM_IDS}} Work Item |{{/if}}
+|---|---|---|{{#if HAS_PM_IDS}}---|{{/if}}
+{{#each EPIC_GROUPS}}{{#each STORIES}}| `{{STORY_ID}}` | {{STORY_TITLE}} | {{TEST_OUTCOME}} |{{#if PM_ID}} #{{PM_ID}} |{{/if}}
+{{/each}}{{/each}}

@@ -47,22 +47,22 @@ function saveReleaseHistory(repoRoot, history) {
 // ── Main hook ──────────────────────────────────────────────────────────────────
 module.exports = async function (ctx) {
   const cfg      = await loadConfig({ ctx });
-  const storyIds = ctx.args || [];
-
-  if (storyIds.length === 0) {
-    ctx.send('No story IDs provided. Usage: /evyasys:GenerateReleaseNote EVYA-1042 EVYA-1043 ...');
-    return;
-  }
 
   const rawOutput = ctx.agentResult || '';
 
   // Parse and strip the EVYARELEASE block.
+  // Note: story IDs may have been collected interactively by the agent (no ctx.args),
+  // so we rely on the block itself rather than ctx.args for presence check.
   const { releaseData, cleanedOutput } = parseReleaseBlock(rawOutput);
 
   if (!releaseData) {
+    const hasArgs = (ctx.args || []).length > 0;
     ctx.send(
-      '⚠️  No EVYARELEASE block found in agent output — PDF cannot be generated.\n' +
-      'Ask the agent to re-run and output the structured block at the end.'
+      hasArgs
+        ? '⚠️  No EVYARELEASE block found in agent output — PDF cannot be generated.\n' +
+          'Ask the agent to re-run and output the structured block at the end.'
+        : 'No story IDs provided. Usage: /evyasys:GenerateReleaseNote EVYA-1042 EVYA-1043 ...\n' +
+          'Or run the command without arguments — the agent will ask you.'
     );
     return;
   }
@@ -76,9 +76,9 @@ module.exports = async function (ctx) {
   const mdPath      = path.join(outputDir, `${baseFile}.md`);
   const pdfPath     = path.join(outputDir, `${baseFile}.pdf`);
 
-  const storyCount = (releaseData.storyIds || []).length;
-  const epicCount  = (releaseData.epicGroups || []).length;
-  const notifyPart = cfg.notificationTool !== 'none' ? ` + notify ${notify.toolLabel(cfg)}` : '';
+  const storyCount  = (releaseData.storyIds || []).length;
+  const epicCount   = (releaseData.epicGroups || []).length;
+  const notifyPart  = cfg.notificationTool !== 'none' ? ` + notify ${notify.toolLabel(cfg)}` : '';
 
   if (!(await ctx.confirm(
     `Generate PDF release notes for "${releaseName}" (${storyCount} stor${storyCount !== 1 ? 'ies' : 'y'}, ${epicCount} epic${epicCount !== 1 ? 's' : ''})${notifyPart}?`
@@ -126,19 +126,29 @@ module.exports = async function (ctx) {
   ctx.send(`Release history updated → .evyasys/memory/release-notes.json`);
 
   // ── Notification ──────────────────────────────────────────────────────────────
-  if (cfg.notificationTool !== 'none' && !cfg.dryRun) {
+  if (cfg.notificationTool !== 'none') {
     await notify.ensureCredentials(cfg);
     await runIntegration({
       name: `${cfg.notificationTool}:release-generated`, cfg,
-      args: { storyId: releaseName, storyCount, version: releaseData.version, pdfFile: pdfPath },
+      args: {
+        storyId:  releaseName, storyCount,
+        version:  releaseData.version,
+        pdfFile:  pdfPath,
+      },
       live: () => notify.send(cfg, {
-        event:      'release-generated',
-        storyId:    releaseName,
+        event:            'release-generated',
+        storyId:          releaseName,
         storyCount,
-        version:    releaseData.version || '',
-        pdfFile:    pdfPath,
+        version:          releaseData.version    || '',
+        pdfFile:          pdfPath,
+        executiveSummary: releaseData.executiveSummary || '',
+        epicGroups:       releaseData.epicGroups  || [],
+        qualityGates:     releaseData.qualityGates || {},
+        knownIssues:      releaseData.knownIssues  || [],
       }),
-    }).catch(() => {});
+    }).catch((err) => {
+      ctx.send(`⚠️  Notification failed: ${err.message}`);
+    });
   }
 
   // ── Final summary ─────────────────────────────────────────────────────────────

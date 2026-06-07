@@ -382,8 +382,8 @@ async function generate(cfg, data, log) {
     subHeading(doc, `2.${ei + 1}  ${eg.epicTitle || eg.epicId}`, brandColor);
 
     for (const story of (eg.stories || [])) {
-      // Overflow guard: if insufficient space, start a new page
-      const estimatedH = 50 + (story.changelog || []).length * 16 + 40;
+      // Overflow guard: mirrors drawStoryCard's cardH formula (summary + changelog + testOutcome)
+      const estimatedH = 46 + (story.summary ? 36 : 0) + (story.changelog || []).length * 16 + (story.testOutcome ? 18 : 0) + 20;
       if (doc.y + estimatedH > A4_H - FTR_H - 30) {
         doc.addPage();
         drawRunningHeader(doc, releaseName, brandColor);

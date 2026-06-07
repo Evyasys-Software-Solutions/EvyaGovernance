@@ -21,9 +21,11 @@ trigger: /evyasys:CreateSubtask
 7. **Drafts all subtasks** — functional headlines + deep Technical Analysis per task, using shared context (no re-reading)
 8. **Shared task handling** — tasks serving multiple stories written once in the owning story; reference entries in others
 9. **Cross-story consistency check** — every AC covered, no contradictions across shared files, QA regression rows cover cross-story touchpoints
-10. **Saves and syncs** — each story's subtask file saved locally; child tasks created in PM tool linked to parent story
+10. **Saves and syncs (progressive)** — two modes:
+    - **Story input**: each story is saved locally → PM-synced → notified immediately before moving to the next
+    - **Epic input**: all stories in the epic are saved locally first, then PM-synced together, then a single notification fires for that epic; the next epic starts immediately after
 11. **Playwright spec scaffolding** — one spec file per story from QA test scenarios
-12. **Single notification** — one `subtasks-batch-created` card with all stories, task counts, shared tasks, and cross-story flags
+12. **Notifications** — `subtasks-batch-created` fires per story (story mode) or per epic (epic mode) — never waits for the entire batch to complete
 
 ---
 
@@ -95,5 +97,5 @@ formalise these into proper quality-gate documents.
 
 - PM sync failures are reported inline; local file is always saved regardless
 - Each story's subtask file is saved before its PM sync is attempted
-- Batch continues on individual story PM failure
-- Notification sent after all stories are processed (reports any failures inline)
+- Batch continues on individual story or epic PM failure
+- Notification for a story/epic group is sent immediately after that group completes (failures included in the notification payload)

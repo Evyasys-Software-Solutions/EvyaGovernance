@@ -147,10 +147,26 @@ function subtasksBatchCreated({ stories, sharedTasks, crossStoryFlags, projectNa
   );
 }
 
-function releaseGenerated({ storyId, storyCount, version }) {
-  const versionStr = version    ? ` v${version}` : '';
-  const countStr   = storyCount ? ` (${storyCount} stor${storyCount !== 1 ? 'ies' : 'y'})` : '';
-  return sendMessage(`📄 Evyasys: Release Notes Ready — ${storyId}${versionStr}${countStr}. PDF generated and saved.`);
+function releaseGenerated({ storyId, storyCount, version, executiveSummary, epicGroups, qualityGates }) {
+  const vStr  = version    ? ` v${version}` : '';
+  const nStr  = storyCount ? ` (${storyCount} stor${storyCount !== 1 ? 'ies' : 'y'})` : '';
+  const gq    = qualityGates || {};
+  const gIcon = (val) => { const u = String(val || '').toUpperCase(); return u === 'PASS' ? '✅' : u === 'FAIL' ? '❌' : '➖'; };
+  const gateStr = `Security ${gIcon(gq.security)} · Performance ${gIcon(gq.performance)} · Accessibility ${gIcon(gq.accessibility)} · Data Integrity ${gIcon(gq.dataIntegrity)}`;
+
+  const storyLines = (epicGroups || []).flatMap(eg =>
+    (eg.stories || []).map(s => `  • ${s.id}: ${s.summary || s.title}`)
+  ).join('\n');
+
+  const parts = [
+    `🚀 Evyasys: Release Notes Ready — ${storyId}${vStr}${nStr}`,
+    executiveSummary ? executiveSummary : '',
+    `🔍 ${gateStr}`,
+    storyLines ? `\n✨ What's New:\n${storyLines}` : '',
+    `\nPDF generated and saved.`,
+  ].filter(Boolean);
+
+  return sendMessage(parts.join('\n'));
 }
 
 const EVENT_MAP = {
@@ -166,7 +182,7 @@ const EVENT_MAP = {
   'qa-started':            ({ storyId })                                    => qaStarted({ storyId }),
   'qa-finished':           ({ storyId })                                    => qaFinished({ storyId }),
   'bug-found':             ({ storyId, count, criticalCount })              => bugFound({ storyId, count, criticalCount }),
-  'release-generated':     ({ storyId, storyCount, version })               => releaseGenerated({ storyId, storyCount, version }),
+  'release-generated':     ({ storyId, storyCount, version, executiveSummary, epicGroups, qualityGates }) => releaseGenerated({ storyId, storyCount, version, executiveSummary, epicGroups, qualityGates }),
 };
 
 /** Called by notify-adapter with { event, storyId, ...extras }. */

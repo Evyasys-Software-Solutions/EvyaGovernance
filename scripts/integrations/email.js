@@ -5,6 +5,8 @@
  * Non-sensitive config (smtp_host, smtp_port, from, to) lives in project.yaml.
  * Sensitive credentials (smtp_user, smtp_password) are encrypted in ~/.evyasys/credentials.
  */
+const path = require('path');
+const fs   = require('fs');
 const { ensurePackage } = require('../lib/ensure-package');
 
 function getMailer(cfg, log) {
@@ -135,6 +137,62 @@ function buildSubtasksBatchHtml(meta, stories, sharedTasks, crossStoryFlags, pro
   return wrapEmail(meta, tableHtml);
 }
 
+function buildReleaseGeneratedHtml(meta, { storyId, version, executiveSummary, epicGroups, qualityGates, knownIssues }) {
+  const gateIcon = (val) => {
+    const u = String(val || '').toUpperCase();
+    return u === 'PASS' ? '✅ PASS' : u === 'FAIL' ? '❌ FAIL' : '➖ N/A';
+  };
+  const gq = qualityGates || {};
+  const gatesHtml = `
+    <table style="border-collapse:collapse;width:100%;margin:8px 0 14px">
+      <thead><tr>
+        <th style="${TH}">Security</th><th style="${TH}">Performance</th>
+        <th style="${TH}">Accessibility</th><th style="${TH}">Data Integrity</th>
+      </tr></thead>
+      <tbody><tr>
+        <td style="${TD};text-align:center">${gateIcon(gq.security)}</td>
+        <td style="${TD};text-align:center">${gateIcon(gq.performance)}</td>
+        <td style="${TD};text-align:center">${gateIcon(gq.accessibility)}</td>
+        <td style="${TD};text-align:center">${gateIcon(gq.dataIntegrity)}</td>
+      </tr></tbody>
+    </table>`;
+
+  const storiesHtml = (epicGroups || []).map(eg => {
+    const rows = (eg.stories || []).map(s => `
+      <tr>
+        <td style="${TD};white-space:nowrap">${s.id}</td>
+        <td style="${TD}">${s.title || ''}</td>
+        <td style="${TD}">${s.summary || ''}</td>
+        <td style="${TD};white-space:nowrap">${s.testOutcome || ''}</td>
+      </tr>`).join('');
+    return `
+      <p style="margin:14px 0 4px;font-size:13px;font-weight:600">📦 ${eg.epicTitle || eg.epicId || 'Stories'}</p>
+      <table style="border-collapse:collapse;width:100%">
+        <thead><tr>
+          <th style="${TH}">ID</th><th style="${TH}">Title</th>
+          <th style="${TH}">What changed</th><th style="${TH}">QA</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }).join('');
+
+  const issuesHtml = (knownIssues || []).length > 0
+    ? `<p style="margin:14px 0 4px;font-size:13px;font-weight:600">⚠️ Known Issues</p>` +
+      (knownIssues || []).map(i => `<p style="margin:2px 0 2px 8px;font-size:13px">• ${i}</p>`).join('')
+    : '';
+
+  const bodyHtml = `
+    <p style="margin:0 0 6px;font-size:15px"><strong>${storyId}</strong>${version ? `<span style="margin-left:8px;font-size:12px;color:#666">v${version}</span>` : ''}</p>
+    ${executiveSummary ? `<p style="margin:0 0 12px;font-size:13px;color:#444;font-style:italic">${executiveSummary}</p>` : ''}
+    <p style="margin:10px 0 4px;font-size:13px;font-weight:600">🔍 Quality Gates</p>
+    ${gatesHtml}
+    ${storiesHtml}
+    ${issuesHtml}
+    <p style="margin:16px 0 0;font-size:11px;color:#888">📎 PDF release notes are attached to this email.</p>`;
+
+  return wrapEmail(meta, bodyHtml);
+}
+
 function buildHtml(event, storyId, extras) {
   const meta    = EVENT_META[event] || { emoji: '📌', title: event };
   const details = Object.entries(extras)
@@ -177,17 +235,27 @@ async function send(cfg, { event, storyId, ...extras }, log) {
     const totalTasks = storyList.reduce((n, s) => n + (s.taskCount || 0), 0);
     subject = `[Evyasys] ${meta.emoji} ${meta.title}: ${totalTasks} task${totalTasks !== 1 ? 's' : ''} across ${storyList.length} stor${storyList.length !== 1 ? 'ies' : 'y'}${extras.projectName ? ' — ' + extras.projectName : ''}`;
     html    = buildSubtasksBatchHtml(meta, storyList, extras.sharedTasks || [], extras.crossStoryFlags || [], extras.projectName || '');
+  } else if (event === 'release-generated') {
+    const vStr = extras.version ? ` v${extras.version}` : '';
+    subject = `[Evyasys] 🚀 Release Notes: ${storyId}${vStr}`;
+    html    = buildReleaseGeneratedHtml(meta, { storyId, ...extras });
   } else {
     subject = `[Evyasys] ${meta.emoji} ${meta.title}: ${storyId}`;
     html    = buildHtml(event, storyId, extras);
   }
 
+  // Attach the PDF for release notes (nodemailer attachments API)
+  const attachments = (event === 'release-generated' && extras.pdfFile && fs.existsSync(extras.pdfFile))
+    ? [{ filename: path.basename(extras.pdfFile), path: extras.pdfFile }]
+    : [];
+
   const transporter = getMailer(cfg, log);
   return transporter.sendMail({
-    from:    cfg.email.from || cfg.email.smtpUser,
-    to:      cfg.email.to,
+    from:        cfg.email.from || cfg.email.smtpUser,
+    to:          cfg.email.to,
     subject,
     html,
+    attachments,
   });
 }
 

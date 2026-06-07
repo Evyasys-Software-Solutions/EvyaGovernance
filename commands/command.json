@@ -41,6 +41,6 @@
   },
   {
     "name": "GenerateReleaseNote",
-    "description": "Compile a branded PDF release notes document from one or more completed stories — groups by Epic, consolidates quality gates, proposes version from history, generates PDF. Pass story IDs e.g. EVYA-1042 EVYA-1043."
+    "description": "Compile a short, beautiful, branded PDF release notes document from one or more completed stories. Pass story IDs as arguments, or omit to be asked. Groups by Epic, emoji quality gate table, compact format. e.g. EVYA-1042 EVYA-1043."
   }
 ]

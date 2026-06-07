@@ -28,7 +28,11 @@ Evidence first — document second.
 ## Step 0 — Parse and validate story IDs
 
 Split `$ARGUMENTS` on whitespace to extract the list of story IDs.
-Minimum 1 story ID required — if none are present, ask: "Which story IDs should I include in this release? (e.g. EVYA-1042 EVYA-1043)"
+
+If none are present, ask:
+> "Which story IDs should I include in this release? You can list multiple, e.g.: `EVYA-1042 EVYA-1043 EVYA-1044`"
+
+Wait for the answer before proceeding.
 
 For each story ID:
 - Use `Glob .evyasys/board/**/<id>/` to locate the story folder.
@@ -110,37 +114,49 @@ This must reflect what actually happened in QA — not what was expected.
 
 ## Step 5 — Draft the Executive Summary
 
-Write 3–5 sentences, plain language:
-1. Sentence 1: What this release delivers at the business level (reference epics by name).
-2. Sentence 2: Who benefits and how (user persona + outcome).
-3. Sentence 3: Quality — "All [N] test cases passed" or "X issues of severity 3–4 were logged for tracking."
-4. Sentence 4 (if applicable): Any known limitations or items deferred to next release.
+Write **1–2 sentences** — a punchy, plain-language tagline that sits below the release header:
+- Sentence 1: What this release delivers and who benefits (mention epic names).
+- Sentence 2 (optional): Quality highlight or a notable deferral, only if it adds real context.
 
 Rules:
-- No class names, endpoint paths, or jargon.
-- No "we implemented" — use "users can now", "the system now", "this release introduces".
-- Maximum 5 sentences.
+- No class names, endpoint paths, or technical jargon.
+- No "we implemented" — use "users can now", "this release brings", "teams can now".
+- Maximum 2 sentences. Short is better.
 
 ---
 
 ## Step 6 — Draft the full release document
 
-Fill `RELEASE_DOC_TEMPLATE.md` with all collected data:
+Fill `RELEASE_DOC_TEMPLATE.md` with all collected data. Apply these formatting rules for a short, beautiful document:
 
-**Per-story changelog entries** — transform technical descriptions from `_ReleaseNotes.md` into outcome-focused bullets:
+### ✨ What's New section
+- Group stories under their epic bold heading.
+- One bullet per story — a single outcome-focused sentence.
 - ❌ "Added `VisitService.getHistory()` method"
 - ✅ "Users can now view their complete visit history filtered by date and status"
+- No sub-headings per story, no QA detail in this section. Keep it scannable.
 
-**Deployment Notes** — consolidate all stories' deployment requirements:
-- If any story has DB migrations: list the migration commands explicitly.
-- If any story requires env variable changes: list them.
-- If nothing required: "No deployment steps required — no migrations, no config changes."
+### 🔍 Quality Gates table
+Map each gate result to an icon and render the compact single-row table from the template:
+- `PASS` → `✅ PASS`
+- `FAIL` → `❌ FAIL`
+- `N/A`  → `➖ N/A`
 
-**Rollback** — consolidate from stories:
-- If any story has a rollback procedure, include it.
-- If all are N/A: "N/A — no migrations or destructive changes. Feature flags: off by default."
+### ⚠️ Known Issues
+Short bullet list. If none: "None identified at release time." Never leave blank.
 
-**Known Issues** — list all cross-story limitations. Never leave this section empty.
+### 🚀 Deployment Notes
+- If DB migrations exist: list the exact command(s).
+- If env vars changed: list them.
+- If nothing required: "No deployment steps required."
+
+### ↩️ Rollback
+- If a rollback procedure exists: list steps concisely.
+- If not: "N/A — no rollback required."
+
+### 📎 Stories table
+Compact reference table — story ID, title, QA outcome, work item number if available.
+`HAS_PM_IDS` = true if at least one story has a non-empty `pmId`.
 
 ---
 
@@ -152,15 +168,10 @@ Run every item. Fix silently if any fail. Only proceed to Step 8 when all items 
 
 ## Step 8 — Show and confirm
 
-Present the complete release document to the user. Include:
-- A summary header: "Release **[name]** covering [N] stories across [M] epics."
-- The full document body.
-- A gate summary row: "Quality gates: Security ✅ | Performance N/A | Accessibility ✅ | Data Integrity ✅"
+Present the complete release document to the user exactly as it will appear in the PDF.
 
-Tell the user:
-> "On approval I will generate:
-> - Markdown: `.evyasys/releases/[filename].md`
-> - PDF:      `.evyasys/releases/[filename].pdf`"
+After the document, add a one-line save notice:
+> "Approve to save → `.evyasys/releases/[filename].md` + `.evyasys/releases/[filename].pdf`"
 
 Wait for explicit approval before outputting the EVYARELEASE block.
 
@@ -179,6 +190,8 @@ This block is parsed by the hook to generate the PDF and save release history.
   "releaseDate": "YYYY-MM-DD",
   "preparedBy": "QA Team",
   "storyIds": ["EVYA-1042", "EVYA-1043"],
+  "storyCount": 2,
+  "totalSP": 13,
   "epicGroups": [
     {
       "epicId": "EP-001",
@@ -187,17 +200,15 @@ This block is parsed by the hook to generate the PDF and save release history.
         {
           "id": "EVYA-1042",
           "title": "User Login Enhancement",
-          "summary": "One-sentence user-facing summary",
-          "changelog": ["Users can now...", "The system now..."],
-          "limitations": [],
+          "summary": "Users can now log in via SSO — one click replaces the password flow",
           "storyPoints": 5,
           "pmId": "12345",
-          "testOutcome": "All 8 TCs passed"
+          "testOutcome": "All 8 TCs ✅"
         }
       ]
     }
   ],
-  "executiveSummary": "Full executive summary text...",
+  "executiveSummary": "1–2 sentence tagline here.",
   "qualityGates": {
     "security": "PASS",
     "performance": "N/A",
@@ -213,8 +224,9 @@ This block is parsed by the hook to generate the PDF and save release history.
 
 **JSON rules:**
 - `storyPoints` must be a number (0 if unknown), not a string.
-- `changelog` must be an array of strings (minimum 1 per story).
-- `limitations` must be an array (empty `[]` if none).
+- `storyCount` must equal `storyIds.length`.
+- `totalSP` must equal the sum of all `storyPoints`.
+- `summary` per story must be one sentence, user-outcome focused.
 - `knownIssues` must be an array (empty `[]` if none).
 - `qualityGates` must have exactly these 4 keys: `security`, `performance`, `accessibility`, `dataIntegrity`.
 - Values for gate fields: `"PASS"` | `"FAIL"` | `"N/A"`.
