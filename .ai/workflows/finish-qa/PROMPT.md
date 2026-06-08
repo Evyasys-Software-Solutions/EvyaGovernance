@@ -1,5 +1,20 @@
 # Prompt: /evyasys:FinishQa <StoryID>
 
+## Batch input — epic or multiple stories
+
+`$ARGUMENTS` may be one or more story IDs, one or more epic IDs, or a mix.
+
+**To expand an epic ID** (any token that does not match `EVYA-\d+`):
+- Glob `.evyasys/board/epics/{epicId}/stories/*/` to find all story sub-folders.
+- Show: `Resolved N stories in {epicId}: EVYA-1001, EVYA-1002 …`
+
+**If `$ARGUMENTS` is empty**: ask "Which story or epic IDs should I finish QA for?"
+
+Deduplicate if the same story ID appears more than once.
+Set `inputMode = "epic"` if any epic ID was supplied; `"story"` otherwise.
+
+---
+
 You are the Release Manager / Senior QA described in `AGENT.md`.
 
 ## Inputs
@@ -158,3 +173,78 @@ These are parsed by the hook — they are never saved to the release notes file.
 - ADO state → **Done** (or stays **In QA** if P1/P2 bugs found)
 - Bug work items created in ADO (linked to story)
 - Teams release card posted (or bug-found card if blocking bugs)
+
+---
+
+## Output format (batch — hooks parse these blocks)
+
+When processing **multiple stories** (or an epic), use the qualified block format below instead of the unqualified blocks above. For a **single story**, the unqualified `<!-- EVYATCRESULTS -->` and `<!-- EVYABUGS -->` blocks (defined in "Final output blocks" above) remain in effect — the hook falls back to single-story mode automatically.
+
+### Per-story release notes block
+
+Wrap each story's release notes in labelled fences:
+
+```
+=== EVYA_RELEASENOTES: EVYA-1001 ===
+<full release notes content>
+=== END_EVYA_RELEASENOTES: EVYA-1001 ===
+```
+
+### Per-story TC results block (qualified — replaces unqualified tag in batch mode)
+
+Emit immediately after each story's release notes block:
+
+```
+<!-- EVYATCRESULTS:EVYA-1001
+[
+  { "id": "TC-001", "status": "PASSED", "date": "YYYY-MM-DD" },
+  { "id": "TC-002", "status": "FAILED", "date": "YYYY-MM-DD" }
+]
+-->
+```
+
+### Per-story bugs block (qualified — replaces unqualified tag in batch mode)
+
+Emit immediately after the TC results block for each story:
+
+```
+<!-- EVYABUGS:EVYA-1001
+[
+  {
+    "title": "Short descriptive title",
+    "description": "Steps to reproduce and expected vs actual behaviour",
+    "severity": 2,
+    "tcId": "TC-002"
+  }
+]
+-->
+```
+
+If no bugs were found for a story, emit: `<!-- EVYABUGS:EVYA-1001 [] -->`
+
+### Batch manifest (one per run — append at very end)
+
+```
+<!-- EVYAFINISHQABATCH
+{
+  "stories": [
+    {
+      "storyId": "EVYA-1001",
+      "title": "Short story title",
+      "hasBlockingBugs": false,
+      "epicId": "EP-001"
+    }
+  ],
+  "inputMode": "story",
+  "epicGroups": [],
+  "projectName": "Project name from story"
+}
+-->
+```
+
+- `hasBlockingBugs`: `true` if any severity 1–2 bugs were found for this story (story stays In QA); `false` otherwise.
+- `inputMode`: `"story"` → hook notifies per story; `"epic"` → hook notifies once per epic group.
+- `epicGroups`: populated only when `inputMode` is `"epic"`:
+  `[{ "epicId": "EP-001", "storyIds": ["EVYA-1001", "EVYA-1002"] }]`.
+  Use `"_standalone"` as `epicId` for any story supplied directly (not via an epic ID).
+- `epicGroups` must be `[]` when `inputMode` is `"story"`.

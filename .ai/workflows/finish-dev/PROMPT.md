@@ -1,5 +1,20 @@
 # Prompt: /evyasys:FinishDev <StoryID>
 
+## Batch input — epic or multiple stories
+
+`$ARGUMENTS` may be one or more story IDs, one or more epic IDs, or a mix.
+
+**To expand an epic ID** (any token that does not match `EVYA-\d+`):
+- Glob `.evyasys/board/epics/{epicId}/stories/*/` to find all story sub-folders.
+- Show: `Resolved N stories in {epicId}: EVYA-1001, EVYA-1002 …`
+
+**If `$ARGUMENTS` is empty**: ask "Which story or epic IDs should I finish dev for?"
+
+Deduplicate if the same story ID appears more than once.
+Set `inputMode = "epic"` if any epic ID was supplied; `"story"` otherwise.
+
+---
+
 You are the Senior Developer described in `AGENT.md`.
 
 ## Inputs
@@ -114,3 +129,45 @@ On approval, the hook transitions ADO state to **Ready for QA** and posts the Te
 - `.evyasys/board/**/<StoryID>/<StoryID>_DevSummary.md`
 - ADO state → **Ready for QA**
 - Teams handoff card posted
+
+---
+
+## Output format (batch — hooks parse these blocks)
+
+When processing **multiple stories** (or an epic), emit both sections below for every story, then append a single batch manifest at the very end. For a **single story**, these blocks are not required — the hook falls back to single-story mode automatically.
+
+### Per-story dev summary block
+
+Wrap each story's dev summary in labelled fences:
+
+```
+=== EVYA_DEVSUMMARY: EVYA-1001 ===
+<full dev summary content>
+=== END_EVYA_DEVSUMMARY: EVYA-1001 ===
+```
+
+### Batch manifest (one per run — append at very end)
+
+```
+<!-- EVYAFINISHDEVBATCH
+{
+  "stories": [
+    {
+      "storyId": "EVYA-1001",
+      "title": "Short story title",
+      "branch": "feature/EVYA-1001-short-title",
+      "epicId": "EP-001"
+    }
+  ],
+  "inputMode": "story",
+  "epicGroups": [],
+  "projectName": "Project name from story"
+}
+-->
+```
+
+- `inputMode`: `"story"` → hook notifies per story; `"epic"` → hook notifies once per epic group.
+- `epicGroups`: populated only when `inputMode` is `"epic"`:
+  `[{ "epicId": "EP-001", "storyIds": ["EVYA-1001", "EVYA-1002"] }]`.
+  Use `"_standalone"` as `epicId` for any story supplied directly (not via an epic ID).
+- `epicGroups` must be `[]` when `inputMode` is `"story"`.

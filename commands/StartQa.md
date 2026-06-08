@@ -1,7 +1,7 @@
 ---
 description: Generate a comprehensive test plan — confirms environment and test data first, then AC-driven positive/negative/edge/regression/non-functional cases with Gherkin. Transitions ADO to In QA.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
-argument-hint: <StoryID>
+argument-hint: <StoryID|EpicID>...  e.g. EVYA-1042  or  EP-001  or  EP-001 EVYA-1005
 skill: evyasys-start-qa
 ---
 

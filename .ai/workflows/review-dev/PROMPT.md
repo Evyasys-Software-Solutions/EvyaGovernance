@@ -1,5 +1,20 @@
 # Prompt: /evyasys:ReviewDev <StoryID>
 
+## Batch input — epic or multiple stories
+
+`$ARGUMENTS` may be one or more story IDs, one or more epic IDs, or a mix.
+
+**To expand an epic ID** (any token that does not match `EVYA-\d+`):
+- Glob `.evyasys/board/epics/{epicId}/stories/*/` to find all story sub-folders.
+- Show: `Resolved N stories in {epicId}: EVYA-1001, EVYA-1002 …`
+
+**If `$ARGUMENTS` is empty**: ask "Which story or epic IDs should I review?"
+
+Deduplicate if the same story ID appears more than once.
+Set `inputMode = "epic"` if any epic ID was supplied; `"story"` otherwise.
+
+---
+
 You are the Senior Code Reviewer described in `AGENT.md`.
 
 ## Inputs
@@ -193,3 +208,46 @@ re-review.
 - Review report shown to developer (not saved until approved)
 - On GO: save report to story folder under `.evyasys/board/`
 - No ADO state change (FinishDev handles that)
+
+---
+
+## Output format (batch — hooks parse these blocks)
+
+When processing **multiple stories** (or an epic), emit both sections below for every story, then append a single batch manifest at the very end. For a **single story**, these blocks are not required — the hook falls back to single-story mode automatically.
+
+### Per-story code review block
+
+Wrap each story's review report in labelled fences:
+
+```
+=== EVYA_CODEREVIEW: EVYA-1001 ===
+<full code review report content>
+=== END_EVYA_CODEREVIEW: EVYA-1001 ===
+```
+
+### Batch manifest (one per run — append at very end)
+
+```
+<!-- EVYAREVIEWDEVBATCH
+{
+  "stories": [
+    {
+      "storyId": "EVYA-1001",
+      "title": "Short story title",
+      "verdict": "GO",
+      "epicId": "EP-001"
+    }
+  ],
+  "inputMode": "story",
+  "epicGroups": [],
+  "projectName": "Project name from story"
+}
+-->
+```
+
+- `verdict`: `"GO"` | `"NO-GO"` | `"UNCLEAR"`. Set `"UNCLEAR"` if the review cannot reach a verdict without developer input (e.g. repo unavailable, diff empty, or critical context missing).
+- `inputMode`: `"story"` → hook processes each story immediately; `"epic"` → hook processes per epic group.
+- `epicGroups`: populated only when `inputMode` is `"epic"`:
+  `[{ "epicId": "EP-001", "storyIds": ["EVYA-1001", "EVYA-1002"] }]`.
+  Use `"_standalone"` as `epicId` for any story supplied directly (not via an epic ID).
+- `epicGroups` must be `[]` when `inputMode` is `"story"`.

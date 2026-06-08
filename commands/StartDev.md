@@ -1,7 +1,7 @@
 ---
 description: Kick off development — structured technical brainstorm (3+ approaches, team approval) then branch/PR/DoR/dependency gates. Transitions ADO to In Progress.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
-argument-hint: <StoryID>
+argument-hint: <StoryID|EpicID>...  e.g. EVYA-1042  or  EP-001  or  EP-001 EVYA-1005
 skill: evyasys-start-dev
 ---
 

@@ -1,7 +1,7 @@
 ---
 description: Release sign-off — verifies all TC outcomes recorded, no P0/P1 defects open, drafts plain-language release notes. Transitions ADO to Done.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
-argument-hint: <StoryID>
+argument-hint: <StoryID|EpicID>...  e.g. EVYA-1042  or  EP-001  or  EP-001 EVYA-1005
 skill: evyasys-finish-qa
 ---
 

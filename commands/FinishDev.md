@@ -1,7 +1,7 @@
 ---
 description: Wrap development — AC coverage audit (asks clarifying questions for gaps), DoD checklist, diff scope check, Dev Summary. Transitions ADO to Ready for QA.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
-argument-hint: <StoryID>
+argument-hint: <StoryID|EpicID>...  e.g. EVYA-1042  or  EP-001  or  EP-001 EVYA-1005
 skill: evyasys-finish-dev
 ---
 

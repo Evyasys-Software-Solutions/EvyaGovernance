@@ -1,7 +1,7 @@
 ---
 description: Independent code review — AC coverage, correctness, security, YAGNI, test quality. Evidence-based findings (file+line). Critical issues block FinishDev.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
-argument-hint: <StoryID>
+argument-hint: <StoryID|EpicID>...  e.g. EVYA-1042  or  EP-001  or  EP-001 EVYA-1005
 skill: evyasys-review-dev
 ---
 

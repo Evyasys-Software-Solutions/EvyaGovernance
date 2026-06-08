@@ -1,5 +1,20 @@
 # Prompt: /evyasys:StartDev <StoryID>
 
+## Batch input — epic or multiple stories
+
+`$ARGUMENTS` may be one or more story IDs, one or more epic IDs, or a mix.
+
+**To expand an epic ID** (any token that does not match `EVYA-\d+`):
+- Glob `.evyasys/board/epics/{epicId}/stories/*/` to find all story sub-folders.
+- Show: `Resolved N stories in {epicId}: EVYA-1001, EVYA-1002 …`
+
+**If `$ARGUMENTS` is empty**: ask "Which story or epic IDs should I start dev for?"
+
+Deduplicate if the same story ID appears more than once.
+Set `inputMode = "epic"` if any epic ID was supplied; `"story"` otherwise.
+
+---
+
 You are the Engineering Lead described in `AGENT.md`.
 
 ## Inputs
@@ -234,3 +249,46 @@ If NO-GO: list exactly which items are blocking and what must happen to unblock 
 
 1. Save the agreed brainstorm — the hook writes it to the story folder under `.evyasys/board/`.
 2. The hook transitions ADO state to **In Progress** and posts the Teams kickoff card.
+
+---
+
+## Output format (batch — hooks parse these blocks)
+
+When processing **multiple stories** (or an epic), emit both sections below for every story, then append a single batch manifest at the very end. For a **single story**, these blocks are not required — the hook falls back to single-story mode automatically.
+
+### Per-story brainstorm block
+
+Wrap each story's agreed brainstorm in labelled fences immediately after it is approved:
+
+```
+=== EVYA_BRAINSTORM: EVYA-1001 ===
+<full brainstorm content>
+=== END_EVYA_BRAINSTORM: EVYA-1001 ===
+```
+
+### Batch manifest (one per run — append at very end)
+
+```
+<!-- EVYASTARTDEVBATCH
+{
+  "stories": [
+    {
+      "storyId": "EVYA-1001",
+      "title": "Short story title",
+      "branch": "feature/EVYA-1001-short-title",
+      "approachedOption": "Option 2 — Event-driven",
+      "epicId": "EP-001"
+    }
+  ],
+  "inputMode": "story",
+  "epicGroups": [],
+  "projectName": "Project name from story"
+}
+-->
+```
+
+- `inputMode`: `"story"` → hook notifies per story; `"epic"` → hook notifies once per epic group after all stories in that epic are processed.
+- `epicGroups`: populated only when `inputMode` is `"epic"`:
+  `[{ "epicId": "EP-001", "storyIds": ["EVYA-1001", "EVYA-1002"] }]`.
+  Use `"_standalone"` as `epicId` for any story supplied directly (not via an epic ID).
+- `epicGroups` must be `[]` when `inputMode` is `"story"`.
