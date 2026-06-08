@@ -18,7 +18,7 @@ trigger: /evyasys:CreateSubtask
 4. **Unified code analysis** — unions all impacted areas, reads each file once; builds shared technical inventory
 5. **Cross-story dependency analysis** — shared files, shared infrastructure tasks, sequence requirements, parallelism opportunities, merge-conflict risk
 6. **Single Gate** — consolidated plan table (all stories, strategy, task count, cross-story notes) — one approval for the whole batch
-7. **Drafts all subtasks** — functional headlines + deep Technical Analysis per task, using shared context (no re-reading)
+7. **Drafts all subtasks** — functional headlines + business rules + deep Technical Guidance per task, using shared context (no re-reading); no code in any task
 8. **Shared task handling** — tasks serving multiple stories written once in the owning story; reference entries in others
 9. **Cross-story consistency check** — every AC covered, no contradictions across shared files, QA regression rows cover cross-story touchpoints
 10. **Saves and syncs (progressive)** — two modes:
@@ -53,8 +53,11 @@ Every implementation task has:
 
 | Layer | Content | Audience |
 |---|---|---|
-| **Functional** | Headline + outcome summary — plain language | PO, QA, non-developers |
-| **Technical** | Exact file paths, method signatures, DB changes, API contract, edge cases, security, performance | Developer implementing the task |
+| **Functional** | Headline + outcome summary + business rules + workflow — plain language | PO, QA, non-developers |
+| **Technical Guidance** | Exact file paths · behaviour contracts (what functions do, not how) · DB schema specs · API contracts · edge cases · security layer · performance expectation | Developer implementing the task |
+
+**No code in tasks.** Technical Guidance describes expected behaviour, contracts, and constraints.
+The developer writes all implementation code during StartDev using project rules and their own judgement.
 
 Functional headlines never contain class names, method names, or endpoint paths.
 

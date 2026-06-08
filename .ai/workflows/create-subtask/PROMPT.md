@@ -205,30 +205,51 @@ Ask:
 
 For each story, using the confirmed strategy, write **3–7 implementation tasks** followed by **exactly one mandatory QA task** as the final item.
 
+#### No-code rule (enforced without exception)
+
+Tasks describe **expected behaviour, contracts, and constraints** — not implementation.
+The developer writes the code during StartDev, guided by project rules and their own judgement.
+
+✅ **Allowed:**
+- Function signatures as behaviour references: "`login(email, password)` — validates credentials, returns an auth token, throws on invalid input"
+- Business rules: "lock account after 5 failed attempts using the LockoutPolicy; never reveal which field failed"
+- Technical flow: "controller validates input → service checks credentials → DB records attempt → response returned"
+- DB schema specification: "add column `failed_attempts` (integer, not null, default 0) to `users` table; migration filename `<timestamp>_add_failed_attempts`"
+- API contracts: "POST /api/v1/auth/login → 200 { token, expiresAt } | 401 { error } | 423 when locked"
+- Expected test results: "`login succeeds with valid credentials` — expected: token in response"
+
+❌ **Never allowed:**
+- Code blocks of any language — no ``` TypeScript ```, ``` SQL ```, ``` JavaScript ```, or any other language fence
+- SQL DDL/DML: `ALTER TABLE`, `CREATE TABLE`, `INSERT INTO`, `SELECT`, etc.
+- Inline implementation logic: `if (attempts >= 5) { throw new LockoutException(); }`
+- Pseudo-code that mimics implementation
+- Framework-specific decorators or annotations written as implementation hints
+
 #### Functional headline rule (enforced without exception)
 
-Headlines are outcome-focused and readable by a product manager. Technical names belong in Technical Analysis.
+Headlines are outcome-focused and readable by a product manager. Technical names belong in Technical Guidance.
 
 ✅ Correct: "Store user credentials with secure hashing"
-❌ Wrong: "Implement UserService.hashPassword()" — move to Technical Analysis
+❌ Wrong: "Implement UserService.hashPassword()" — move to Technical Guidance
 
-#### Technical Analysis quality bar
+#### Technical Guidance quality bar
 
-Every implementation task **must** include all that apply:
+Every implementation task **must** include all that apply. Write guidance, not code.
 
-| Required element | Example of sufficient detail |
+| Required element | Example of sufficient guidance |
 |---|---|
 | Exact file paths | `src/services/UserService.ts` — not "the service layer" |
-| Method signatures | `UserService.login(email: string, pwd: string): Promise<AuthToken>` |
-| DB changes | Table, column name + type + constraint, migration filename |
-| API contract | `POST /api/v1/auth/login` → `200 { token, expiresAt }` \| `401` |
-| Edge cases | "when password mismatch → throw `UnauthorizedException`; never leak which field failed" |
-| Security/validation | Layer (controller/guard/middleware) + specific rule |
-| Performance | Volume estimate + indexing or caching decision |
+| Behaviour contract | "`login(email, password)` — authenticates a user, returns a token, locks account after 5 failures" |
+| DB schema change | Table `users`, add column `failed_attempts` (integer, not null, default 0), migration `<timestamp>_add_failed_attempts` |
+| API contract | `POST /api/v1/auth/login` → `200 { token, expiresAt }` \| `401` \| `423` |
+| Business rules | "after 5 consecutive failures, apply LockoutPolicy — never reveal which specific field failed" |
+| Edge cases | "empty password → reject before hitting the DB; over-limit input → truncation or rejection?" |
+| Security/validation | Layer (controller/guard/middleware) + specific rule name |
+| Performance | Volume estimate + indexing or caching expectation |
 
 Shallow descriptions like "update the service to handle this" will be rejected at self-review.
 
-If you cannot fill in the Technical Analysis from the shared context, you have not read enough in Step 3 — do not proceed; go back and read the missing file.
+If you cannot fill in the Technical Guidance from the shared context, you have not read enough in Step 3 — do not proceed; go back and read the missing file.
 
 #### Shared task handling
 
@@ -261,9 +282,10 @@ For every UI-facing AC: Playwright spec path `tests/e2e/{storyId}.spec.ts`, usin
 Before emitting any output, verify silently:
 - [ ] Every AC in every story has at least one task linked to it
 - [ ] Shared tasks appear in full in exactly one story; only reference entries in others
-- [ ] No two stories use contradictory implementations for the same shared file
+- [ ] No two stories use contradictory behaviour contracts for the same shared file
 - [ ] QA tasks for stories sharing code each include regression rows covering the shared areas
-- [ ] Technical Analysis in every task cites file paths and method names (no hand-waving)
+- [ ] Technical Guidance in every task cites specific file paths and behaviour contracts (no hand-waving)
+- [ ] No task contains code blocks, SQL syntax, or inline implementation logic (no-code rule)
 - [ ] All tasks comply with docs loaded in Step 2 (architecture layer, approved patterns, hard rules)
 
 Fix silently. Do not flag failures as output — resolve them.
