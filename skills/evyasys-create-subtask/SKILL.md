@@ -1,6 +1,6 @@
 ---
 name: evyasys-create-subtask
-description: Batch-decomposes one or more user stories (or all stories in an epic) into developer-ready subtasks. Builds shared technical context once — no per-story re-scanning. Detects cross-story dependencies, shared infrastructure tasks, and merge risks. Single approval gate covers all stories. One notification with the full batch summary. Triggered by /evyasys:CreateSubtask <EVYA-ID...> or /evyasys:CreateSubtask <EP-ID...>.
+description: Batch-decomposes one or more user stories (or all stories in an epic) into developer-ready subtasks (max 5 per story: 4 implementation + 1 QA). Builds shared technical context once — no per-story re-scanning. Each task includes AC Coverage Map, Data Flow, Error & Recovery, and Technical Guidance — no code. Detects cross-story dependencies, shared infrastructure tasks, and merge risks. Single approval gate covers all stories. Triggered by /evyasys:CreateSubtask <EVYA-ID...> or /evyasys:CreateSubtask <EP-ID...>.
 trigger: /evyasys:CreateSubtask
 ---
 
@@ -18,7 +18,7 @@ trigger: /evyasys:CreateSubtask
 4. **Unified code analysis** — unions all impacted areas, reads each file once; builds shared technical inventory
 5. **Cross-story dependency analysis** — shared files, shared infrastructure tasks, sequence requirements, parallelism opportunities, merge-conflict risk
 6. **Single Gate** — consolidated plan table (all stories, strategy, task count, cross-story notes) — one approval for the whole batch
-7. **Drafts all subtasks** — functional headlines + business rules + deep Technical Guidance per task, using shared context (no re-reading); no code in any task
+7. **Drafts all subtasks** — functional headlines + business rules + AC Coverage Map + Data Flow + Error & Recovery + deep Technical Guidance per task, using shared context (no re-reading); no code in any task; maximum 5 tasks per story (4 implementation + 1 QA)
 8. **Shared task handling** — tasks serving multiple stories written once in the owning story; reference entries in others
 9. **Cross-story consistency check** — every AC covered, no contradictions across shared files, QA regression rows cover cross-story touchpoints
 10. **Saves and syncs (progressive)** — two modes:
@@ -67,9 +67,9 @@ Functional headlines never contain class names, method names, or endpoint paths.
 
 | Strategy | Description |
 |---|---|
-| **A — Backend-first + Frontend in logical groupings** *(default)* | Data/service/API layer first; UI by feature area |
-| **B — Vertical slices** | One complete AC end-to-end per task |
-| **C — Layer by layer** | All data → all service → all UI |
+| **A — Logical feature slices** *(default)* | Tasks grouped by business capability: data foundation → service behaviour → API contract → UI flow. Each task = one independently verifiable unit, not a whole-layer dump. |
+| **B — Vertical slices** | Each task delivers one complete AC end-to-end across all layers |
+| **C — Layer by layer** | All data → all service → all UI — only for large cross-cutting refactors |
 
 Recommended per story based on repo scan findings.
 

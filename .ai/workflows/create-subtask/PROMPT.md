@@ -172,9 +172,9 @@ Recommend a strategy for each story. Default to **A** for the batch; vary per st
 
 | Strategy | Description | Best when |
 |---|---|---|
-| **A — Backend-first + Frontend in logical groupings** *(recommended)* | Data/service/API layer first; UI grouped by feature area | Most stories — backend independently testable, frontend blocked for minimum time |
-| **B — Vertical slices** | Each task delivers one complete AC end-to-end | ACs are truly independent with no shared data model or service |
-| **C — Layer by layer** | All data → all service → all UI | Large cross-cutting refactors where layer boundaries are the primary risk |
+| **A — Logical feature slices** *(recommended)* | Tasks grouped by business capability: data foundation → service behaviour → API contract → UI flow. Each task is a complete, independently verifiable unit — not a whole layer dump. | Most stories |
+| **B — Vertical slices** | Each task delivers one complete AC end-to-end across all layers | ACs are truly independent with no shared data model or service |
+| **C — Layer by layer** | All data → all service → all UI — each task is one whole layer | Only for large cross-cutting refactors where layer-boundary risk dominates the entire story |
 
 ---
 
@@ -203,7 +203,41 @@ Ask:
 
 ### Step 8 — Write subtasks for every story (no new file reads — shared context only)
 
-For each story, using the confirmed strategy, write **3–7 implementation tasks** followed by **exactly one mandatory QA task** as the final item.
+For each story, using the confirmed strategy, write **up to 4 implementation tasks** followed by **exactly one mandatory QA task** as the final item — **maximum 5 tasks total per story, no exceptions**.
+
+#### 5-task limit — density-over-quantity consolidation
+
+If the story's logical units would exceed 4 implementation tasks, consolidate before writing:
+- DB schema + service behaviour → one task
+- API contract + input validation → one task
+- Two closely related UI flows → one task
+- Security, performance, and error handling are **sub-sections inside** the relevant task, not separate tasks
+
+If you still have 5+ implementation units after consolidation, merge the two most cohesive units into a single denser task. No AC or business rule is dropped — it is covered at higher density. A task that is denser is better than a task list that is longer.
+
+#### Purpose of a subtask
+
+Each task is a **specification document for `/evyasys:StartDev`**.
+StartDev reads the task, runs a technical brainstorm (3+ approaches), gets team approval, then writes the code.
+A task is the complete specification StartDev needs — business rules, expected behaviour, file scope, and observable done criteria.
+
+#### Task division — logically complete units (enforced without exception)
+
+**Each task must be one logically complete, independently verifiable unit of functionality.**
+
+A good task covers a natural slice — it may span data + service, or API + validation, or UI + state management — whatever makes a *complete piece of business behaviour* that can be verified on its own.
+
+✅ **Good division** (logical slices):
+- "Set up the data foundation for user credentials" → covers DB schema + service layer behaviour for storing credentials
+- "Expose the login endpoint" → covers API contract + validation + auth guard + error responses
+- "Build the login form and handle the result" → covers UI flow + state + user-facing error messages
+
+❌ **Bad division** (layer dumps — never do this):
+- "All DB schema changes for this story" → this is not one logical unit, it's a technical layer
+- "All service methods" → same problem — splits business logic from its context
+- "All API controllers" → a controller without its business rules is a hollow shell
+
+The test: can this task be picked up by a developer, worked on independently, and verified to work — without needing the adjacent task to also be done first? If yes, it's a good unit.
 
 #### No-code rule (enforced without exception)
 
@@ -219,11 +253,12 @@ The developer writes the code during StartDev, guided by project rules and their
 - Expected test results: "`login succeeds with valid credentials` — expected: token in response"
 
 ❌ **Never allowed:**
-- Code blocks of any language — no ``` TypeScript ```, ``` SQL ```, ``` JavaScript ```, or any other language fence
+- Code blocks of any language — no ` ``` `TypeScript` ``` `, ` ``` `SQL` ``` `, ` ``` `JavaScript` ``` `, or any other language fence
 - SQL DDL/DML: `ALTER TABLE`, `CREATE TABLE`, `INSERT INTO`, `SELECT`, etc.
 - Inline implementation logic: `if (attempts >= 5) { throw new LockoutException(); }`
 - Pseudo-code that mimics implementation
 - Framework-specific decorators or annotations written as implementation hints
+- **Quoting or reproducing existing code from the codebase** — existing code is read during Step 3 for analysis only; it must never appear in task bodies. Translate what you read into behaviour contracts and guidance, not code excerpts.
 
 #### Functional headline rule (enforced without exception)
 
@@ -238,6 +273,9 @@ Every implementation task **must** include all that apply. Write guidance, not c
 
 | Required element | Example of sufficient guidance |
 |---|---|
+| **AC Coverage Map** | Table: each AC this task addresses → which behaviour contract or rule delivers it |
+| **Data Flow** | 5 steps: Input (source + shape) → Validation (layer + rejections) → Processing (service + logic) → Persistence (table/columns/conditions) → Output (response shape + side-effects) |
+| **Error & Recovery** | Table: each failure mode → expected system behaviour (status code, rollback, log, fallback) |
 | Exact file paths | `src/services/UserService.ts` — not "the service layer" |
 | Behaviour contract | "`login(email, password)` — authenticates a user, returns a token, locks account after 5 failures" |
 | DB schema change | Table `users`, add column `failed_attempts` (integer, not null, default 0), migration `<timestamp>_add_failed_attempts` |
@@ -248,6 +286,7 @@ Every implementation task **must** include all that apply. Write guidance, not c
 | Performance | Volume estimate + indexing or caching expectation |
 
 Shallow descriptions like "update the service to handle this" will be rejected at self-review.
+A task missing the AC Coverage Map, Data Flow, or Error & Recovery table will be rejected at self-review.
 
 If you cannot fill in the Technical Guidance from the shared context, you have not read enough in Step 3 — do not proceed; go back and read the missing file.
 

@@ -12,12 +12,23 @@ Run every item before showing output. Fix silently if any fail.
 
 ## Structure
 
-- [ ] Between 4 and 8 tasks total (3–7 implementation tasks + 1 mandatory QA task).
+- [ ] Maximum 5 tasks total (up to 4 implementation tasks + 1 mandatory QA task) — no story exceeds this limit.
 - [ ] Strategy A/B/C was presented and explicitly confirmed by the user before tasks were written.
 - [ ] Each task has a unique title.
 - [ ] Every AC from the parent story is referenced by at least one task.
 - [ ] Dependencies between tasks are explicit (`Depends on: Task N` or `None`).
 - [ ] The final task is titled "QA: Test Scenarios & Playwright Automation".
+
+## Logical completeness (per implementation task)
+
+- [ ] Each task is one logically complete unit — it covers a natural slice of business behaviour, not an arbitrary technical layer.
+- [ ] No task is a layer dump ("all DB changes", "all service methods", "all controllers") — each task covers a complete piece of functionality that can be verified independently.
+- [ ] Each task has a **Scope** section that states what is in this task and what is explicitly deferred.
+- [ ] Each task has an **ACs covered by this task** table — every AC this task addresses is listed with the specific behaviour contract or rule that delivers it.
+- [ ] Each task has a **Data Flow** section with all 5 steps (Input → Validation → Processing → Persistence → Output).
+- [ ] Each task has an **Error & recovery behaviour** table covering every expected failure mode.
+- [ ] Each task has a **Done when** section with at least two observable, verifiable criteria.
+- [ ] A developer can pick up any single task and work on it independently without needing to read adjacent tasks first.
 
 ## Functional headlines
 
@@ -32,6 +43,7 @@ Run every item before showing output. Fix silently if any fail.
 - [ ] No inline implementation logic — no `if/else`, loops, throw statements, or any code-like construct.
 - [ ] No pseudo-code that mimics implementation.
 - [ ] Function and method references are behaviour contracts, not implementations: "`processX(input)` — validates and persists, returns created ID" not "`processX(x) { return db.save(x); }`".
+- [ ] No existing code from the codebase reproduced, quoted, or paraphrased as code — existing methods were read for analysis and translated into behaviour descriptions only.
 
 ## Technical Guidance (per implementation task)
 
