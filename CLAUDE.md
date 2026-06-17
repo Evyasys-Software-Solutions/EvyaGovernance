@@ -7,9 +7,8 @@ modification in this repository. Read it completely before writing a single line
 
 ## 1. Project Overview
 
-EvyaGovernance is an AI-assisted SDLC delivery pipeline built on the
-[SuperPower](https://github.com/obra/superpowers) methodology. It integrates
-Claude Code skills with Azure DevOps and Microsoft Teams to automate the full
+EvyaGovernance is an AI-assisted SDLC delivery pipeline built by Evyasys Software Solutions.
+It integrates Claude Code skills with Azure DevOps and Microsoft Teams to automate the full
 story lifecycle: Create → Subtask → StartDev → ReviewDev → FinishDev → StartQA → FinishQA.
 
 ### Architecture layers (top to bottom)

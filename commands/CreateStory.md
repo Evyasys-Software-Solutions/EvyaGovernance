@@ -1,5 +1,5 @@
 ---
-description: Creates Epics AND Stories in one command. Resolves or creates all required epics (Gate 1), plans the full story batch with one approval (Gate 2), drafts every story at SuperPower BA quality, syncs to the PM tool, and sends exactly 2 notifications — epics table and stories table.
+description: Creates Epics AND Stories in one command. Resolves or creates all required epics (Gate 1), plans the full story batch with one approval (Gate 2), drafts every story at high BA quality, syncs to the PM tool, and sends exactly 2 notifications — epics table and stories table.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 argument-hint: "(no args — command presents the choice interactively)"
 skill: evyasys-create-story

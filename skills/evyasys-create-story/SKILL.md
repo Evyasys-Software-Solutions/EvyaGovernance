@@ -1,6 +1,6 @@
 ---
 name: evyasys-create-story
-description: Creates both Epics AND Stories in a single command. Resolves or creates all required epics first (Gate 1), plans the full story batch with one approval (Gate 2), drafts every story with SuperPower BA quality, syncs everything to the PM tool, and sends exactly 2 notifications — epics table and stories table.
+description: Creates both Epics AND Stories in a single command. Resolves or creates all required epics first (Gate 1), plans the full story batch with one approval (Gate 2), drafts every story with high BA quality, syncs everything to the PM tool, and sends exactly 2 notifications — epics table and stories table.
 trigger: /evyasys:CreateStory
 ---
 

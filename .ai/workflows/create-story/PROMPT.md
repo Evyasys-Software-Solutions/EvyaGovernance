@@ -48,7 +48,7 @@ Do not continue until all files are successfully read.
 
 ---
 
-### Step 0b — BA + Architect deep analysis  (SuperPower quality — no shortcuts)
+### Step 0b — BA + Architect deep analysis  (high quality — no shortcuts)
 
 Analyse each document from **four independent perspectives**. Do not summarise the doc — extract what matters for story creation.
 
@@ -289,7 +289,7 @@ Wait for explicit approval. Do not draft until the user says yes.
 
 ---
 
-## Step 5 — Draft all stories  (SuperPower quality — no shortcuts)
+## Step 5 — Draft all stories  (high quality — no shortcuts)
 
 For **each story** in the approved plan, **in sequence**:
 
