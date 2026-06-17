@@ -1,0 +1,3 @@
+> Not applicable — this project is a developer CLI tool invoked interactively via Claude Code. There are no performance budgets, hot paths, or response time SLAs. Each command runs to completion on the developer's machine; execution time is dominated by AI inference latency (Claude Code) and external API round trips (Azure DevOps, JIRA, Teams), neither of which is optimisable within this plugin.
+>
+> **Relevant note**: `scripts/repo_scan.py` is deliberately lightweight — it avoids AST parsing and does line-count-based analysis only (`total_lines`, `byExtension`, `largestFiles`) to keep startup time under 1 second on a typical project.

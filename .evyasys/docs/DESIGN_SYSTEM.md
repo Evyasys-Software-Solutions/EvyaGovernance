@@ -1,0 +1,1 @@
+> Not applicable — this project is a Claude Code plugin (CLI tool). There is no visual UI, browser-based frontend, or design system. The only "interface" is the Claude Code terminal/chat and the structured markdown files the plugin produces.

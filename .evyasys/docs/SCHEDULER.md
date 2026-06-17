@@ -1,0 +1,1 @@
+> Not applicable — this project has no background jobs, scheduled tasks, or cron jobs. It is a CLI plugin that executes on-demand when a developer invokes a `/evyasys:*` command. All operations complete synchronously within a single hook execution.

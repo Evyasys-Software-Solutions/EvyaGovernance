@@ -57,12 +57,43 @@ Before touching the diff, load and internalise all inputs above in this order:
 4. Read `.evyasys/workflows/review-dev/*.md` if present — any project-specific review instructions override this prompt.
 5. Read `<story-folder>/<id>_TechBrainstorm.md` — identify the agreed implementation approach. This is the architectural contract for the review.
 6. Read prior `<id>_CodeReview*.md` if it exists — know what was flagged before; re-open anything that was not resolved.
-7. Load `.evyasys/docs/ARCHITECTURE.md`, `RULES.md`, `STANDARDS.md`, and `PATTERNS.md` if the
-   directory exists. These project-specific quality gates are the highest-priority constraints.
-   Note: (a) layer boundary rules from ARCHITECTURE.md, (b) all hard rules from RULES.md,
-   (c) required naming from STANDARDS.md, (d) approved patterns from PATTERNS.md.
-   Any violation of these docs is at least **Important** — violations of ARCHITECTURE.md
-   layer boundaries are **Critical**.
+7. Load the following universal quality-gate docs from `.evyasys/docs/` if the directory exists.
+   These are the highest-priority constraints — a violation of any is at least **Important**:
+   - `ARCHITECTURE.md` — layer boundaries (violation → **Critical**), extension hierarchy, non-cloud infrastructure
+   - `RULES.md` — all hard rules (violation → **Important** minimum)
+   - `STANDARDS.md` — naming and formatting
+   - `PATTERNS.md` — approved patterns only
+   - `EXTENSION_PATTERNS.md` — base class compliance, wrapper usage, DRY enforcement
+     - New class not extending documented base → **Important**
+     - Direct vendor/library call outside a wrapper → **Important**
+     - Non-cloud infrastructure call bypassing its wrapper → **Critical**
+     - Duplicated logic (same block in 2+ places) → **Important**
+   - `LOCALISATION.md` — no hardcoded text, no magic values, enum and constant usage
+     - Any hardcoded user-facing string → **Critical**
+     - Any magic number or raw status string comparison → **Important**
+     - Enum without locale key connection → **Important**
+   - `DTO_STANDARDS.md` — request DTOs, response DTOs, API envelope
+     - `$request->all()` passed into a service → **Critical**
+     - Service returning raw ORM model → **Critical**
+     - API response not using standard envelope → **Critical**
+     - Missing pagination meta on a list endpoint → **Important**
+     - DTO exposing password or token field → **Critical**
+   - `RBAC.md` — role/permission definitions, guard placement, ownership checks, frontend visibility
+     - Raw role string comparison (`=== 'admin'`) → **Critical**
+     - Permission check in view only (not in middleware) → **Critical**
+     - Missing ownership check in service for resource-scoped operation → **Critical**
+     - Action button rendered regardless of user permissions → **Critical**
+     - `can()` triggering a DB query per call (N+1) → **Important**
+8. If any changed file is a frontend file (template, CSS, JS, HTML view, asset): additionally load:
+   - `.evyasys/docs/DESIGN_SYSTEM.md` — token usage contract
+   - `.evyasys/docs/UI_UX_STANDARDS.md` — interaction and state contracts
+   - `.evyasys/docs/FRONTEND.md` — component and styling rules
+   - `.evyasys/docs/ADMINLTE.md` if it exists — AdminLTE layout, component, plugin, and responsive contracts
+   - `.evyasys/docs/fe/STYLING_MICRO_STANDARDS.md` — CSS architecture rules (no raw values, no inline styles, no page overrides)
+   - `.ai/rules/adminlte.md` — AdminLTE hard rules (if file exists)
+   These UI documents are the highest-priority constraints for frontend changes.
+   A violation of the responsive behaviour matrix in ADMINLTE.md is **Critical**.
+   A CSS token rule violation (raw value, inline style, page-specific override) is **Important** minimum.
 
 Rules from all sources are **active constraints** throughout the review.
 A violation of any rule from any source is flagged at **Important** minimum.

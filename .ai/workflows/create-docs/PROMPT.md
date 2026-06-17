@@ -22,6 +22,7 @@ You are the Documentation Architect described in `AGENT.md`.
 - **CI/CD**: `.github/workflows/**`, `azure-pipelines.yml`, `Jenkinsfile`, `.circleci/config.yml`
 - **Design system**: `tailwind.config.*`, `*/theme.*`, `src/styles/**`, `src/tokens/**`, `globals.css`,
   `*.stories.*`, `src/components/ui/**`, `src/design-system/**`
+- **AdminLTE**: `adminlte/dist/css/adminlte.min.css` (version comment), `assets/css/variables.css`, `assets/css/custom.css`, `assets/js/app.js`, `views/layouts/base.*` (or master layout), `bower.json`, `package.json` (adminlte key), CDN link in base template
 - **Internationalisation**: `i18n/**`, `locales/**`, `src/i18n/**`, `messages/**`
 - **Source code**: `src/**`, `app/**`, `lib/**`, `components/**`, `pages/**`, `api/**`,
   `services/**`, `models/**`, `repositories/**`, `middleware/**`, `hooks/**`, `store/**`, `utils/**`
@@ -39,12 +40,27 @@ Check `.evyasys/docs/` for existing files. Report the status before proceeding:
 
 | State | Action |
 |---|---|
-| Directory missing or empty | Proceed: full generation of all 25 documents |
-| Partial (some files exist) | List what exists; ask if user wants to overwrite or skip existing |
+| Directory missing or empty | Proceed: full generation of all 35 documents |
+| Partial (some files exist) | List what exists and what is missing; ask if user wants to generate missing, update existing, or both |
 | All present, no flag | Ask: "Regenerate all, update specific, retrain, or abort?" |
-| `--update` flag | Confirm "Regenerate all 25 documents?" before proceeding |
-| `--update <filename>` | Confirm "Regenerate `.evyasys/docs/<filename>` only?" |
+| `--update` flag | Confirm "Regenerate all 35 documents, preserving project customisations?" before proceeding |
+| `--update <filename>` | Confirm "Update `.evyasys/docs/<filename>` only?" |
 | `--retrain` flag | Switch to Retrain mode (Step 0-R below) |
+
+### Update-mode behaviour (applies whenever an existing doc is being regenerated)
+
+Before regenerating any document that already exists on disk:
+
+1. **Read the existing document first.** Its content is the result of a previous code scan — treat it as a baseline, not as something to discard.
+2. **Compare against the current code scan.** Identify:
+   - Sections where the current code confirms what is already documented → **keep unchanged**
+   - Sections where the current code extends or adds to what is documented → **add new content, preserve existing**
+   - Sections where the current code definitively contradicts what is documented (e.g. a dependency has been removed, a pattern has changed) → **update with the new evidence**
+3. **Never remove a quality rule unless the code has stopped enforcing it.** If a rule was justified by a real code pattern and that pattern still exists, the rule stays.
+4. **Never downgrade a coverage level.** If the existing doc has 18 rules, the updated doc must have ≥ 18 rules. Only add, extend, or correct — never reduce.
+5. **Carry forward all "Not applicable" decisions.** If a section was marked `> Not applicable — [reason]` and the project still has no evidence for it, keep that exact entry.
+
+This ensures every re-run of `/evyasys:TrainDocs` can only improve quality — it can never silently erase a standard that is still valid.
 
 Read `CLAUDE.md` if present. Carry its architecture layers into ARCHITECTURE.md
 and its quality rules into RULES.md as the baseline to extend.
@@ -84,6 +100,35 @@ Group changed files into areas using this map:
 | `package.json` dependencies changed | `fe/DEPENDENCIES_WORKFLOW.md`, `STACK.md`, `ONBOARDING.md` |
 | Test config, coverage thresholds, factory/MSW changes | `UNIT_TESTING_COMPLETE.md`, `TESTING.md` |
 | Controller/service/repository pattern changes | `be/MICRO_STANDARDS_BE.md`, `BACKEND.md`, `PATTERNS.md` |
+| Enum directory changed (`app/Enums/`, `src/enums/`, `lib/enums/`, or equivalent) | `LOCALISATION.md` — enum catalog + missing items |
+| Constants directory changed (`app/Constants/`, `src/constants/`, `lib/constants/`, or equivalent) | `LOCALISATION.md` — constants catalog |
+| `lang/`, `locales/`, `resources/lang/`, `i18n/`, `assets/js/locales/` — locale file changed | `LOCALISATION.md` — locale structure |
+| Request DTO directory changed (`app/Http/Requests/`, `src/requests/`, `app/schemas/`, or equivalent) | `DTO_STANDARDS.md` — request catalog |
+| Response DTO directory changed (`app/DTOs/`, `app/Data/`, `src/dtos/`, `app/Http/Resources/`, or equivalent) | `DTO_STANDARDS.md` — response catalog |
+| Base API controller / response builder changed | `DTO_STANDARDS.md` — envelope shape |
+| UserRole or Permission enum/constant changed | `RBAC.md` — role definitions + permission catalog |
+| Role-permission seed script changed | `RBAC.md` — role→permission mapping |
+| Auth middleware or user permission-check method changed | `RBAC.md` — guard placement + permission check implementation |
+| Core/base class directory changed (`app/Core/`, `app/Foundation/`, `src/core/`, `lib/base/`, or equivalent) | `EXTENSION_PATTERNS.md`, `ARCHITECTURE.md`, `PATTERNS.md` |
+| Trait/mixin directory changed (`app/Traits/`, `src/mixins/`, `lib/traits/`, or equivalent) | `EXTENSION_PATTERNS.md` |
+| `assets/js/core/` — frontend base module changes | `EXTENSION_PATTERNS.md`, `FRONTEND.md` |
+| Infrastructure wrapper changed (`StorageService`, `CacheService`, `MailerService`, `QueueService`, `Logger`) | `EXTENSION_PATTERNS.md` |
+| New repository / service / controller that does not extend base | `EXTENSION_PATTERNS.md` — refactor debt section |
+| `assets/css/variables.css`, `assets/css/custom.css` | `ADMINLTE.md`, `DESIGN_SYSTEM.md`, `fe/STYLING_MICRO_STANDARDS.md` |
+| `assets/js/app.js`, plugin JS/CSS files added or changed | `ADMINLTE.md` — plugin catalogue and load order |
+| Base layout template (`views/layouts/base.*`) changed | `ADMINLTE.md` — layout system and header/sidebar sections |
+| AdminLTE version bump (`package.json`, `bower.json`) | `ADMINLTE.md`, `STACK.md` |
+| Sidebar nav template changed | `ADMINLTE.md` — sidebar anatomy section |
+| `nginx.conf` or Nginx vhost config changed | `INFRASTRUCTURE.md`, `SECURITY.md` |
+| Process supervisor config changed | `INFRASTRUCTURE.md` |
+| Redis config changed | `INFRASTRUCTURE.md`, `EXTENSION_PATTERNS.md` |
+| Database server config changed | `INFRASTRUCTURE.md`, `PERFORMANCE.md` |
+| `.env.example` changed (new/removed variable) | `CONFIGURATION_MANAGEMENT.md`, `ONBOARDING.md` |
+| Backup script or schedule changed | `BACKUP_RECOVERY.md` |
+| Health check endpoint changed | `OBSERVABILITY.md`, `INFRASTRUCTURE.md` |
+| Scheduled job added, changed, or removed | `SCHEDULER.md`, `EXTENSION_PATTERNS.md` |
+| Error alerting config changed | `OBSERVABILITY.md`, `ERROR_HANDLING.md` |
+| SSL certificate or HTTPS config changed | `INFRASTRUCTURE.md`, `SECURITY.md` |
 
 If git history is unavailable, ask: "Which area of the codebase changed?" and map the answer.
 
@@ -171,7 +216,18 @@ Read design system config files and extract concrete values — never describe t
 | Ant Design | `antd` in package.json |
 | Radix UI | `@radix-ui/*` in package.json |
 | Headless UI | `@headlessui/react` in package.json |
+| **AdminLTE** | `adminlte` in `package.json`/`bower.json` **or** `adminlte.min.css` link in base template **or** `adminlte/dist/` directory present **or** `class="wrapper"` + `class="main-sidebar"` + `class="content-wrapper"` in base layout |
 | Custom only | None of the above found |
+
+**AdminLTE — additional detection scan** (run only if AdminLTE is detected above):
+Read the following files and extract the values into ADMINLTE.md:
+- Base layout template: extract exact `<body>` classes (layout variant + sidebar skin + navbar classes)
+- `assets/css/variables.css` (or equivalent): extract every CSS custom property (`--bs-*`, `--color-*`, `--sidebar-*`, project tokens)
+- `assets/css/custom.css`: extract every class defined, to document project customisations
+- `assets/js/app.js`: extract plugin initialisations (Select2, DataTables config, Flatpickr options, Toastr options)
+- Sidebar template: extract all nav items, icons, URLs, and sub-menu structures
+- Plugin files present in `assets/plugins/` or `public/plugins/`: build the exact approved plugin catalogue with versions
+- All view template files: glob `views/**/*.html` or equivalent — extract which pages exist and which layout template they extend
 
 **UX pattern detection** — scan source code for these patterns and record what library or approach is used:
 
@@ -187,6 +243,68 @@ Read design system config files and extract concrete values — never describe t
 
 Record all findings — they feed directly into `UI_UX_STANDARDS.md` and `DESIGN_SYSTEM.md`.
 
+**Extension architecture detection** — scan these paths for base classes and wrappers (check all alternatives — paths vary by language):
+| Scan target | What to extract |
+|---|---|
+| `app/Core/`, `app/Foundation/`, `app/Base/`, `src/core/`, `src/base/`, `lib/base/` | Base classes (BaseRepository, BaseService, BaseController, BaseApiController) — list every provided method |
+| `app/Traits/`, `src/mixins/`, `lib/traits/`, `src/shared/` | All traits/mixins — name, purpose, which models use them |
+| `app/Exceptions/`, `src/exceptions/`, `lib/errors/` | Exception hierarchy — class names and parent chain |
+| Infrastructure wrapper files — look for `StorageService`, `CacheService`, `MailerService`, `QueueService`, `Logger` in any directory | Infrastructure wrappers — exposed API methods |
+| `assets/js/core/`, `assets/js/base/`, `src/core/`, `js/core/` | Frontend base modules — BaseTable, BaseForm, BaseModal, BaseAjax, plugin wrappers |
+| All repository files | Check: does each extend BaseRepository or equivalent? Flag any that do not. |
+| All service files | Check: does each extend BaseService or equivalent? Flag any that do not. |
+| All controller files | Check: does each extend the correct base? Flag any that do not. |
+| All page JS files | Check: does each follow the page module pattern (init/bind/destroy)? Flag any that call `$.ajax`, `fetch`, plugin APIs directly. |
+| `.env`, `config/`, `config.yaml`, `app/config/`, `src/config/` | Queue driver (database/redis), cache driver (redis/file), mail driver (smtp), storage path, session driver |
+
+Record all base class method lists, all trait/mixin assignments, all wrapper APIs, and all gaps (code that should extend a base but doesn't). These feed EXTENSION_PATTERNS.md section 15 (refactor debt).
+
+**Localisation and constants detection** — scan these paths (check all alternatives):
+| Scan target | What to extract |
+|---|---|
+| `lang/`, `locales/`, `resources/lang/`, `i18n/`, `messages/` | All locale files — list every file, extract key naming pattern, count total keys per file |
+| `assets/js/locales/`, `src/locales/`, `public/locales/` | Frontend locale JSON — list file, extract top-level namespace keys |
+| Enum directory: `app/Enums/`, `src/enums/`, `lib/enums/`, `app/constants/enums/` | Every enum/constant module — name, values, whether it has `label()`, `values()`, `options()` equivalents |
+| Constants directory: `app/Constants/`, `src/constants/`, `lib/constants/` | Every constant module — name, all constants defined with their values |
+| `assets/js/constants/`, `src/constants/`, `js/constants/` | Frontend constant modules — name, key exports |
+| All service/controller/view files (sample 10) | Scan for hardcoded strings and magic numbers — flag any found as refactor debt in LOCALISATION.md |
+
+**DTO detection** — scan these paths (check all alternatives):
+| Scan target | What to extract |
+|---|---|
+| Request DTO directory: `app/Http/Requests/`, `src/requests/`, `app/schemas/`, `src/dto/requests/` | Every Request DTO — fields, validation rules, casting rules |
+| Response DTO directory: `app/DTOs/`, `app/Data/`, `app/Http/Resources/`, `src/dtos/`, `src/dto/responses/` | Every Response DTO — source model, exposed fields, hidden fields |
+| Base API controller / response builder (any file named `BaseApiController`, `ApiController`, `ResponseHelper`, or containing `success()`, `error()`, `paginated()` response builder methods) | Extract exact envelope shapes for success, error, paginated |
+| All controller files (sample 5) | Check: does each action use a Request DTO? Does each service call receive a DTO? Flag violations as refactor debt in DTO_STANDARDS.md |
+
+**RBAC detection** — scan these paths (check all alternatives):
+| Scan target | What to extract |
+|---|---|
+| UserRole enum/constant: `app/Enums/UserRole.*`, `src/enums/UserRole.*`, `src/constants/roles.*`, or equivalent | All roles with values |
+| Permission enum/constant: `app/Enums/Permission.*`, `app/Constants/Permission.*`, `src/enums/Permission.*`, `src/constants/permissions.*` | All permissions in `{resource}:{action}` format |
+| Role-permission seed/fixture: `database/seeders/`, `src/seeds/`, `db/seeds/`, `fixtures/`, `prisma/seed.*` | Complete role→permission mapping |
+| User model/class — look for permission check method (`can()`, `hasPermission()`, `isAllowed()`, or equivalent) | Permission check implementation — does it use cache? Is there super-admin bypass? |
+| Middleware directory: `app/Http/Middleware/`, `src/middleware/`, `middleware/`, `app/middleware/` | Auth middleware files — what they check and where applied |
+| Routes directory: `routes/`, `src/routes/`, `app/routes/` | Sample 10 routes — is auth + permission middleware applied consistently? |
+| Permissions locale file (any locale file containing permission display labels) | Permission display labels |
+| Database migrations: `database/migrations/`, `migrations/`, `db/migrations/`, `prisma/migrations/` | Roles, permissions, role_permissions, user_roles table schemas |
+
+**Infrastructure and operations detection** — scan these paths:
+| Scan target | What to extract |
+|---|---|
+| `nginx.conf`, `nginx/sites-available/*`, `nginx/sites-enabled/*` | Server blocks, proxy config, SSL cert paths, security headers, rate limiting, gzip config |
+| `/etc/supervisor/conf.d/*.conf` or `supervisord.conf` or `Procfile` or `pm2.config.js` or `ecosystem.config.js` | Process supervisor config — managed processes, worker counts, restart policy |
+| `docker-compose.yml`, `docker-compose.*.yml` | Services, ports, volumes, environment injection |
+| `.env.example`, `.env.staging`, `.env.production` (if committed without secrets) | All environment variable names, defaults, purpose |
+| `config/` or `src/config/` directory | Framework config files and what they control |
+| Central scheduler file: `app/Console/Kernel.php`, `src/scheduler.*`, `crontab`, `scripts/cron*` | All scheduled jobs and their cron expressions |
+| Jobs directory: `app/Jobs/`, `src/jobs/`, `jobs/` | Job classes — what they do, retry count, timeout |
+| Backup scripts: `scripts/backup*`, `bin/backup*`, `cron/backup*` | Backup method, schedule, destination |
+| Health check route: look for `/health`, `/ping`, `/status` endpoints in routes | Health check implementation — what it checks |
+| `README.md`, `docs/SERVER.md`, `docs/DEPLOY.md`, `DEPLOYMENT.md` | Any server setup documentation |
+
+Record: Nginx config values, supervisor process list, all env vars, all scheduled jobs, backup procedures, health check endpoint. These feed INFRASTRUCTURE.md, CONFIGURATION_MANAGEMENT.md, SCHEDULER.md, BACKUP_RECOVERY.md, and OBSERVABILITY.md.
+
 ---
 
 ## Phase 3 — Analysis (internal — do not output)
@@ -201,6 +319,16 @@ After the scan, summarise findings privately before generating any document:
 6. **Security posture** — auth mechanism, validation approach, known gaps
 7. **Gaps and risks** — inconsistencies, missing standards, areas of concern
 8. **Design system** — component library identified, exact token values extracted (colours, spacing, typography), UX patterns catalogued (loading, error, empty states, toasts, forms)
+9. **AdminLTE** (if detected) — version confirmed, layout variant, sidebar skin, navbar skin, plugin catalogue, custom token values from variables.css, page template inventory
+10. **Extension architecture** — base classes found (and their methods), traits catalogued, infrastructure wrappers found, frontend base modules found, refactor debt list (code that violates extension rules), non-cloud infrastructure configuration (queue/cache/mail/storage drivers)
+11. **Localisation** — locale files found, enum catalog (with label()/values() completeness), constants catalog, frontend locale file, hardcoded string/magic number violations found
+12. **DTOs** — Request DTO catalog, Response DTO catalog, actual API envelope shape extracted from base controller, DTO violations (raw unvalidated input crossing boundaries)
+13. **RBAC** — all roles, all permissions, complete role→permission mapping, permission check implementation, auth middleware chain, permission cache strategy, RBAC data schema
+14. **Infrastructure** — Nginx server block config, process supervisor processes, Redis config, database server config, SSL setup, firewall notes; if no config files found, document what the stack requires as a baseline
+15. **Configuration** — complete env var list from `.env.example`, per-environment differences inferred from code, secrets that must be set, config validation on startup
+16. **Scheduler** — all scheduled jobs with cron expressions, estimated durations, failure behaviours; if no scheduler found, note explicitly
+17. **Backup** — backup scripts found (or absent), schedule, destination; if absent, flag as a critical gap
+18. **Observability** — health check endpoint (or gap), uptime monitoring tool (or gap), error alerting mechanism (or gap), log paths
 
 This analysis is the foundation of every document. Do not start Phase 4 until it is complete.
 
@@ -212,33 +340,56 @@ Read `DOC_MANIFEST.md` for the required sections and quality bar of each documen
 
 Generate documents in this order — STACK.md first so other docs can reference it:
 
+**Core layer docs (architecture, code standards, data contracts):**
 1. `STACK.md`
 2. `ARCHITECTURE.md`
 3. `RULES.md`
 4. `STANDARDS.md`
-5. `PATTERNS.md`
-6. `BACKEND.md`
-7. `FRONTEND.md`
-8. `DB_STANDARDS.md`
-9. `API_STANDARDS.md`
-10. `TESTING.md`
-11. `SECURITY.md`
-12. `DESIGN_SYSTEM.md`
-13. `UI_UX_STANDARDS.md`
-14. `WORKFLOWS.md`
-15. `DEPLOYMENT.md`
-16. `ERROR_HANDLING.md`
-17. `DECISIONS.md`
-18. `PERFORMANCE.md`
-19. `ONBOARDING.md`
-20. `GLOSSARY.md`
-21. `fe/STYLING_MICRO_STANDARDS.md`
-22. `fe/HOOKS_DEEP_RULES.md`
-23. `fe/DEPENDENCIES_WORKFLOW.md`
-24. `UNIT_TESTING_COMPLETE.md`
-25. `be/MICRO_STANDARDS_BE.md`
+5. `LOCALISATION.md`
+6. `PATTERNS.md`
+7. `EXTENSION_PATTERNS.md`
+8. `BACKEND.md`
+9. `CONFIGURATION_MANAGEMENT.md`
+10. `FRONTEND.md`
+11. `DB_STANDARDS.md`
+12. `API_STANDARDS.md`
+13. `DTO_STANDARDS.md`
+14. `RBAC.md`
+15. `SECURITY.md`
 
-Documents 21–25 are supplementary micro-level documents. They add depth to the core docs and follow the same quality rules — if the project has no evidence for a document (e.g. no frontend layer), output the delimiter and write `> Not applicable — [specific reason].` at the top, exactly as you would for any other document.
+**Quality and testing:**
+16. `TESTING.md`
+17. `ERROR_HANDLING.md`
+18. `PERFORMANCE.md`
+
+**UI / design:**
+19. `DESIGN_SYSTEM.md`
+20. `UI_UX_STANDARDS.md`
+21. `ADMINLTE.md` *(conditional — generate only if AdminLTE is detected; write "Not applicable" if not)*
+
+**Operations (self-hosted):**
+22. `INFRASTRUCTURE.md`
+23. `SCHEDULER.md`
+24. `BACKUP_RECOVERY.md`
+25. `OBSERVABILITY.md`
+26. `DEPLOYMENT.md`
+27. `WORKFLOWS.md`
+
+**Knowledge and onboarding:**
+28. `DECISIONS.md`
+29. `ONBOARDING.md`
+30. `GLOSSARY.md`
+
+**Supplementary micro-level docs:**
+31. `fe/STYLING_MICRO_STANDARDS.md`
+32. `fe/HOOKS_DEEP_RULES.md`
+33. `fe/DEPENDENCIES_WORKFLOW.md`
+34. `UNIT_TESTING_COMPLETE.md`
+35. `be/MICRO_STANDARDS_BE.md`
+
+Documents 31–35 are supplementary micro-level documents. They add depth to the core docs and follow the same quality rules — if the project has no evidence for a document (e.g. no frontend layer), output the delimiter and write `> Not applicable — [specific reason].` at the top, exactly as you would for any other document.
+
+For self-hosted projects (no cloud infrastructure): documents 22–26 (INFRASTRUCTURE.md through DEPLOYMENT.md) are critical — never mark them Not applicable unless the project explicitly uses a managed PaaS. Write them based on what the stack requires even if config files are not yet on disk.
 
 ### Quality rules for every document
 
@@ -288,7 +439,7 @@ Before the hook writes anything, show a summary table:
 | `UI_UX_STANDARDS.md` | [e.g. shadcn/ui + Tailwind — loading: skeleton, error: toast (sonner), form: react-hook-form + zod] |
 | ... | ... |
 
-Ask: **"Ready to write these 25 documents to `.evyasys/docs/`?"** (or N documents in retrain mode)
+Ask: **"Ready to write these 35 documents to `.evyasys/docs/`?"** (or N documents in retrain/update mode)
 
 Wait for explicit confirmation. Do not write anything before it.
 

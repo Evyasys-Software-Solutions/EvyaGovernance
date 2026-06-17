@@ -1,0 +1,1 @@
+> Not applicable — this project has no React frontend. There are no React hooks, no `useEffect`, and no component lifecycle. Note: `hooks.js` files in this project are Node.js post-agent hooks — a different concept from React hooks entirely.

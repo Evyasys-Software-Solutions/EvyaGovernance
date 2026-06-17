@@ -101,13 +101,18 @@ module.exports = async function (ctx) {
   const docsDir = path.join(cfg.repoRoot, '.evyasys', 'docs');
   fs.mkdirSync(docsDir, { recursive: true });
 
-  const written = [];
+  const created = [];
+  const updated = [];
+
   for (const [name, content] of Object.entries(docs)) {
     const docPath = path.join(docsDir, name);
     fs.mkdirSync(path.dirname(docPath), { recursive: true });
+    const isNew = !fs.existsSync(docPath);
     fs.writeFileSync(docPath, content + '\n', 'utf8');
-    written.push(name);
+    (isNew ? created : updated).push(name);
   }
+
+  const written = [...created, ...updated];
 
   // ── INDEX.md — always regenerated, never user-edited ──────────────────────────
   const today = new Date().toISOString().split('T')[0];
@@ -118,6 +123,8 @@ module.exports = async function (ctx) {
   );
 
   // ── Success ───────────────────────────────────────────────────────────────────
-  ctx.send(`Written ${written.length} document(s) + INDEX.md → .evyasys/docs/`);
+  if (created.length) ctx.send(`✅ Created (${created.length}): ${created.join(', ')}`);
+  if (updated.length) ctx.send(`✅ Updated (${updated.length}): ${updated.join(', ')}`);
+  ctx.send(`INDEX.md regenerated → .evyasys/docs/`);
   ctx.send('Quality gates active. These documents are loaded by /evyasys:StartDev at Step 0.');
 };

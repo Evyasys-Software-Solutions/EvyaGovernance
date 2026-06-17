@@ -1,0 +1,1 @@
+> Not applicable — this project is a Claude Code plugin (CLI tool). There is no web frontend, browser UI, or client-side rendering layer. All user interaction occurs through the Claude Code terminal interface via slash commands (`/evyasys:CreateStory`, etc.).

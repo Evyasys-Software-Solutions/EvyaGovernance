@@ -1,0 +1,1 @@
+> Not applicable — AdminLTE was not detected in this project. No `adminlte` package in `package.json`, no `adminlte/dist/` directory, and no AdminLTE class signatures (`main-sidebar`, `content-wrapper`) in any template files. This is a CLI plugin with no web frontend.

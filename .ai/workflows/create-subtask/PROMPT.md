@@ -95,17 +95,17 @@ Build an internal story registry used throughout. Do **not** read any source-cod
 
 Check whether `.evyasys/docs/` exists.
 
-**If YES** — load the base docs shared by all stories:
-`ARCHITECTURE.md` · `RULES.md` · `STANDARDS.md` · `PATTERNS.md` · `ERROR_HANDLING.md`
+**If YES** — load the base docs shared by all stories (these apply universally — every task written must conform):
+`ARCHITECTURE.md` · `RULES.md` · `STANDARDS.md` · `PATTERNS.md` · `ERROR_HANDLING.md` · `EXTENSION_PATTERNS.md` · `LOCALISATION.md` · `DTO_STANDARDS.md` · `RBAC.md`
 
 Then load domain docs based on the **union** of all Impacted Areas flags across all stories:
 
 | Flag in any story | Load from `.evyasys/docs/` |
 |---|---|
-| Security | `SECURITY.md` |
+| Security | `SECURITY.md`, `RBAC.md` |
 | DB | `DB_STANDARDS.md` |
-| Frontend | `FRONTEND.md`, `DESIGN_SYSTEM.md` |
-| API | `API_STANDARDS.md` |
+| Frontend | `FRONTEND.md`, `DESIGN_SYSTEM.md`, `UI_UX_STANDARDS.md`, `fe/STYLING_MICRO_STANDARDS.md`, `ADMINLTE.md` *(if file exists — AdminLTE projects only)* |
+| API | `API_STANDARDS.md`, `DTO_STANDARDS.md` |
 | Performance | `PERFORMANCE.md` |
 
 **If NO docs directory** — note: "Quality-gate docs not found — will derive standards from codebase in Step 3."
