@@ -38,8 +38,10 @@ commands:
     prompt: workflows/start-dev/PROMPT.md
     checklist: workflows/start-dev/CHECKLIST.md
     args:
-      - name: storyId
+      - name: storyOrEpicIds
         required: true
+        hint: "one or more story/epic IDs — e.g. EVYA-1042  or  EP-001  or  EP-001 EVYA-1042 EVYA-1043"
+        variadic: true
     ado_state: "In Progress"
     teams_event: dev-kickoff
 

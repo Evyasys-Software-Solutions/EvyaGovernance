@@ -136,6 +136,12 @@ Produce the **shared technical inventory**:
 
 This inventory is the **only code read** that occurs. Phase 2 uses it — no further file reads.
 
+> **Context compression** — if `headroom_compress` is available as a tool in this session:
+> - **Only compress implementation files.** An implementation file is any file whose primary purpose is defining program logic: `.ts` `.tsx` `.js` `.jsx` `.mjs` `.py` `.php` `.go` `.cs` `.java` `.rb` `.rs` `.swift` `.kt` `.scala` `.dart` `.ex` `.exs` `.cpp` `.c` `.h` `.hpp` `.vue` `.css` `.scss` `.less`. If uncertain — if the file *instructs a machine*, compress it; if it *informs a human* (markdown, YAML, JSON, SQL, `.env`, config), do not.
+> - For each implementation file over 80 lines: call `headroom_compress` on its full content immediately after reading, store the token, and build the shared technical inventory from the compressed representation.
+> - Before writing behaviour contracts that reference specific function signatures or exact field names, call `headroom_retrieve` to verify accuracy.
+> - If `headroom_compress` is unavailable or returns any error, **skip silently and continue with the full content** — compression never blocks or alters the analysis. Quality is always maintained regardless.
+
 ---
 
 ### Step 4 — Cross-story dependency analysis

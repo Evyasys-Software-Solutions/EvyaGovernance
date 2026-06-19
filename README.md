@@ -273,7 +273,7 @@ flowchart TD
 | 2 | Setup | `/evyasys:TrainDocs` | 🏗️ Tech Lead | Scan full codebase; generate 35 quality-gate docs | `.evyasys/docs/` (35 files) | — |
 | 3 | Plan | `/evyasys:CreateStory` | 👔 PO / BA | Resolves/creates epics (Gate 1); plans full story batch (Gate 2); drafts all stories; syncs everything; 2 notifications | `{epicId}_Epic.md` · `{storyId}_UserStory.md` | Epics + Backlog |
 | 4 | Plan | `/evyasys:CreateSubtask EVYA-XXXX EVYA-XXYY` | 🏗️ Architect | Load shared context once; cross-story analysis; single consolidated plan approval; 3–7 dev tasks + QA task per story; 1 batch notification | `{storyId}_Subtasks.md` (per story) | Tasks created |
-| 5 | Dev | `/evyasys:StartDev EVYA-XXXX` | 💻 Dev Lead | Load quality-gate docs; brainstorm 3+ approaches with trade-offs; architecture approval gate | `TechBrainstorm.md` | **In Progress** |
+| 5 | Dev | `/evyasys:StartDev EVYA-XXXX [EVYA-XXYY] [EP-00N]` | 💻 Dev Lead | Accepts one story, multiple stories, an epic, or a mix; epic IDs auto-expand to stories; brainstorm 3+ approaches per story; architecture approval gate | `TechBrainstorm.md` (per story) | **In Progress** |
 | 6 | Dev | `/evyasys:ReviewDev EVYA-XXXX` | 🎯 Senior Dev | Independent review: full diff, AC coverage, arch, security, test quality — GO / NO-GO | `CodeReview.md` | — |
 | 7 | Dev | `/evyasys:FinishDev EVYA-XXXX` | 💻 Developer | AC audit; diff scope check; DoD checklist; architect gate (docs-to-update list) | `DevSummary.md` | **Ready for QA** |
 | 8 | QA | `/evyasys:StartQa EVYA-XXXX` | 🔬 QA Engineer | Load domain quality gates; ask env + test data; write AC-driven test cases (Gherkin) | `TestPlan.md` | **In QA** |
@@ -425,23 +425,33 @@ and performance decisions.
 
 ---
 
-### `/evyasys:StartDev EVYA-1042`
+### `/evyasys:StartDev EVYA-1042 [EVYA-1043] [EP-001]`
 **Who:** Engineering Lead — **When:** Sprint start, before any code is written
 
-Loads the story's Impacted Areas flags and reads the relevant quality-gate documents
+**Input forms:**
+```
+/evyasys:StartDev EVYA-1042                    ← single story
+/evyasys:StartDev EVYA-1042 EVYA-1043          ← multiple stories
+/evyasys:StartDev EP-001                       ← all stories in an epic
+/evyasys:StartDev EP-001 EVYA-1005             ← epic + additional story
+```
+
+Epic IDs are automatically expanded to all their constituent stories before processing begins.
+
+Loads each story's Impacted Areas flags and reads the relevant quality-gate documents
 from `.evyasys/docs/` before forming any opinion. If any story AC conflicts with a
 loaded standard, presents a compliance report and waits for a decision before
 brainstorming begins.
 
-**Phase 1 — Brainstorm:** Generates minimum 3 meaningfully distinct implementation
+**Phase 1 — Brainstorm (per story):** Generates minimum 3 meaningfully distinct implementation
 approaches with specific pros, cons, and effort delta (S/M/L). Recommends one with
 a clear deciding reason and top risk. Waits for team agreement before proceeding —
 the agreed approach is saved to the repo so the architectural decision travels with the PR.
 
-**Phase 2 — Gates:** Branch naming, draft PR, Definition of Ready line-by-line,
+**Phase 2 — Gates (per story):** Branch naming, draft PR, Definition of Ready line-by-line,
 dependencies. Produces a GO / NO-GO gate table.
 
-**Produces:** `<id>_TechBrainstorm.md` · ADO → **In Progress** · 🚀 Teams
+**Produces:** `<id>_TechBrainstorm.md` per story · ADO → **In Progress** per story · 🚀 kickoff notification per story
 
 ---
 
@@ -611,6 +621,26 @@ $env:EVYASYS_DRY_RUN = "1"
 ```
 
 Logs exactly what would be sent to ADO and Teams without executing anything.
+
+---
+
+## Context compression
+
+The three highest-context commands (`/evyasys:ReviewDev`, `/evyasys:CreateSubtask`,
+`/evyasys:StartDev` batch) automatically compress large source files during analysis,
+reducing token usage by 40–70% with no effect on output quality.
+
+**Active by default. No manual installation.** `/evyasys:Setup` installs the compression
+engine (requires Python 3.8+ and pip) and registers it as a Claude Code tool. After Setup,
+**restart Claude Code once** for the tool to activate — it is then available automatically
+in every future session. If Python is not available or installation fails for any reason,
+the system auto-bypasses silently — commands run normally at full token usage.
+
+Quality-gate docs, story files, gate tables, and output blocks are never compressed —
+they are always read and processed verbatim.
+
+> **Escape hatch:** Set `EVYASYS_COMPRESS=0` before running `/evyasys:Setup` to skip
+> the compression engine installation entirely.
 
 ---
 

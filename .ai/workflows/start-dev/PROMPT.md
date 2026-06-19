@@ -1,4 +1,4 @@
-# Prompt: /evyasys:StartDev <StoryID>
+# Prompt: /evyasys:StartDev <StoryID|EpicID> [...]
 
 ## Batch input — epic or multiple stories
 
@@ -166,6 +166,12 @@ List:
 - Which existing modules / files will be touched.
 - Which shared utilities or services are in scope.
 - Any risky or unfamiliar areas flagged by the scan.
+
+> **Context compression** — if `headroom_compress` is available as a tool in this session:
+> - **Only compress implementation files.** An implementation file is any file whose primary purpose is defining program logic: `.ts` `.tsx` `.js` `.jsx` `.mjs` `.py` `.php` `.go` `.cs` `.java` `.rb` `.rs` `.swift` `.kt` `.scala` `.dart` `.ex` `.exs` `.cpp` `.c` `.h` `.hpp` `.vue` `.css` `.scss` `.less`. If uncertain — if the file *instructs a machine*, compress it; if it *informs a human* (markdown, YAML, JSON, SQL, `.env`, config), do not.
+> - For each implementation file over 80 lines read during the probe: call `headroom_compress` on its full content immediately after reading, store the token, and continue building the codebase analysis from the compressed representation.
+> - Before referencing specific method names or exact file-level details in the brainstorm, call `headroom_retrieve` to verify accuracy.
+> - If `headroom_compress` is unavailable or returns any error, **skip silently and continue with the full content** — compression never blocks or alters the brainstorm. Quality is always maintained regardless.
 
 ### Step 3: Generate approaches (minimum 3, maximum 5)
 For each approach write:

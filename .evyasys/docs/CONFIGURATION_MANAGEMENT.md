@@ -25,6 +25,7 @@ Implemented in `scripts/lib/config.js:loadConfig()`. All hooks must call `loadCo
 | `EVYASYS_REPO_ROOT` | Override the project root path (useful in CI) | No | `process.cwd()` | env |
 | `EVYASYS_PM_TOOL` | Override pm_tool (`local\|devops\|jira\|github`) | No | from project.yaml | env |
 | `EVYASYS_NOTIFY_TOOL` | Override notification_tool | No | from project.yaml | env |
+| `EVYASYS_COMPRESS` | `0` = skip context compression installation during Setup. The system auto-bypasses compression at runtime if unavailable — this flag is only needed to prevent the pip install during setup. | No | `1` (enabled) | env |
 | `AZURE_ORG` | Azure DevOps organization name | If pm_tool=devops | — | env / credentials |
 | `AZURE_PROJECT` | Azure DevOps project name | If pm_tool=devops | — | env / credentials |
 | `AZURE_PAT` | Azure DevOps Personal Access Token (scope: Work Items Read & Write) | If pm_tool=devops | — | credentials (encrypted) |

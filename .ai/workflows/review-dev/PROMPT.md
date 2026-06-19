@@ -109,6 +109,13 @@ Run `git diff main...HEAD`.
 For each changed file, read the complete file content (not just the diff chunk)
 to understand context.
 
+> **Context compression** — if `headroom_compress` is available as a tool in this session:
+> - **Only compress implementation files and the git diff.** An implementation file is any file whose primary purpose is defining program logic: `.ts` `.tsx` `.js` `.jsx` `.mjs` `.py` `.php` `.go` `.cs` `.java` `.rb` `.rs` `.swift` `.kt` `.scala` `.dart` `.ex` `.exs` `.cpp` `.c` `.h` `.hpp` `.vue` `.css` `.scss` `.less`. If uncertain — if the file *instructs a machine*, compress it; if it *informs a human* (markdown, YAML, JSON, SQL, `.env`, config), do not.
+> - For each implementation file over 80 lines: call `headroom_compress` on its full content immediately after reading, store the token, and work from the compressed representation.
+> - For the `git diff` output: if it exceeds 150 lines, call `headroom_compress` on the full diff immediately after running the command, store the token, and work from it.
+> - Before citing a specific line number, hunk, or quoting exact code, call `headroom_retrieve` first to verify accuracy.
+> - If `headroom_compress` is unavailable or returns any error, **skip silently and continue with the full content** — compression never blocks or alters the review. Quality is always maintained regardless.
+
 ## Step 3 — AC coverage check
 For every AC in the story:
 - Is there an automated test that proves it? State the test file and test name.

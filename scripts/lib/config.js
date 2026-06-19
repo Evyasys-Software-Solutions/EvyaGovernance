@@ -209,6 +209,9 @@ async function loadConfig({ ctx } = {}) {
     dryRun,
     pmTool,
     notificationTool,
+    compress: {
+      enabled: process.env.EVYASYS_COMPRESS !== '0',
+    },
     hasEvyasysDir,
     hasProjectYaml,
     hasDocs,

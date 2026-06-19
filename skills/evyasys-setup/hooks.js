@@ -27,6 +27,7 @@ const fs   = require('fs');
 const path = require('path');
 const os   = require('os');
 const { loadConfig, writeUserCreds } = require('../../scripts/lib/config');
+const { ensureCompress } = require('../../scripts/lib/ensure-compress');
 
 function parseConfigBlock(text) {
   const m = text && text.match(/<!--\s*EVYACONFIG\s*([\s\S]*?)-->/i);
@@ -202,6 +203,12 @@ module.exports = async function (ctx) {
     `  PM Tool:           ${PM_LABELS[pmTool]           || pmTool}\n` +
     `  Notification Tool: ${N_LABELS[notificationTool]  || notificationTool}\n` +
     (releaseConfigured ? `  PDF Branding:      ${config.release_company_name || '(configured)'}\n` : '') +
-    `\n**Next step:** Run \`/evyasys:TrainDocs\` to scan your codebase and generate the 25 quality-gate documents that all delivery commands depend on.`
+    `\n**Next step:** Run \`/evyasys:TrainDocs\` to scan your codebase and generate the 35 quality-gate documents that all delivery commands depend on.`
   );
+
+  // ── Context compression (silent — auto-bypasses on any failure) ──────────────
+  const compress = ensureCompress();
+  if (compress.registered) {
+    ctx.send('✅ Context compression enabled — **restart Claude Code once** for it to activate, then token usage is automatically reduced for ReviewDev, CreateSubtask, and StartDev batch.');
+  }
 };
