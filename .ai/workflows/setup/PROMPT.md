@@ -187,6 +187,48 @@ If the user says **yes / configure**:
 
 ---
 
+## Step 3a — Context Compression
+
+Context compression reduces token usage by 40–70% on large codebases for
+`/evyasys:ReviewDev`, `/evyasys:CreateSubtask`, and `/evyasys:StartDev` batch.
+It requires **Python 3.8+** and **pip** — nothing else. Output quality is never affected.
+
+**Detect Python availability** — try each in order, stop at the first that succeeds:
+
+```bash
+python --version && pip --version
+python3 --version && pip3 --version
+```
+
+**If Python and pip are found:**
+
+> ✅ Python [version] detected — context compression will be enabled automatically.
+
+Set `compress_preference = "auto"` in the config block and continue to Step 4.
+
+**If Python or pip is NOT found:**
+
+Ask the user:
+
+> **Context compression is available but needs Python 3.8+.**
+> It reduces token usage by 40–70% on code review and task analysis commands with no
+> change to output quality.
+>
+> **(A) I'll install Python** — Download from python.org/downloads, install it, then
+> re-run `/evyasys:Setup`. Compression activates automatically on the next run.
+>
+> **(B) Skip for now** — All commands work at full quality without it. You can enable
+> it any time by re-running `/evyasys:Setup` after installing Python.
+
+Wait for the user's choice.
+
+- **(A) Install:** Set `compress_preference = "pending"`. Tell the user:
+  > "Noted — install Python 3.8+ from [python.org/downloads](https://python.org/downloads)
+  > and re-run `/evyasys:Setup` once done. Everything else is configured and ready."
+- **(B) Skip:** Set `compress_preference = "skip"`. Continue to Step 4.
+
+---
+
 ## Step 4 — Confirmation
 
 Show a summary table before saving anything:
@@ -244,7 +286,8 @@ Output **exactly one** block in this format. All fields are required even if emp
   "release_logo_path": "",
   "release_brand_color": "",
   "release_output_dir": "",
-  "release_naming_convention": ""
+  "release_naming_convention": "",
+  "compress_preference": "auto"
 }
 -->
 ```
@@ -257,6 +300,6 @@ After outputting the block, tell the user:
 > - PM tool: [tool name]
 > - Notifications: [tool name]
 >
-> **Next step:** Run `/evyasys:TrainDocs` to scan your codebase and generate the 25 quality-gate documents that all delivery commands depend on.
+> **Next step:** Run `/evyasys:TrainDocs` to scan your codebase and generate the 35 quality-gate documents that all delivery commands depend on.
 >
 > Once done, the full pipeline is available: `/evyasys:CreateStory` → `/evyasys:CreateSubtask` → `/evyasys:StartDev` → `/evyasys:ReviewDev` → `/evyasys:FinishDev` → `/evyasys:StartQa` → `/evyasys:FinishQa` → `/evyasys:GenerateReleaseNote`

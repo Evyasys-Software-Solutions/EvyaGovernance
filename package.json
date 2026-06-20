@@ -1,6 +1,6 @@
 {
   "name": "evyasys",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "Evyasys delivery pipeline plugin — story → dev → QA → release",
   "author": "Evya Systems",
   "license": "MIT",

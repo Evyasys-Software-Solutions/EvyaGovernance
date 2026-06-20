@@ -8,8 +8,8 @@
   "plugins": [
     {
       "name": "evyasys",
-      "description": "AI-assisted delivery pipeline: /evyasys:Setup, /evyasys:TrainDocs, /evyasys:CreateStory, /evyasys:CreateSubtask, /evyasys:StartDev, /evyasys:ReviewDev, /evyasys:FinishDev, /evyasys:StartQa, /evyasys:FinishQa, /evyasys:GenerateReleaseNote, /evyasys:Update",
-      "version": "0.2.0",
+      "description": "AI-assisted delivery pipeline: /evyasys:Setup, /evyasys:TrainDocs, /evyasys:CreateStory, /evyasys:CreateSubtask, /evyasys:StartDev, /evyasys:ReviewDev, /evyasys:FinishDev, /evyasys:StartQa, /evyasys:FinishQa, /evyasys:GenerateReleaseNote, /evyasys:Update, /evyasys:Repair",
+      "version": "1.0.0",
       "source": "./",
       "author": {
         "name": "Evyasys Software Solutions",

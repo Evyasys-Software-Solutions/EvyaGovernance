@@ -206,9 +206,21 @@ module.exports = async function (ctx) {
     `\n**Next step:** Run \`/evyasys:TrainDocs\` to scan your codebase and generate the 35 quality-gate documents that all delivery commands depend on.`
   );
 
-  // ── Context compression (silent — auto-bypasses on any failure) ──────────────
-  const compress = ensureCompress();
-  if (compress.registered) {
-    ctx.send('✅ Context compression enabled — **restart Claude Code once** for it to activate, then token usage is automatically reduced for ReviewDev, CreateSubtask, and StartDev batch.');
+  // ── Context compression — only when user preference allows it ────────────────
+  // compress_preference values from agent:
+  //   "auto"    → Python found; install and register now
+  //   "pending" → user chose to install Python later; skip for now
+  //   "skip"    → user explicitly opted out; never install
+  //   ""        → missing/old config; attempt install (backward compat)
+  const compressPref = (config.compress_preference || '').toLowerCase();
+  if (compressPref !== 'skip' && compressPref !== 'pending') {
+    const compress = ensureCompress();
+    if (compress.registered) {
+      ctx.send(
+        '✅ Context compression enabled — **restart Claude Code once** for it to ' +
+        'activate, then token usage is automatically reduced for ReviewDev, ' +
+        'CreateSubtask, and StartDev batch.'
+      );
+    }
   }
 };

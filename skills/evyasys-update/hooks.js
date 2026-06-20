@@ -1,23 +1,69 @@
 /**
  * Post-agent hook for evyasys-update.
  *
- * 1. Checks for the <!-- EVYAUPDATE confirmed --> marker in agent output.
- * 2. Clears plugin cache directories (cache/EvyaGovernance, marketplaces/EvyaGovernance).
- * 3. Removes the evyasys plugin entry from all Claude Code settings files so no
- *    manual /plugin uninstall is needed.
- * 4. Git-clones the latest source to the marketplaces directory automatically —
- *    so the user never needs to run /plugin marketplace add.
- * 5. Shows the reinstall commands (2 if the clone succeeded, 3 if it failed).
+ * 1. Checks for the <!-- EVYAUPDATE confirmed --> marker.
+ * 2. Reads the current installed version from this plugin's own plugin.json.
+ * 3. Fetches the latest version + changelog from GitHub (small JSON/text fetch —
+ *    no clone, no file deletions).
+ * 4. Shows version diff and what's new.
+ * 5. Shows the 3 built-in Claude Code commands needed to complete the update.
  *
+ * Nothing is deleted — Claude Code's /plugin update owns the install cleanly.
  * Project config (.evyasys/project.yaml) and credentials (~/.evyasys/credentials)
  * are never touched.
+ *
+ * For a broken install that needs full teardown, /evyasys:Repair handles that.
  */
-const fs                   = require('fs');
-const path                 = require('path');
-const os                   = require('os');
-const { execFileSync }     = require('child_process');
+const fs    = require('fs');
+const path  = require('path');
+const https = require('https');
 
-const REPO_URL = 'https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git';
+const RAW_BASE    = 'https://raw.githubusercontent.com/Evyasys-Software-Solutions/EvyaGovernance/main';
+const PLUGIN_ROOT = path.resolve(__dirname, '..', '..');
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function readLocalVersion() {
+  try {
+    const raw = fs.readFileSync(
+      path.join(PLUGIN_ROOT, '.claude-plugin', 'plugin.json'), 'utf8'
+    );
+    return JSON.parse(raw).version || '?';
+  } catch { return '?'; }
+}
+
+function fetchText(url, timeoutMs = 6000) {
+  return new Promise((resolve) => {
+    const req = https.get(url, { timeout: timeoutMs }, (res) => {
+      if (res.statusCode !== 200) { res.resume(); return resolve(null); }
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => resolve(body));
+    });
+    req.on('error',   () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+  });
+}
+
+/**
+ * Extract changelog sections newer than `fromVersion`.
+ * Shows up to 3 release sections, each capped at 35 lines.
+ */
+function parseChangelog(text, fromVersion) {
+  if (!text) return null;
+  const sections = text.split(/\n(?=## \[)/);
+  const out = [];
+  for (const section of sections) {
+    const m = section.match(/^## \[([^\]]+)\]/);
+    if (!m) continue;
+    if (m[1] === fromVersion) break;
+    out.push(section.split('\n').slice(0, 35).join('\n').trimEnd());
+    if (out.length >= 3) break;
+  }
+  return out.length > 0 ? out.join('\n\n') : null;
+}
+
+// ── Main hook ─────────────────────────────────────────────────────────────────
 
 module.exports = async function (ctx) {
   const output = ctx.agentResult || '';
@@ -27,137 +73,48 @@ module.exports = async function (ctx) {
     return;
   }
 
-  // ── 1. Clear plugin cache directories ──────────────────────────────────────
-  const pluginsDir = path.join(os.homedir(), '.claude', 'plugins');
-  const cacheDirs  = [
-    path.join(pluginsDir, 'cache', 'EvyaGovernance'),
-    path.join(pluginsDir, 'marketplaces', 'EvyaGovernance'),
-  ];
-  const cleared = [];
-  const skipped = [];
+  const currentVersion = readLocalVersion();
+  ctx.send(`Current version: **v${currentVersion}**`);
 
-  for (const full of cacheDirs) {
-    if (!fs.existsSync(full)) { skipped.push(full); continue; }
-    try {
-      fs.rmSync(full, { recursive: true, force: true });
-      cleared.push(full);
-    } catch (err) {
-      ctx.send(`⚠️  Could not clear ${full}: ${err.message}`);
+  ctx.send('Checking latest version on GitHub…');
+
+  const [remotePluginRaw, changelogRaw] = await Promise.all([
+    fetchText(`${RAW_BASE}/.claude-plugin/plugin.json`),
+    fetchText(`${RAW_BASE}/CHANGELOG.md`),
+  ]);
+
+  let latestVersion = null;
+  if (remotePluginRaw) {
+    try { latestVersion = JSON.parse(remotePluginRaw).version || null; } catch { /* */ }
+  }
+
+  if (latestVersion) {
+    if (latestVersion === currentVersion) {
+      ctx.send(`✅ You are already on the latest version (v${latestVersion}).`);
+    } else {
+      ctx.send(`📦 **v${currentVersion} → v${latestVersion}**`);
     }
-  }
-
-  // ── 2. Remove evyasys entry from all settings files ────────────────────────
-  const settingsFiles = [
-    path.join(os.homedir(), '.claude', 'settings.json'),
-    path.join(process.cwd(), '.claude', 'settings.json'),
-    path.join(process.cwd(), '.claude', 'settings.local.json'),
-  ];
-
-  function removeFromSettings(filePath) {
-    if (!fs.existsSync(filePath)) return false;
-    try {
-      const raw  = fs.readFileSync(filePath, 'utf8');
-      const obj  = JSON.parse(raw);
-      let changed = false;
-
-      // Format: { plugins: { "evyasys": {...} } or { "evyasys@EvyaGovernance": {...} } }
-      if (obj.plugins && typeof obj.plugins === 'object') {
-        for (const key of Object.keys(obj.plugins)) {
-          if (key.startsWith('evyasys')) { delete obj.plugins[key]; changed = true; }
-        }
-        if (changed && Object.keys(obj.plugins).length === 0) delete obj.plugins;
-      }
-
-      // Format: { enabledPlugins / installedPlugins / disabledPlugins: [...] }
-      for (const field of ['enabledPlugins', 'installedPlugins', 'disabledPlugins']) {
-        if (Array.isArray(obj[field])) {
-          const before = obj[field].length;
-          obj[field] = obj[field].filter(p =>
-            !(typeof p === 'string' ? p : (p.name || '')).startsWith('evyasys')
-          );
-          if (obj[field].length !== before) changed = true;
-          if (obj[field].length === 0) delete obj[field];
-        }
-      }
-
-      if (changed) {
-        fs.writeFileSync(filePath, JSON.stringify(obj, null, 2) + '\n', 'utf8');
-        return true;
-      }
-    } catch (_) { /* skip unreadable or non-JSON files silently */ }
-    return false;
-  }
-
-  const cleanedSettings = settingsFiles.filter(removeFromSettings);
-
-  // ── 3. Report cleanup ───────────────────────────────────────────────────────
-  if (cleared.length > 0)
-    ctx.send('Cleared:\n' + cleared.map(p => `  • ${p}`).join('\n'));
-  if (skipped.length > 0)
-    ctx.send('Already clean:\n' + skipped.map(p => `  • ${p}`).join('\n'));
-  if (cleanedSettings.length > 0)
-    ctx.send('Removed plugin entry from settings:\n' + cleanedSettings.map(p => `  • ${p}`).join('\n'));
-
-  // ── 4. Clone latest source to marketplaces directory ───────────────────────
-  // This replaces the manual "/plugin marketplace add" step — the directory
-  // just needs to exist for "/plugin install evyasys@EvyaGovernance" to work.
-  const marketplacesDir = path.join(pluginsDir, 'marketplaces');
-  const marketplaceDir  = path.join(marketplacesDir, 'EvyaGovernance');
-
-  let cloneOk = false;
-  try {
-    fs.mkdirSync(marketplacesDir, { recursive: true });
-    // execFileSync bypasses the shell entirely — no quoting needed, works on
-    // Windows (any username/path), macOS, and Linux without modification.
-    execFileSync('git', ['clone', '--depth', '1', REPO_URL, marketplaceDir], {
-      stdio: 'pipe',
-      timeout: 60_000,
-    });
-    cloneOk = true;
-    ctx.send(`Cloned latest plugin source → ${marketplaceDir}`);
-  } catch (err) {
-    const detail = ((err.stderr || err.message || '').toString()).slice(0, 300);
-    ctx.send(
-      `⚠️  Auto-clone failed — git may not be in your PATH or the network is unavailable.\n` +
-      `Detail: ${detail}\n\n` +
-      `You will need to run "/plugin marketplace add ${REPO_URL}" manually (step 2 of 3 below).`
-    );
-  }
-
-  // ── 5. Show reinstall steps ─────────────────────────────────────────────────
-  if (cloneOk) {
-    ctx.send(
-      '✅ **Fully cleaned and updated. Run these two commands inside Claude Code — in order:**\n\n' +
-      '**1 of 2 — Refresh plugin state**\n' +
-      '```\n' +
-      '/reload-plugins\n' +
-      '```\n\n' +
-      '**2 of 2 — Install the latest version**\n' +
-      '```\n' +
-      '/plugin install evyasys@EvyaGovernance\n' +
-      '```\n\n' +
-      'When prompted, choose **Install for you (user scope)**.\n\n' +
-      'Then **fully quit Claude Code and reopen it** — all 11 commands will appear.\n\n' +
-      '> Your project config and credentials were not changed.'
-    );
+    const highlights = parseChangelog(changelogRaw, currentVersion);
+    if (highlights) ctx.send(`**What's new:**\n\n${highlights}`);
   } else {
-    ctx.send(
-      '✅ **Cache cleaned. Run these three commands inside Claude Code — in order:**\n\n' +
-      '**1 of 3 — Refresh plugin state**\n' +
-      '```\n' +
-      '/reload-plugins\n' +
-      '```\n\n' +
-      '**2 of 3 — Re-register the source**\n' +
-      '```\n' +
-      `/plugin marketplace add ${REPO_URL}\n` +
-      '```\n\n' +
-      '**3 of 3 — Install the latest version**\n' +
-      '```\n' +
-      '/plugin install evyasys@EvyaGovernance\n' +
-      '```\n\n' +
-      'When prompted, choose **Install for you (user scope)**.\n\n' +
-      'Then **fully quit Claude Code and reopen it** — all 11 commands will appear.\n\n' +
-      '> Your project config and credentials were not changed.'
-    );
+    ctx.send('⚠️  Could not reach GitHub to check the latest version — run the commands below anyway to pull the latest.');
   }
+
+  ctx.send(
+    '✅ **Run these commands inside Claude Code — in order:**\n\n' +
+
+    '**Step 1 — Refresh the marketplace source**\n' +
+    '```\n/plugin marketplace update EvyaGovernance\n```\n\n' +
+
+    '**Step 2 — Install the latest version**\n' +
+    '```\n/plugin update evyasys@EvyaGovernance\n```\n\n' +
+
+    '**Step 3 — Reload plugin state**\n' +
+    '```\n/reload-plugins\n```\n\n' +
+
+    '**Step 4 — Fully quit Claude Code and reopen it.**\n\n' +
+
+    '> Your `.evyasys/` docs, board artefacts, `project.yaml`, and credentials were not changed.\n' +
+    '> If commands are still missing after this, run `/evyasys:Repair` for a full clean reinstall.'
+  );
 };

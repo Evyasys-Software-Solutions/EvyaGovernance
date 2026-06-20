@@ -168,10 +168,10 @@ List:
 - Any risky or unfamiliar areas flagged by the scan.
 
 > **Context compression** — if `headroom_compress` is available as a tool in this session:
-> - **Only compress implementation files.** An implementation file is any file whose primary purpose is defining program logic: `.ts` `.tsx` `.js` `.jsx` `.mjs` `.py` `.php` `.go` `.cs` `.java` `.rb` `.rs` `.swift` `.kt` `.scala` `.dart` `.ex` `.exs` `.cpp` `.c` `.h` `.hpp` `.vue` `.css` `.scss` `.less`. If uncertain — if the file *instructs a machine*, compress it; if it *informs a human* (markdown, YAML, JSON, SQL, `.env`, config), do not.
-> - For each implementation file over 80 lines read during the probe: call `headroom_compress` on its full content immediately after reading, store the token, and continue building the codebase analysis from the compressed representation.
-> - Before referencing specific method names or exact file-level details in the brainstorm, call `headroom_retrieve` to verify accuracy.
-> - If `headroom_compress` is unavailable or returns any error, **skip silently and continue with the full content** — compression never blocks or alters the brainstorm. Quality is always maintained regardless.
+> - **Compress only implementation files.** Compressible extensions: `.ts` `.tsx` `.js` `.jsx` `.mjs` `.py` `.php` `.go` `.cs` `.java` `.rb` `.rs` `.swift` `.kt` `.scala` `.dart` `.ex` `.exs` `.cpp` `.c` `.h` `.hpp` `.vue` `.css` `.scss` `.less`. **Never compress:** `.md` `.yaml` `.yml` `.json` `.sql` `.env` `.toml` `.ini` `.lock` or any config/schema/spec format — quality-gate docs and rules must always be read verbatim.
+> - For each qualifying implementation file over 80 lines read during the probe: call `headroom_compress` on its full content immediately after reading, keep the returned token, and release the raw content from context. Continue building the codebase analysis from the compressed representations.
+> - **Before referencing specific method names, exception types, or exact file-level API details in the brainstorm:** call `headroom_retrieve` on that file's token. Batch all lookups for a single file — gather every specific detail you need from that file, retrieve once, then draft that section of the brainstorm. This minimises roundtrips while guaranteeing accuracy.
+> - If `headroom_compress` or `headroom_retrieve` is unavailable or returns any error, skip silently and continue with the full content for all remaining files — compression never blocks or alters the brainstorm.
 
 ### Step 3: Generate approaches (minimum 3, maximum 5)
 For each approach write:

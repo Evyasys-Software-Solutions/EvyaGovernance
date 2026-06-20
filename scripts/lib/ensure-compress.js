@@ -58,6 +58,11 @@ function ensureCompress() {
     run('headroom mcp install');
     return { registered: true, skipped: false };
   } catch {
+    // headroom mcp install may throw "already registered" on repeated Setup runs.
+    // If headroom is on PATH, the engine is present and registered — treat as success.
+    if (isHeadroomOnPath()) {
+      return { registered: true, skipped: false };
+    }
     return { registered: false, skipped: false };
   }
 }

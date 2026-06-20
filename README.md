@@ -66,7 +66,7 @@ When prompted, choose **Install for you (user scope)** so it works in every proj
 
 Then **fully quit Claude Code and reopen it** — commands appear after a fresh start.
 
-Type `/evya` — you should see 11 commands in autocomplete.
+Type `/evya` — you should see 12 commands in autocomplete.
 
 ---
 
@@ -151,48 +151,69 @@ All notifications fire **after your approval**. Both GO and NO-GO reviews notify
 
 ### Updating to the latest version
 
-`/evyasys:Update` handles the full cleanup **and** clones the latest source from GitHub automatically. After it finishes, only 2 commands are needed to complete the reinstall.
-
-**Step 1 — Run the cleanup (inside Claude Code):**
+**Step 1 — Run the update (inside Claude Code):**
 
 ```
 /evyasys:Update
 ```
 
-Confirm when prompted. This automatically:
-- Clears the plugin cache
-- Removes the plugin entry from all Claude Code settings files
-- Clones the latest plugin source from GitHub (replaces `/plugin marketplace add`)
+Confirm when prompted. The update command checks your installed version against the latest on GitHub, shows what's new from the changelog, then shows you the commands to complete the update.
 
-Your `.evyasys/project.yaml` and credentials are never touched.
+Your `.evyasys/` docs, board artefacts, `project.yaml`, and credentials are **never touched**.
 
-**Step 2 — Reinstall (two commands, in order, inside Claude Code):**
+**Steps 2–4 — Run these commands in order, inside Claude Code:**
+
+```
+/plugin marketplace update EvyaGovernance
+```
+```
+/plugin update evyasys@EvyaGovernance
+```
+```
+/reload-plugins
+```
+
+**Step 5 — Fully quit Claude Code and reopen it.**
+
+All commands appear at the new version. Project config and credentials unchanged.
+
+---
+
+### Repairing a broken install
+
+If commands are missing or broken and `/evyasys:Update` doesn't fix it, run the repair command:
+
+```
+/evyasys:Repair
+```
+
+Confirm when prompted. Repair does a full clean reinstall — clears the plugin cache, removes the old install entry from settings, then shows you the commands to reinstall from scratch.
+
+**After Repair, run these commands in order, inside Claude Code:**
 
 ```
 /reload-plugins
 ```
 ```
+/plugin marketplace add https://github.com/Evyasys-Software-Solutions/EvyaGovernance.git
+```
+```
 /plugin install evyasys@EvyaGovernance
 ```
 
-When prompted, choose **Install for you (user scope)**.
+When prompted, choose **Install for you (user scope)**, then **fully quit Claude Code and reopen it**.
 
-**Step 3 — Fully quit Claude Code and reopen it.**
-
-All 11 commands will appear. Your project config and credentials are unchanged.
-
-> **If the auto-clone failed** (git not installed or no network), the Update command will tell you and show a 3-command fallback that includes `/plugin marketplace add`.
+Your `.evyasys/` docs, board artefacts, `project.yaml`, and credentials are **never touched** by either command — only plugin code is removed and reinstalled.
 
 ---
 
-### Troubleshooting a broken install
-
-Run `/evyasys:Update` and follow the three reinstall steps it shows. If commands still don't appear after reinstalling, fully close and reopen Claude Code, then reinstall once more.
+### Troubleshooting
 
 | Symptom | Fix |
 |---|---|
 | `claude` command not found | Install Node.js 18+ then `npm install -g @anthropic-ai/claude-code` |
-| Commands don't appear | Run `/evyasys:Update` then follow the 3 reinstall steps it shows |
+| Commands don't appear after update | Run `/evyasys:Repair` and follow the reinstall steps it shows |
+| Commands don't appear after fresh install | Fully quit and reopen Claude Code, then try `/reload-plugins` |
 | No PM tool configured | Run `/evyasys:Setup` |
 | Credentials not found | Run `/evyasys:Setup` to re-enter encrypted credentials |
 | 401 / auth error | Credentials expired — run `/evyasys:Setup` and re-enter |

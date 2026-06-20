@@ -1,5 +1,5 @@
 ---
-description: Update the Evyasys plugin to the latest version — clears the plugin cache automatically and shows the three reinstall commands. Project config and credentials are not affected.
+description: Update the Evyasys plugin to the latest version — shows current vs new version, changelog highlights, and the 3 commands to complete the update. Project config, credentials, docs, and board artefacts are never touched.
 allowed-tools: Read
 skill: evyasys-update
 ---
@@ -7,11 +7,11 @@ skill: evyasys-update
 You are running **/evyasys:Update**.
 
 1. Tell the user clearly what will happen:
-   - The plugin cache will be cleared (`~/.claude/plugins/cache/EvyaGovernance` and `~/.claude/plugins/marketplaces/EvyaGovernance`)
-   - The evyasys entry will be removed from all Claude Code settings files automatically — no manual `/plugin uninstall` needed
-   - The latest plugin source will be cloned from GitHub automatically — no manual `/plugin marketplace add` needed
-   - After cleanup, only **2 commands** are needed to reinstall: `/reload-plugins` then `/plugin install evyasys@EvyaGovernance`
-   - `.evyasys/project.yaml` and `~/.evyasys/credentials` are **not touched** — all project config and credentials stay intact
+   - The command will check your current version against the latest on GitHub
+   - It will show the version change (e.g. v1.0.0 → v1.1.0) and what's new from the changelog
+   - After confirming, you will be shown 3 commands to run inside Claude Code to complete the update
+   - `.evyasys/` docs, board artefacts, `project.yaml`, and `~/.evyasys/credentials` are **never touched**
+   - If commands are still missing or broken after updating, run `/evyasys:Repair` for a full clean reinstall
 
 2. Ask the user to confirm before proceeding.
 

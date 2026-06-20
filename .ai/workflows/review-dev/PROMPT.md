@@ -110,11 +110,11 @@ For each changed file, read the complete file content (not just the diff chunk)
 to understand context.
 
 > **Context compression** — if `headroom_compress` is available as a tool in this session:
-> - **Only compress implementation files and the git diff.** An implementation file is any file whose primary purpose is defining program logic: `.ts` `.tsx` `.js` `.jsx` `.mjs` `.py` `.php` `.go` `.cs` `.java` `.rb` `.rs` `.swift` `.kt` `.scala` `.dart` `.ex` `.exs` `.cpp` `.c` `.h` `.hpp` `.vue` `.css` `.scss` `.less`. If uncertain — if the file *instructs a machine*, compress it; if it *informs a human* (markdown, YAML, JSON, SQL, `.env`, config), do not.
-> - For each implementation file over 80 lines: call `headroom_compress` on its full content immediately after reading, store the token, and work from the compressed representation.
-> - For the `git diff` output: if it exceeds 150 lines, call `headroom_compress` on the full diff immediately after running the command, store the token, and work from it.
-> - Before citing a specific line number, hunk, or quoting exact code, call `headroom_retrieve` first to verify accuracy.
-> - If `headroom_compress` is unavailable or returns any error, **skip silently and continue with the full content** — compression never blocks or alters the review. Quality is always maintained regardless.
+> - **Compress only implementation files and the git diff.** Compressible extensions: `.ts` `.tsx` `.js` `.jsx` `.mjs` `.py` `.php` `.go` `.cs` `.java` `.rb` `.rs` `.swift` `.kt` `.scala` `.dart` `.ex` `.exs` `.cpp` `.c` `.h` `.hpp` `.vue` `.css` `.scss` `.less`. **Never compress:** `.md` `.yaml` `.yml` `.json` `.sql` `.env` `.toml` `.ini` `.lock` or any config/schema/spec format — story files, quality-gate docs, and rules must always be read verbatim.
+> - For each qualifying implementation file over 80 lines: call `headroom_compress` on its full content immediately after reading, keep the returned token, and release the raw content from context. All subsequent analysis of that file uses the token.
+> - For the `git diff` output: if it exceeds 150 lines, call `headroom_compress` on the full diff immediately after running the command, keep the token, and work from it.
+> - **Compression invalidates line numbers.** After compressing a file you no longer have reliable line numbers from memory. Before writing any finding that cites a specific file path and line number, call `headroom_retrieve` on that file's token to confirm the exact code at that location. Never write a file:line citation from a compressed token without retrieving first — accuracy of findings depends on this.
+> - If `headroom_compress` or `headroom_retrieve` is unavailable or returns any error, skip silently and continue with the full content for all remaining files — compression never blocks or alters the review.
 
 ## Step 3 — AC coverage check
 For every AC in the story:
