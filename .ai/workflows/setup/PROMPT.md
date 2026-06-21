@@ -189,43 +189,25 @@ If the user says **yes / configure**:
 
 ## Step 3a — Context Compression
 
-Context compression reduces token usage by 40–70% on large codebases for
-`/evyasys:ReviewDev`, `/evyasys:CreateSubtask`, and `/evyasys:StartDev` batch.
-It requires **Python 3.8+** and **pip** — nothing else. Output quality is never affected.
+Use the Read tool to read `~/.evyasys/settings.json` (ignore error if file does not exist).
 
-**Detect Python availability** — try each in order, stop at the first that succeeds:
+**If the file exists and contains a `compress` key with `enabled` set to `true` or `false`:**
+The user has already decided. Do **not** ask anything. Set `compress_preference = "keep"` and move on.
 
-```bash
-python --version && pip --version
-python3 --version && pip3 --version
-```
+**If the file does not exist, or exists but has no `compress` key:**
+Ask the user exactly once:
 
-**If Python and pip are found:**
-
-> ✅ Python [version] detected — context compression will be enabled automatically.
-
-Set `compress_preference = "auto"` in the config block and continue to Step 4.
-
-**If Python or pip is NOT found:**
-
-Ask the user:
-
-> **Context compression is available but needs Python 3.8+.**
-> It reduces token usage by 40–70% on code review and task analysis commands with no
-> change to output quality.
+> **Enable context compression?**
 >
-> **(A) I'll install Python** — Download from python.org/downloads, install it, then
-> re-run `/evyasys:Setup`. Compression activates automatically on the next run.
+> Automatically reduces token usage by 40–70% on ReviewDev, CreateSubtask, and StartDev — with no change to output quality. Requires Python 3.8+ on this machine (checked silently during save).
 >
-> **(B) Skip for now** — All commands work at full quality without it. You can enable
-> it any time by re-running `/evyasys:Setup` after installing Python.
+> **(Y) Yes — enable it**
+> **(N) No — skip for now** (you can enable it any time via `/evyasys:Update`)
 
-Wait for the user's choice.
+- **(Y):** set `compress_preference = "enable"`
+- **(N):** set `compress_preference = "disable"`
 
-- **(A) Install:** Set `compress_preference = "pending"`. Tell the user:
-  > "Noted — install Python 3.8+ from [python.org/downloads](https://python.org/downloads)
-  > and re-run `/evyasys:Setup` once done. Everything else is configured and ready."
-- **(B) Skip:** Set `compress_preference = "skip"`. Continue to Step 4.
+> This preference is saved to `~/.evyasys/settings.json` on this machine and is **never reset by plugin updates**.
 
 ---
 
@@ -241,10 +223,14 @@ Show a summary table before saving anything:
 | Notification Tool | [tool name] | `project.yaml` |
 | [Notification URL / numbers] | [values] | `project.yaml` |
 | [Notification auth token if applicable] | ••••••• | `~/.evyasys/credentials` (encrypted) |
+| Context Compression | [only include this row if compress_preference is "enable" or "disable"] Enable / Disable | `~/.evyasys/settings.json` (this machine only) |
+
+Omit the Context Compression row entirely when `compress_preference` is `"keep"` — the user made no change to it.
 
 Tell the user:
 - What goes into `project.yaml` (safe to commit — the whole team gets it via `git pull`)
 - What goes into `~/.evyasys/credentials` (machine-specific, encrypted, never committed — each team member enters their own)
+- If compression is being enabled or disabled: it is saved to `~/.evyasys/settings.json` on this machine only — never committed, never reset by plugin updates
 
 Ask: "Save this configuration?"
 
@@ -287,7 +273,7 @@ Output **exactly one** block in this format. All fields are required even if emp
   "release_brand_color": "",
   "release_output_dir": "",
   "release_naming_convention": "",
-  "compress_preference": "auto"
+  "compress_preference": "keep"
 }
 -->
 ```

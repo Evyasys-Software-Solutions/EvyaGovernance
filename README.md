@@ -651,17 +651,21 @@ The three highest-context commands (`/evyasys:ReviewDev`, `/evyasys:CreateSubtas
 `/evyasys:StartDev` batch) automatically compress large source files during analysis,
 reducing token usage by 40–70% with no effect on output quality.
 
-**Active by default. No manual installation.** `/evyasys:Setup` installs the compression
-engine (requires Python 3.8+ and pip) and registers it as a Claude Code tool. After Setup,
-**restart Claude Code once** for the tool to activate — it is then available automatically
-in every future session. If Python is not available or installation fails for any reason,
-the system auto-bypasses silently — commands run normally at full token usage.
+**Fully automatic — no questions, no configuration.** At the end of `/evyasys:Setup`,
+the compression engine is installed silently (requires Python 3.8+ and pip on the machine).
+If Python is available, Setup confirms: "✅ Context compression enabled — restart Claude Code
+once." If Python is not installed or installation fails for any reason, Setup completes
+normally and commands run at full quality without compression — nothing breaks, nothing
+is asked of the user.
+
+After Setup, **restart Claude Code once** for the tool to activate — it is then available
+automatically in every future session.
 
 Quality-gate docs, story files, gate tables, and output blocks are never compressed —
 they are always read and processed verbatim.
 
-> **Escape hatch:** Set `EVYASYS_COMPRESS=0` before running `/evyasys:Setup` to skip
-> the compression engine installation entirely.
+> **Escape hatch:** Set `EVYASYS_COMPRESS=0` in your environment before running
+> `/evyasys:Setup` to skip compression installation entirely (useful in CI or restricted environments).
 
 ---
 

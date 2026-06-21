@@ -19,15 +19,21 @@
  *   "slack_webhook": "",
  *   "twilio_account_sid": "", "twilio_auth_token": "", "whatsapp_from": "", "whatsapp_to": "",
  *   "email_smtp_host": "", "email_smtp_port": "", "email_smtp_user": "", "email_smtp_password": "",
- *   "email_from": "", "email_to": ""
+ *   "email_from": "", "email_to": "",
+ *   "compress_preference": "enable|disable|keep"
  * }
  * -->
+ *
+ * compress_preference values:
+ *   "enable"  — user said Y on first-time ask: install engine, write ~/.evyasys/settings.json
+ *   "disable" — user said N on first-time ask: write disabled flag, skip install
+ *   "keep"    — preference already saved on this machine: do nothing (default)
  */
 const fs   = require('fs');
 const path = require('path');
 const os   = require('os');
-const { loadConfig, writeUserCreds } = require('../../scripts/lib/config');
-const { ensureCompress } = require('../../scripts/lib/ensure-compress');
+const { loadConfig, writeUserCreds }                   = require('../../scripts/lib/config');
+const { ensureCompress, disableCompress, getCompressState } = require('../../scripts/lib/ensure-compress');
 
 function parseConfigBlock(text) {
   const m = text && text.match(/<!--\s*EVYACONFIG\s*([\s\S]*?)-->/i);
@@ -206,21 +212,33 @@ module.exports = async function (ctx) {
     `\n**Next step:** Run \`/evyasys:TrainDocs\` to scan your codebase and generate the 35 quality-gate documents that all delivery commands depend on.`
   );
 
-  // ── Context compression — only when user preference allows it ────────────────
-  // compress_preference values from agent:
-  //   "auto"    → Python found; install and register now
-  //   "pending" → user chose to install Python later; skip for now
-  //   "skip"    → user explicitly opted out; never install
-  //   ""        → missing/old config; attempt install (backward compat)
-  const compressPref = (config.compress_preference || '').toLowerCase();
-  if (compressPref !== 'skip' && compressPref !== 'pending') {
+  // ── Context compression — act on user's explicit preference ─────────────────
+  // "enable"  → user said Y on first run: install silently, write settings flag
+  // "disable" → user said N on first run: record preference, skip install
+  // "keep"    → preference already saved on this machine: do nothing
+  // EVYASYS_COMPRESS=0 bypasses all operations regardless of preference.
+  const compressPref = (config.compress_preference || 'keep').toLowerCase();
+
+  if (compressPref === 'enable') {
     const compress = ensureCompress();
-    if (compress.registered) {
+    if (compress.registered && compress.freshInstall) {
       ctx.send(
         '✅ Context compression enabled — **restart Claude Code once** for it to ' +
         'activate, then token usage is automatically reduced for ReviewDev, ' +
         'CreateSubtask, and StartDev batch.'
       );
+    } else if (compress.registered && !compress.freshInstall) {
+      ctx.send('✅ Context compression is already active on this machine.');
+    } else {
+      ctx.send(
+        '⚠️  Context compression could not be installed — Python or pip may not be ' +
+        'available. All commands work normally without it. Run `/evyasys:Update` to ' +
+        'try again after installing Python 3.8+.'
+      );
     }
+  } else if (compressPref === 'disable') {
+    disableCompress();
+    ctx.send('Context compression skipped. Enable it any time via `/evyasys:Update`.');
   }
+  // "keep" → preference already recorded; do nothing, show nothing.
 };

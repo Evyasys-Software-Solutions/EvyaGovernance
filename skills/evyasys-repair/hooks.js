@@ -95,7 +95,8 @@ module.exports = async function (ctx) {
 
     '**Step 4 — Fully quit Claude Code and reopen it.**\n\n' +
 
-    '> Your `.evyasys/` docs, board artefacts, `project.yaml`, and credentials were not changed.\n' +
-    '> Context compression will re-activate automatically on the next `/evyasys:Setup` run if Python is available.'
+    '> Your `.evyasys/` docs, board artefacts, `project.yaml`, credentials, and\n' +
+    '> compression preferences (`~/.evyasys/settings.json`) were not changed.\n' +
+    '> Run `/evyasys:Update` to manage compression after reinstalling.'
   );
 };

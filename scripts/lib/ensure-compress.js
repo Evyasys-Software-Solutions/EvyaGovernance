@@ -1,17 +1,24 @@
 /**
- * Context compression — auto-install and MCP registration.
+ * Context compression — install, register, and update.
  *
- * Called silently during /evyasys:Setup. Installs headroom-ai[mcp] (Python)
- * and registers its MCP server with Claude Code so that high-context commands
- * can compress large source files, reducing token usage by 40–70% with no
- * effect on output quality.
+ * All user-visible state is persisted in ~/.evyasys/settings.json (compress key).
+ * That file is never modified by plugin updates — only by explicit user consent
+ * via /evyasys:Setup (first-time) or /evyasys:Update (ongoing management).
  *
- * Failures at any stage are fully silent — the system auto-bypasses and
- * delivery commands continue normally without compression.
+ * Exports:
+ *   ensureCompress()  — first-time install (Setup hook). Fast-path skips if
+ *                       already registered. Only installs with user consent.
+ *   updateCompress()  — upgrade to latest version (Update hook).
+ *   disableCompress() — unregister MCP and mark disabled in settings.
+ *   getCompressState()— read current machine state without changing anything.
  *
- * Bypass: set EVYASYS_COMPRESS=0 to skip installation during Setup.
+ * Bypass: EVYASYS_COMPRESS=0 skips all operations silently.
  */
-const { execSync } = require('child_process');
+const { execSync }                                    = require('child_process');
+const fs                                              = require('fs');
+const path                                            = require('path');
+const os                                              = require('os');
+const { readCompressSettings, writeCompressSettings } = require('./compress-settings');
 
 function run(cmd) {
   return execSync(cmd, { stdio: 'pipe', timeout: 120_000 }).toString().trim();
@@ -21,6 +28,14 @@ function isHeadroomOnPath() {
   try { run('headroom --version'); return true; } catch { return false; }
 }
 
+function getInstalledVersion() {
+  try {
+    const out = run('headroom --version');
+    const m   = out.match(/(\d+\.\d+(?:\.\d+)*)/);
+    return m ? m[1] : out.trim();
+  } catch { return null; }
+}
+
 function findPip() {
   try { run('pip --version'); return 'pip'; } catch {
     try { run('pip3 --version'); return 'pip3'; } catch { return null; }
@@ -28,43 +43,113 @@ function findPip() {
 }
 
 /**
- * Ensure the compression engine is installed and registered as a Claude Code
- * MCP server. Never throws. All failures return { registered: false } silently.
+ * Check whether headroom is registered as a Claude Code MCP server.
+ * Scans ~/.claude/settings.json mcpServers for any entry whose command
+ * contains "headroom" — robust regardless of the key name headroom assigns.
+ */
+function isMcpRegistered() {
+  try {
+    const settingsPath = path.join(os.homedir(), '.claude', 'settings.json');
+    if (!fs.existsSync(settingsPath)) return false;
+    const s = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    if (!s.mcpServers) return false;
+    return Object.values(s.mcpServers).some(
+      srv => typeof srv.command === 'string' && srv.command.includes('headroom')
+    );
+  } catch { return false; }
+}
+
+/**
+ * Returns the current machine state — no side effects.
+ * @returns {{ onPath: boolean, mcpRegistered: boolean, version: string|null, settingsEnabled: boolean|null }}
+ */
+function getCompressState() {
+  const saved = readCompressSettings();
+  return {
+    onPath:          isHeadroomOnPath(),
+    mcpRegistered:   isMcpRegistered(),
+    version:         getInstalledVersion(),
+    settingsEnabled: saved ? saved.enabled : null,
+    settingsVersion: saved ? (saved.version || null) : null,
+  };
+}
+
+/**
+ * First-time install. Called by the Setup hook when user chose "enable".
+ * Fast-path: if already registered, skip pip+mcp and return immediately.
  *
- * Always runs pip install when pip is available — pip is a no-op if the
- * package is already current, and it guarantees the MCP extras are present
- * even when an older headroom version is already on PATH.
- *
- * @returns {{ registered: boolean, skipped: boolean }}
+ * @returns {{ registered: boolean, freshInstall: boolean, version: string|null }}
  */
 function ensureCompress() {
   if (process.env.EVYASYS_COMPRESS === '0') {
-    return { registered: false, skipped: true };
+    return { registered: false, freshInstall: false, version: null };
+  }
+
+  // Fast path — already installed and registered.
+  if (isHeadroomOnPath() && isMcpRegistered()) {
+    const version = getInstalledVersion();
+    writeCompressSettings({ enabled: true, version });
+    return { registered: true, freshInstall: false, version };
   }
 
   try {
     const pip = findPip();
-
     if (pip) {
-      // Always install / upgrade so MCP extras are present even when an
-      // older headroom binary is already on PATH.
       run(`${pip} install "headroom-ai[mcp]" --user --quiet`);
     } else if (!isHeadroomOnPath()) {
-      // No pip and no existing headroom binary — cannot proceed.
-      return { registered: false, skipped: false };
+      return { registered: false, freshInstall: false, version: null };
     }
 
-    // Register headroom as a Claude Code MCP server.
     run('headroom mcp install');
-    return { registered: true, skipped: false };
+    const version = getInstalledVersion();
+    writeCompressSettings({ enabled: true, version });
+    return { registered: true, freshInstall: true, version };
   } catch {
-    // headroom mcp install may throw "already registered" on repeated Setup runs.
-    // If headroom is on PATH, the engine is present and registered — treat as success.
+    // mcp install may throw "already registered" — if binary is on PATH, treat as success.
     if (isHeadroomOnPath()) {
-      return { registered: true, skipped: false };
+      const version = getInstalledVersion();
+      writeCompressSettings({ enabled: true, version });
+      return { registered: true, freshInstall: false, version };
     }
-    return { registered: false, skipped: false };
+    return { registered: false, freshInstall: false, version: null };
   }
 }
 
-module.exports = { ensureCompress };
+/**
+ * Upgrade to latest version. Called by the Update hook when user chose to update.
+ *
+ * @returns {{ success: boolean, version: string|null, previousVersion: string|null }}
+ */
+function updateCompress() {
+  if (process.env.EVYASYS_COMPRESS === '0') {
+    return { success: false, version: null, previousVersion: null };
+  }
+
+  const previousVersion = getInstalledVersion();
+  try {
+    const pip = findPip();
+    if (!pip && !isHeadroomOnPath()) {
+      return { success: false, version: null, previousVersion };
+    }
+    if (pip) {
+      run(`${pip} install "headroom-ai[mcp]" --user --quiet --upgrade`);
+    }
+    // Re-register in case MCP entry was lost.
+    try { run('headroom mcp install'); } catch { /* already registered — ok */ }
+    const version = getInstalledVersion();
+    writeCompressSettings({ enabled: true, version });
+    return { success: true, version, previousVersion };
+  } catch {
+    return { success: false, version: null, previousVersion };
+  }
+}
+
+/**
+ * Mark compression as disabled in settings. Does not uninstall the pip package
+ * (that would be destructive) — just records the user's preference.
+ */
+function disableCompress() {
+  writeCompressSettings({ enabled: false, version: getInstalledVersion() });
+}
+
+module.exports = { ensureCompress, updateCompress, disableCompress, getCompressState };

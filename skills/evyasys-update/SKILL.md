@@ -1,28 +1,42 @@
 ---
 name: evyasys-update
-description: Updates the Evyasys plugin to the latest version — shows current vs new version, displays changelog highlights, and shows the 3 built-in commands to complete the update. No files are deleted. Project config, credentials, docs, and board artefacts are never touched.
+description: Updates the Evyasys plugin — shows version diff, changelog highlights, always asks about compression state (update / enable / disable / keep), then shows the 3 commands to complete the plugin update. Compression preference is saved to ~/.evyasys/settings.json and never reset by plugin updates.
 trigger: /evyasys:Update
 ---
 
 # evyasys:Update
 
-Updates the Evyasys plugin to the latest version using Claude Code's built-in plugin update mechanism.
+Updates the Evyasys plugin and manages context compression with explicit user consent.
 
 ## What it does
 
-1. Asks for confirmation before touching anything.
-2. Checks your current version against the latest on GitHub.
-3. Shows the version change (e.g. v1.0.0 → v1.1.0) and what's new from the changelog.
-4. Shows 3 commands to run inside Claude Code to complete the update.
+1. Shows current plugin version vs latest on GitHub + changelog highlights.
+2. **Always checks compression state** — reads `~/.evyasys/settings.json` and asks:
+   - If enabled: Update / Keep / Disable
+   - If disabled: Enable / Keep disabled
+   - If not configured: Enable / Skip
+3. Acts on user's compression choice (update engine, enable, disable, or leave unchanged).
+4. Shows 3 commands to complete the plugin update.
 
-Nothing is deleted. Project config (`.evyasys/project.yaml`), credentials (`~/.evyasys/credentials`), docs, and board artefacts are **never touched**.
+Nothing about the plugin directories is touched — `/plugin update` owns that cleanly.
+Project config, credentials, docs, board artefacts, and `~/.evyasys/settings.json` are
+only written when the user explicitly chooses a compression action.
 
-> **For a broken install** (commands missing or not working after Update), run `/evyasys:Repair` — it does a full clean reinstall.
+> **For a broken install** (commands missing after Update), run `/evyasys:Repair`.
 
-## When to run it
+## Compression persistence
 
-- To pull the latest plugin version from GitHub.
-- After Evyasys announces a new release.
+Compression preference is stored in `~/.evyasys/settings.json`:
+```json
+{
+  "compress": {
+    "enabled": true,
+    "version": "1.2.3",
+    "updated_at": "2026-06-21"
+  }
+}
+```
+Plugin updates **never modify this file**. It is owned entirely by the user.
 
 ## What happens after
 

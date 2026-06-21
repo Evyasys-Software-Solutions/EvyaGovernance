@@ -3,20 +3,24 @@
  *
  * 1. Checks for the <!-- EVYAUPDATE confirmed --> marker.
  * 2. Reads the current installed version from this plugin's own plugin.json.
- * 3. Fetches the latest version + changelog from GitHub (small JSON/text fetch —
- *    no clone, no file deletions).
- * 4. Shows version diff and what's new.
- * 5. Shows the 3 built-in Claude Code commands needed to complete the update.
+ * 3. Fetches the latest version + changelog from GitHub (small JSON/text fetch).
+ * 4. Shows version diff and what's new from the changelog.
+ * 5. Handles context compression based on <!-- EVYACOMPRESS --> marker:
+ *      update  → upgrade headroom-ai[mcp] to latest, update ~/.evyasys/settings.json
+ *      disable → mark disabled in ~/.evyasys/settings.json
+ *      skip    → leave compression state unchanged
+ * 6. Shows the 3 commands to complete the plugin update.
  *
- * Nothing is deleted — Claude Code's /plugin update owns the install cleanly.
+ * Nothing is deleted from the plugin dirs — /plugin update owns that cleanly.
  * Project config (.evyasys/project.yaml) and credentials (~/.evyasys/credentials)
- * are never touched.
- *
- * For a broken install that needs full teardown, /evyasys:Repair handles that.
+ * are never touched. ~/.evyasys/settings.json is only written when the user
+ * explicitly chose update or disable in Step 2 of the Update command.
  */
 const fs    = require('fs');
 const path  = require('path');
 const https = require('https');
+
+const { updateCompress, disableCompress } = require('../../scripts/lib/ensure-compress');
 
 const RAW_BASE    = 'https://raw.githubusercontent.com/Evyasys-Software-Solutions/EvyaGovernance/main';
 const PLUGIN_ROOT = path.resolve(__dirname, '..', '..');
@@ -45,10 +49,6 @@ function fetchText(url, timeoutMs = 6000) {
   });
 }
 
-/**
- * Extract changelog sections newer than `fromVersion`.
- * Shows up to 3 release sections, each capped at 35 lines.
- */
 function parseChangelog(text, fromVersion) {
   if (!text) return null;
   const sections = text.split(/\n(?=## \[)/);
@@ -73,9 +73,9 @@ module.exports = async function (ctx) {
     return;
   }
 
+  // ── 1. Plugin version check ─────────────────────────────────────────────────
   const currentVersion = readLocalVersion();
-  ctx.send(`Current version: **v${currentVersion}**`);
-
+  ctx.send(`Current plugin version: **v${currentVersion}**`);
   ctx.send('Checking latest version on GitHub…');
 
   const [remotePluginRaw, changelogRaw] = await Promise.all([
@@ -90,16 +90,45 @@ module.exports = async function (ctx) {
 
   if (latestVersion) {
     if (latestVersion === currentVersion) {
-      ctx.send(`✅ You are already on the latest version (v${latestVersion}).`);
+      ctx.send(`✅ Already on the latest plugin version (v${latestVersion}).`);
     } else {
       ctx.send(`📦 **v${currentVersion} → v${latestVersion}**`);
     }
     const highlights = parseChangelog(changelogRaw, currentVersion);
     if (highlights) ctx.send(`**What's new:**\n\n${highlights}`);
   } else {
-    ctx.send('⚠️  Could not reach GitHub to check the latest version — run the commands below anyway to pull the latest.');
+    ctx.send('⚠️  Could not reach GitHub to check the latest version — run the commands below to pull the latest.');
   }
 
+  // ── 2. Compression — act on user's explicit choice ──────────────────────────
+  const compressMarker = output.includes('<!-- EVYACOMPRESS update -->')  ? 'update'
+                       : output.includes('<!-- EVYACOMPRESS disable -->') ? 'disable'
+                       : 'skip';
+
+  if (compressMarker === 'update') {
+    ctx.send('Updating context compression engine…');
+    const result = updateCompress();
+    if (result.success) {
+      const versionNote = result.previousVersion && result.version && result.previousVersion !== result.version
+        ? ` (v${result.previousVersion} → v${result.version})`
+        : result.version ? ` (v${result.version})` : '';
+      ctx.send(
+        `✅ Compression engine updated${versionNote}.\n` +
+        '> Restart Claude Code once for the update to activate.'
+      );
+    } else {
+      ctx.send(
+        '⚠️  Compression engine update failed — Python or pip may not be available.\n' +
+        '> Install Python 3.8+ and run `/evyasys:Update` again to retry.'
+      );
+    }
+  } else if (compressMarker === 'disable') {
+    disableCompress();
+    ctx.send('Context compression disabled. Preference saved to `~/.evyasys/settings.json`.');
+  }
+  // 'skip' → leave compression state unchanged, show nothing.
+
+  // ── 3. Plugin update commands ───────────────────────────────────────────────
   ctx.send(
     '✅ **Run these commands inside Claude Code — in order:**\n\n' +
 
@@ -114,7 +143,8 @@ module.exports = async function (ctx) {
 
     '**Step 4 — Fully quit Claude Code and reopen it.**\n\n' +
 
-    '> Your `.evyasys/` docs, board artefacts, `project.yaml`, and credentials were not changed.\n' +
-    '> If commands are still missing after this, run `/evyasys:Repair` for a full clean reinstall.'
+    '> Your `.evyasys/` docs, board artefacts, `project.yaml`, credentials, and\n' +
+    '> compression preferences (`~/.evyasys/settings.json`) were not changed.\n' +
+    '> If commands are still missing after this, run `/evyasys:Repair`.'
   );
 };
