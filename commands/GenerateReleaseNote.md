@@ -4,7 +4,7 @@ description: >
   Pass story IDs as arguments, or run with no arguments and the agent will ask.
   Reads FinishQa artefacts, groups by Epic, consolidates quality gates, proposes version number
   from release history, and generates a compact PDF saved to .evyasys/releases/.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, PowerShell
 argument-hint: "[StoryID ...] — space-separated story IDs (optional, e.g. EVYA-1042 EVYA-1043). Omit to be prompted."
 skill: evyasys-generate-release-note
 ---
@@ -15,8 +15,17 @@ You are running **/evyasys:GenerateReleaseNote**.
 
 1. Parse story IDs from `$ARGUMENTS`. If none provided, ask: "Which story IDs should I include in this release? (e.g. EVYA-1042 EVYA-1043)"
 
-2. Read the workflow files:
-   - `.ai/workflows/generate-release-note/{AGENT,PROMPT,CHECKLIST,RELEASE_DOC_TEMPLATE}.md`
+2. **Find the plugin's installed workflow directory**, then read the workflow files from it:
+
+   macOS / Linux (Bash): `EVYA_AI=$(find "$HOME/.claude/plugins" -maxdepth 6 -type d -name ".ai" 2>/dev/null | grep -i "EvyaGovernance" | head -1); [ -z "$EVYA_AI" ] && EVYA_AI=".ai"; echo "$EVYA_AI"`
+
+   Windows (PowerShell): `$EVYA_AI = (Get-ChildItem "$env:USERPROFILE\.claude\plugins" -Recurse -Directory -Filter ".ai" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -like '*EvyaGovernance*' } | Select-Object -First 1 -ExpandProperty FullName); if (-not $EVYA_AI) { $EVYA_AI = ".ai" }; Write-Output $EVYA_AI`
+
+   Load from `<plugin-ai>/workflows/generate-release-note/` (replace `<plugin-ai>` with the printed path). If any file is not found at the plugin path, fall back to the same filename under `.ai/workflows/generate-release-note/`:
+   - `<plugin-ai>/workflows/generate-release-note/AGENT.md`
+   - `<plugin-ai>/workflows/generate-release-note/PROMPT.md`
+   - `<plugin-ai>/workflows/generate-release-note/CHECKLIST.md`
+   - `<plugin-ai>/workflows/generate-release-note/RELEASE_DOC_TEMPLATE.md`
    - `.evyasys/workflows/generate-release-note/*.md` (project overrides if any)
    - `.evyasys/project.yaml` (brand color, company name, output dir, naming convention)
    - `.evyasys/memory/release-notes.json` (version history)

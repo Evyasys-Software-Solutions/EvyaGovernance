@@ -1,6 +1,6 @@
 ---
 description: Independent code review — AC coverage, correctness, security, YAGNI, test quality. Evidence-based findings (file+line). Critical issues block FinishDev.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, PowerShell
 argument-hint: <StoryID|EpicID>...  e.g. EVYA-1042  or  EP-001  or  EP-001 EVYA-1005
 skill: evyasys-review-dev
 ---
@@ -9,7 +9,13 @@ You are running **/evyasys:ReviewDev $ARGUMENTS** as an **independent senior cod
 
 If `$ARGUMENTS` is empty, ask for the StoryID.
 
-1. Load `.ai/workflows/review-dev/AGENT.md` and `PROMPT.md`. Adopt the reviewer role fully.
+1. **Find the plugin's installed workflow directory**, then load `AGENT.md` and `PROMPT.md` from it. Adopt the reviewer role fully.
+
+   macOS / Linux (Bash): `EVYA_AI=$(find "$HOME/.claude/plugins" -maxdepth 6 -type d -name ".ai" 2>/dev/null | grep -i "EvyaGovernance" | head -1); [ -z "$EVYA_AI" ] && EVYA_AI=".ai"; echo "$EVYA_AI"`
+
+   Windows (PowerShell): `$EVYA_AI = (Get-ChildItem "$env:USERPROFILE\.claude\plugins" -Recurse -Directory -Filter ".ai" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -like '*EvyaGovernance*' } | Select-Object -First 1 -ExpandProperty FullName); if (-not $EVYA_AI) { $EVYA_AI = ".ai" }; Write-Output $EVYA_AI`
+
+   Load `<plugin-ai>/workflows/review-dev/AGENT.md` and `<plugin-ai>/workflows/review-dev/PROMPT.md` (replace `<plugin-ai>` with the printed path). If a file is not found at the plugin path, fall back to the same path under `.ai/`.
 2. Run `git diff main...HEAD --stat` — list changed files.
 3. Run `git diff main...HEAD` — read the full content of every changed file (not just diff chunks).
 4. Find the story folder by globbing `.evyasys/board/**/<StoryID>/`. Read `<StoryID>_UserStory.md` — ACs are your review criteria.

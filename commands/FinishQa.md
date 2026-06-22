@@ -1,6 +1,6 @@
 ---
 description: Release sign-off — verifies all TC outcomes recorded, no P0/P1 defects open, drafts plain-language release notes. Transitions ADO to Done.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, PowerShell
 argument-hint: <StoryID|EpicID>...  e.g. EVYA-1042  or  EP-001  or  EP-001 EVYA-1005
 skill: evyasys-finish-qa
 ---
@@ -9,7 +9,11 @@ You are running **/evyasys:FinishQa $ARGUMENTS**.
 
 If `$ARGUMENTS` is empty, ask for the StoryID.
 
-1. Load `.ai/workflows/finish-qa/*` (+ project overrides).
+1. **Find the plugin's installed workflow directory**, then load all files under `<plugin-ai>/workflows/finish-qa/` (+ project overrides). If any file is not found at the plugin path, fall back to the same filename under `.ai/workflows/finish-qa/`.
+
+   macOS / Linux (Bash): `EVYA_AI=$(find "$HOME/.claude/plugins" -maxdepth 6 -type d -name ".ai" 2>/dev/null | grep -i "EvyaGovernance" | head -1); [ -z "$EVYA_AI" ] && EVYA_AI=".ai"; echo "$EVYA_AI"`
+
+   Windows (PowerShell): `$EVYA_AI = (Get-ChildItem "$env:USERPROFILE\.claude\plugins" -Recurse -Directory -Filter ".ai" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -like '*EvyaGovernance*' } | Select-Object -First 1 -ExpandProperty FullName); if (-not $EVYA_AI) { $EVYA_AI = ".ai" }; Write-Output $EVYA_AI`
 2. Find the story folder by globbing `.evyasys/board/**/<StoryID>/`. Read `<StoryID>_UserStory.md` (for Impacted Areas flags) and `<StoryID>_TestPlan.md`. If any TC has no recorded outcome (pass/fail/blocked), stop and ask the user to fill it in first. **Do not proceed until all TCs have outcomes.**
 3. Verify no P0/P1 defects remain open against this story. If yes: list them. Gate cannot proceed until resolved or formally accepted.
 4. Verify AC sign-off: every AC has a passing test case or is formally waived by the Product Owner.

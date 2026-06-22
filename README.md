@@ -214,6 +214,7 @@ Your `.evyasys/` docs, board artefacts, `project.yaml`, and credentials are **ne
 | `claude` command not found | Install Node.js 18+ then `npm install -g @anthropic-ai/claude-code` |
 | Commands don't appear after update | Run `/evyasys:Repair` and follow the reinstall steps it shows |
 | Commands don't appear after fresh install | Fully quit and reopen Claude Code, then try `/reload-plugins` |
+| Setup wizard skips steps (e.g. compression not asked) | A stale `.ai/` folder in your project is shadowing the plugin. Delete it: `rm -rf .ai` (macOS/Linux) or `Remove-Item -Recurse .ai` (Windows PowerShell), then run `/evyasys:Setup` again. |
 | No PM tool configured | Run `/evyasys:Setup` |
 | Credentials not found | Run `/evyasys:Setup` to re-enter encrypted credentials |
 | 401 / auth error | Credentials expired — run `/evyasys:Setup` and re-enter |
@@ -648,24 +649,27 @@ Logs exactly what would be sent to ADO and Teams without executing anything.
 ## Context compression
 
 The three highest-context commands (`/evyasys:ReviewDev`, `/evyasys:CreateSubtask`,
-`/evyasys:StartDev` batch) automatically compress large source files during analysis,
+`/evyasys:StartDev` batch) can compress large source files during analysis,
 reducing token usage by 40–70% with no effect on output quality.
 
-**Fully automatic — no questions, no configuration.** At the end of `/evyasys:Setup`,
-the compression engine is installed silently (requires Python 3.8+ and pip on the machine).
-If Python is available, Setup confirms: "✅ Context compression enabled — restart Claude Code
-once." If Python is not installed or installation fails for any reason, Setup completes
-normally and commands run at full quality without compression — nothing breaks, nothing
-is asked of the user.
+**One-time opt-in per machine.** At the end of `/evyasys:Setup`, you are asked once
+whether to enable compression. If you say yes, the engine is installed (requires Python
+3.8+ and pip). If Python is unavailable or installation fails, Setup completes normally
+and commands run at full quality without compression — nothing breaks, nothing is retried
+without your input.
 
-After Setup, **restart Claude Code once** for the tool to activate — it is then available
-automatically in every future session.
+After enabling, **restart Claude Code once** for the tool to activate — it is then
+available automatically in every future session.
+
+Your preference is saved to `~/.evyasys/settings.json` on this machine — it is
+**never reset by plugin updates or reinstalls**. You can update, enable, or disable
+compression at any time by running `/evyasys:Update`.
 
 Quality-gate docs, story files, gate tables, and output blocks are never compressed —
 they are always read and processed verbatim.
 
-> **Escape hatch:** Set `EVYASYS_COMPRESS=0` in your environment before running
-> `/evyasys:Setup` to skip compression installation entirely (useful in CI or restricted environments).
+> **Escape hatch:** Set `EVYASYS_COMPRESS=0` in your environment to bypass all
+> compression operations regardless of your saved preference (useful in CI or restricted environments).
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 description: Kick off development — structured technical brainstorm (3+ approaches, team approval) then branch/PR/DoR/dependency gates. Accepts one or more story IDs, epic IDs, or a mix. Transitions each story to In Progress.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, PowerShell
 argument-hint: <StoryID|EpicID> [...]  e.g. EVYA-1042  or  EP-001  or  EP-001 EVYA-1042 EVYA-1043
 skill: evyasys-start-dev
 ---
@@ -25,7 +25,13 @@ If `$ARGUMENTS` is empty, ask: "Which story or epic IDs should I start dev for? 
     If every story in the batch fails the hard stop, abort. If only some fail, continue with the remaining valid stories.
 
 ## Phase 1 — Technical Brainstorm (repeat for each resolved story)
-1. Load `.ai/workflows/start-dev/AGENT.md` and `PROMPT.md` (+ project overrides).
+1. **Find the plugin's installed workflow directory**, then load `AGENT.md` and `PROMPT.md` from it (+ project overrides):
+
+   macOS / Linux (Bash): `EVYA_AI=$(find "$HOME/.claude/plugins" -maxdepth 6 -type d -name ".ai" 2>/dev/null | grep -i "EvyaGovernance" | head -1); [ -z "$EVYA_AI" ] && EVYA_AI=".ai"; echo "$EVYA_AI"`
+
+   Windows (PowerShell): `$EVYA_AI = (Get-ChildItem "$env:USERPROFILE\.claude\plugins" -Recurse -Directory -Filter ".ai" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -like '*EvyaGovernance*' } | Select-Object -First 1 -ExpandProperty FullName); if (-not $EVYA_AI) { $EVYA_AI = ".ai" }; Write-Output $EVYA_AI`
+
+   Load `<plugin-ai>/workflows/start-dev/AGENT.md` and `<plugin-ai>/workflows/start-dev/PROMPT.md` (replace `<plugin-ai>` with the printed path). If a file is not found at the plugin path, fall back to the same path under `.ai/`.
 2. Read story and subtasks in full. Run `python scripts/repo_scan.py --story <storyId>` for each story.
 3. Generate **at least 3 meaningfully distinct** approaches — each with specific pros, specific cons, estimate delta (S/M/L).
 4. State recommendation with deciding reason and top risk.

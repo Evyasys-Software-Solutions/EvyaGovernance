@@ -1,6 +1,6 @@
 ---
 description: Scan the entire project and generate 25 comprehensive quality-gate documents into .evyasys/docs/ — covering architecture, standards, patterns, testing, security, deployment, design system, UI/UX standards, styling tokens, hook rules, dependency governance, complete unit testing standards, and backend micro-contracts. All new development must follow these documents. Use --retrain to update only docs affected by recent code changes.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, PowerShell
 argument-hint: [--update | --update <filename> | --retrain]
 skill: evyasys-train-docs
 ---
@@ -16,7 +16,13 @@ You are running **/evyasys:TrainDocs $ARGUMENTS**.
     - `$ARGUMENTS` is `--retrain` → switch to retrain mode (see PROMPT.md Step 0-R):
       read last generation date from INDEX.md, detect changed areas via git log, regenerate only affected docs.
 0b. Read `CLAUDE.md` from project root if present. Carry its content into ARCHITECTURE.md and RULES.md.
-0c. Load `.ai/workflows/create-docs/AGENT.md`, `PROMPT.md`, and `DOC_MANIFEST.md`.
+0c. **Find the plugin's installed workflow directory**, then load `AGENT.md`, `PROMPT.md`, and `DOC_MANIFEST.md` from it:
+
+    macOS / Linux (Bash): `EVYA_AI=$(find "$HOME/.claude/plugins" -maxdepth 6 -type d -name ".ai" 2>/dev/null | grep -i "EvyaGovernance" | head -1); [ -z "$EVYA_AI" ] && EVYA_AI=".ai"; echo "$EVYA_AI"`
+
+    Windows (PowerShell): `$EVYA_AI = (Get-ChildItem "$env:USERPROFILE\.claude\plugins" -Recurse -Directory -Filter ".ai" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -like '*EvyaGovernance*' } | Select-Object -First 1 -ExpandProperty FullName); if (-not $EVYA_AI) { $EVYA_AI = ".ai" }; Write-Output $EVYA_AI`
+
+    Load `<plugin-ai>/workflows/create-docs/AGENT.md`, `<plugin-ai>/workflows/create-docs/PROMPT.md`, and `<plugin-ai>/workflows/create-docs/DOC_MANIFEST.md` (replace `<plugin-ai>` with the printed path). If any file is not found at the plugin path, fall back to the same filename under `.ai/workflows/create-docs/`.
 
 ## Phase 1 — Project scan (complete before writing any document)
 1. **Tech stack**: read `package.json`, `requirements.txt`, `pyproject.toml`, `Cargo.toml`,

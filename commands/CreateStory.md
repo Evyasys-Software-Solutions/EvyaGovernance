@@ -1,6 +1,6 @@
 ---
 description: Creates Epics AND Stories in one command. Resolves or creates all required epics (Gate 1), plans the full story batch with one approval (Gate 2), drafts every story at high BA quality, syncs to the PM tool, and sends exactly 2 notifications — epics table and stories table.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, PowerShell
 argument-hint: "(no args — command presents the choice interactively)"
 skill: evyasys-create-story
 ---
@@ -9,7 +9,13 @@ You are running **/evyasys:CreateStory**.
 
 ## Step 0 — Input Gate  ⛔ HARD GATE
 
-Read the full workflow from `.ai/workflows/create-story/PROMPT.md`.
+**First — find the plugin's installed workflow directory:**
+
+macOS / Linux (Bash): `EVYA_AI=$(find "$HOME/.claude/plugins" -maxdepth 6 -type d -name ".ai" 2>/dev/null | grep -i "EvyaGovernance" | head -1); [ -z "$EVYA_AI" ] && EVYA_AI=".ai"; echo "$EVYA_AI"`
+
+Windows (PowerShell): `$EVYA_AI = (Get-ChildItem "$env:USERPROFILE\.claude\plugins" -Recurse -Directory -Filter ".ai" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -like '*EvyaGovernance*' } | Select-Object -First 1 -ExpandProperty FullName); if (-not $EVYA_AI) { $EVYA_AI = ".ai" }; Write-Output $EVYA_AI`
+
+Read the full workflow from `<plugin-ai>/workflows/create-story/PROMPT.md` (use the path printed above instead of `.ai`). If the file is not found at the plugin path, fall back to `.ai/workflows/create-story/PROMPT.md`.
 
 The very first thing you do is present the user with **two options** and wait:
 

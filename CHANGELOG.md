@@ -10,6 +10,66 @@ Versioning: [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.PATCH`
 
 ---
 
+## [1.1.0] — 2026-06-22
+
+### Added
+- **`/evyasys:Update` command** — check installed version vs. latest on GitHub, see
+  changelog highlights, manage context compression (update / enable / disable / keep),
+  then run 3 commands to complete the update. Project config, credentials, and docs
+  are never touched.
+- **`/evyasys:Repair` command** — full clean reinstall for broken plugin installs.
+  Clears plugin cache and marketplace dirs, removes plugin entries from Claude Code
+  settings, then shows 4-step reinstall sequence. Project config, credentials, docs,
+  board artefacts, and compression preferences are never touched.
+- **Plugin path resolution in all 10 delivery commands** — commands now locate the
+  plugin's installed `.ai/` directory at runtime (via bash on macOS/Linux, PowerShell
+  on Windows) and read workflow files from that absolute path. Prevents stale project-
+  level `.ai/` folders from shadowing the plugin's current workflow files. Falls back
+  to relative `.ai/` if a specific file is not found in the installed version.
+- **`PowerShell` in `allowed-tools`** — all 10 delivery commands now include
+  `PowerShell` alongside `Bash` so agents can run the plugin-dir locator on Windows.
+- **Compression consent model** — Setup now asks the user once whether to enable
+  context compression (Y/N). Preference is saved to `~/.evyasys/settings.json` on the
+  local machine. Never asked again on re-run (returns "keep"). Never reset by plugin
+  updates, reinstalls, or Repair.
+- **Compression version tracking** — `~/.evyasys/settings.json` stores the installed
+  `headroom-ai` version and last-updated timestamp. `/evyasys:Update` shows the before/
+  after version when upgrading the compression engine.
+- **`scripts/lib/compress-settings.js`** — new library for reading/writing
+  `~/.evyasys/settings.json` with deep-merge so unrelated keys are never clobbered.
+- **Release Notes / PDF branding in Setup** — Step 3 of the Setup wizard now optionally
+  collects company name, logo path, brand colour, output directory, and release naming
+  convention. All saved to `project.yaml`.
+
+### Changed
+- **`scripts/lib/ensure-compress.js`** fully rewritten — `isMcpRegistered()` scans
+  `~/.claude/settings.json` mcpServers values for any entry with `headroom` in the
+  command (robust to any key name). `ensureCompress()` has correct fast-path when
+  already installed. Catch block distinguishes "already registered" from real failures.
+  `updateCompress()` and `disableCompress()` added. All exports are stable.
+- Setup compress block now supports `"enable"` / `"disable"` / `"keep"` preferences and
+  shows the appropriate confirmation message for each case.
+- Update hook reads `<!-- EVYACOMPRESS update|disable|skip -->` marker output by the
+  Update agent and acts on it with explicit user consent — never changes compression
+  state silently.
+- README "Context compression" section corrected: was "fully automatic, no questions"
+  (wrong); now documents the one-time opt-in consent model accurately.
+- README Troubleshooting table: added row for stale `.ai/` folder shadowing issue with
+  fix command (`rm -rf .ai` / `Remove-Item -Recurse .ai`).
+- Command count in README updated to 12 (added Update and Repair).
+
+### Fixed
+- Update hook no longer imports unused `getCompressState` — dead import removed.
+- Repair hook message corrected: no longer falsely states "compression re-activates on
+  next Setup run" (wrong — Setup only asks if no compress key exists, and `settings.json`
+  survives Repair). Now says "Run `/evyasys:Update` to manage compression after reinstalling."
+- Compression question in Update now fires AFTER the user confirms the update (Step 3),
+  not before (was Step 2 in the old flow — confusing order fixed).
+- Setup confirmation table (Step 4) now includes a Context Compression row only when the
+  preference is being changed (`"enable"` or `"disable"`); row is omitted for `"keep"`.
+
+---
+
 ## [1.0.0] — 2026-06-20
 
 First public release. MIT licensed and open to all teams.

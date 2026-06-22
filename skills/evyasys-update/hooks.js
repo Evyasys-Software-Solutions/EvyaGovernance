@@ -129,8 +129,12 @@ module.exports = async function (ctx) {
   // 'skip' → leave compression state unchanged, show nothing.
 
   // ── 3. Plugin update commands ───────────────────────────────────────────────
+  const targetVersionNote = latestVersion && latestVersion !== currentVersion
+    ? ` to **v${latestVersion}**`
+    : latestVersion ? ` (v${latestVersion})` : '';
+
   ctx.send(
-    '✅ **Run these commands inside Claude Code — in order:**\n\n' +
+    `✅ **Run these commands inside Claude Code — in order — to update${targetVersionNote}:**\n\n` +
 
     '**Step 1 — Refresh the marketplace source**\n' +
     '```\n/plugin marketplace update EvyaGovernance\n```\n\n' +
@@ -143,6 +147,9 @@ module.exports = async function (ctx) {
 
     '**Step 4 — Fully quit Claude Code and reopen it.**\n\n' +
 
+    (latestVersion && latestVersion !== currentVersion
+      ? `> After reopening, you will be on **v${latestVersion}**. Run \`/evyasys:Update\` once more to confirm.\n> \n`
+      : '') +
     '> Your `.evyasys/` docs, board artefacts, `project.yaml`, credentials, and\n' +
     '> compression preferences (`~/.evyasys/settings.json`) were not changed.\n' +
     '> If commands are still missing after this, run `/evyasys:Repair`.'
