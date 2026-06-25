@@ -1435,6 +1435,147 @@ Quality bar: every PR has a complete PR description. A reviewer can process any 
 
 ---
 
+## fe/ACCESSIBILITY.md
+**Purpose:** WCAG 2.1 AA compliance contract for every UI component in this project. Defines the minimum accessibility requirements every developer must meet before a feature reaches QA. ReviewDev loads this to verify compliance. StartQa uses it to write accessibility test cases.
+Write "Not applicable" at top if no frontend layer exists.
+
+Required sections:
+
+### 1 — Colour contrast minimums
+- Body text (< 18px normal / < 14px bold): minimum **4.5:1** contrast ratio against its background
+- Large text (≥ 18px normal / ≥ 14px bold): minimum **3:1** contrast ratio
+- UI components and graphical objects (icons, input borders, focus rings): minimum **3:1** contrast ratio
+- For each semantic colour token pair in DESIGN_SYSTEM.md (e.g. `--color-text-primary` on `--color-surface-default`), compute and document the actual contrast ratio. Flag any pair that does not meet its category threshold.
+- Disabled state exception: WCAG allows < 4.5:1 for genuinely disabled UI (but document which disabled states are exempt)
+
+### 2 — Keyboard navigation contract
+- All interactive elements (buttons, links, inputs, custom controls) reachable by Tab key
+- No keyboard traps — Tab must always be able to leave any component
+- Logical tab order follows visual reading order on every page/view
+- Document the keyboard model for each custom widget type found in this codebase:
+  | Widget type | Open | Navigate | Select | Close |
+  |---|---|---|---|---|
+  | Dropdown / Combobox | `Enter` / `Space` on trigger | `↑` `↓` | `Enter` | `Escape` |
+  | Modal / Dialog | (programmatic) | `Tab` cycles within modal | — | `Escape`; focus returns to trigger |
+  | Tabs component | — | `←` `→` between tabs | `Enter` / `Space` | — |
+  | Date picker | `Enter` on input | arrow keys | `Enter` | `Escape` |
+  If a widget type from this list does not exist in the project, mark it N/A.
+
+### 3 — Focus management rules
+- **Never** `outline: none` or `outline: 0` without a visible custom focus indicator with ≥ 3:1 contrast
+- Focus must move programmatically when:
+  - Modal opens → first focusable element inside the modal
+  - Modal closes → trigger element that opened it
+  - Page / route navigates → page `<h1>` or the main content landmark
+  - Inline error summary appears → the error summary heading
+- List every component in this project that manages focus programmatically, with the trigger and target element
+
+### 4 — ARIA usage rules
+- Use native HTML semantics first; ARIA supplements, never replaces them
+- Required ARIA patterns for every custom widget found in this codebase:
+  - Icon-only button: `aria-label="<action verb + noun>"` required
+  - Loading state on a region: `aria-live="polite"` on the container or `aria-busy="true"` during load
+  - Form error message: linked to its input via `aria-describedby`; error region uses `role="alert"` or `aria-live="assertive"`
+  - Required form field: `aria-required="true"` when `required` attribute is not native HTML
+  - Custom toggle: `aria-pressed` (button) or `aria-checked` (checkbox-like)
+  - Expandable panel / accordion: `aria-expanded` on the trigger; `aria-controls` pointing to the panel id
+- For each custom widget in this project, document its full ARIA contract (role, required attributes, state attributes)
+
+### 5 — Semantic HTML contract
+- Exactly one `<main>` landmark per page; `<nav>` for primary and secondary navigation; `<aside>` for complementary content
+- Heading hierarchy is never skipped (`h1` → `h2` → `h3`, not `h1` → `h3`)
+- Every `<input>`, `<select>`, and `<textarea>` has a visible `<label>` element or `aria-label`/`aria-labelledby`
+- Decorative images: `alt=""` (empty string, not absent); informative images: short, meaningful `alt` text; complex images (charts, diagrams): `aria-describedby` pointing to a prose description
+- Data tables use `<th scope="col|row">` and `<caption>`
+
+### 6 — Minimum touch target sizes
+- Interactive element minimum: **44×44 CSS pixels** (WCAG 2.5.5 AAA / recommended best practice)
+- WCAG 2.2 AA minimum: 24×24 CSS pixels with 24px spacing from adjacent targets
+- Document the spacing and min-height/min-width tokens from DESIGN_SYSTEM.md that satisfy these requirements for buttons, icon buttons, list items, and form controls
+
+### 7 — Accessibility testing checklist
+- Document the screen readers used in this project's test matrix (e.g. NVDA + Chrome on Windows; VoiceOver + Safari on macOS/iOS; TalkBack on Android)
+- Minimum test procedure: (1) navigate all headings, (2) navigate all landmarks, (3) navigate all links, (4) complete and submit a form, (5) open, use, and close a modal, (6) use every custom widget with keyboard only
+- Automated tool: document whether `axe-core`, `jest-axe`, `@testing-library/jest-axe`, or Lighthouse is used and at what coverage threshold
+- Known gaps and workarounds — document any component with a known WCAG failure and its planned remediation
+
+Quality bar: a developer can build a new component from this document and be confident it meets WCAG 2.1 AA without checking any external reference. ReviewDev can flag a specific WCAG criterion by number and severity.
+
+---
+
+## fe/VISUAL_QUALITY.md
+**Purpose:** The interactive state and visual quality contract for every UI component. Defines the minimum states every interactive element must implement, visual hierarchy rules, motion standards, dark mode patterns, and responsive quality gates. ReviewDev blocks merges on incomplete state implementations. StartQa uses it to generate complete test cases per component.
+Write "Not applicable" at top if no frontend layer exists.
+
+Required sections:
+
+### 1 — Interactive state contract
+Every interactive component MUST implement all states applicable to its type. A missing state is a merge blocker (**Important** in ReviewDev; **Critical** if the missing state degrades usability or accessibility).
+
+Required states per component type — document the actual CSS class, design token, or prop used to implement each state in this codebase:
+
+| Component type | Required states |
+|---|---|
+| Button (primary / secondary / ghost) | `default` · `hover` · `focus-visible` · `active` · `disabled` · `loading` |
+| Text input / textarea | `default` · `placeholder` · `focus` · `filled` · `invalid` (error) · `disabled` · `read-only` |
+| Select / dropdown | `default` · `open` · `option-hover` · `option-selected` · `disabled` · `empty-state` |
+| Checkbox / radio | `unchecked` · `checked` · `indeterminate` (checkbox only) · `hover` · `focus-visible` · `disabled` |
+| Link | `default` · `hover` · `visited` · `focus-visible` · `active` |
+| Data row / list item | `default` · `hover` · `selected` · `focus-visible` |
+| Modal / drawer | `open-entering` · `open` · `close-leaving` |
+| Toast / notification | `entering` · `visible` · `leaving` |
+| Page / view | `loading` (skeleton) · `loaded` · `empty` · `error` |
+| Form | `idle` · `submitting` (all inputs disabled, button loading) · `success` · `error-summary` |
+
+For each component type present in this project, fill in the implementation column (token name, class name, or prop value). Flag any state that is missing with `⚠ NOT IMPLEMENTED — add before merge`.
+
+### 2 — Visual hierarchy rules
+- **Primary action rule:** every page/view has at most one primary CTA. Document which button variant is "primary" (filled, high emphasis) and when each variant (secondary, ghost, destructive) is appropriate
+- **Heading scale contract:** document the actual heading tokens used per heading level (h1 → h6 or the project's equivalent scale) with their `font-size`, `font-weight`, and `line-height` token values from DESIGN_SYSTEM.md
+- **Information density contract:** table row height, card padding, form field vertical rhythm — document the exact spacing tokens used so every developer uses the same density
+- **Colour use contract:** primary colour → brand CTAs and interactive highlights only; neutral colours → text, backgrounds, dividers; semantic colours → success/warning/error/info states only. No semantic colour used decoratively.
+
+### 3 — Motion and animation standards
+- **Prefer-reduced-motion is mandatory.** Every transition and animation MUST have a `@media (prefers-reduced-motion: reduce)` override that removes or minimises the motion. Document where this is applied globally (e.g. a base CSS reset rule) and where individual components override it
+- **Duration tokens:** document the duration tokens from DESIGN_SYSTEM.md and map each to its use case:
+  | Token | Value | Use case |
+  |---|---|---|
+  | `--duration-fast` | e.g. 100ms | Icon swaps, toggle flips, checkbox check |
+  | `--duration-normal` | e.g. 200ms | Button press feedback, tooltip appear, menu open |
+  | `--duration-slow` | e.g. 350ms | Modal open/close, drawer slide, page transition |
+- **Easing contract:** document the easing tokens and their purpose (enter vs exit vs elastic)
+- **No motion > 5 seconds** without user control (WCAG 2.2.2)
+- **State-change animations must have a non-motion fallback:** loading spinners → colour change; success animation → icon; error shake → red border. Document each animated state and its fallback
+
+### 4 — Dark mode (if applicable)
+Write "Not applicable — single theme only" if the project has no dark mode.
+- For each semantic colour token in DESIGN_SYSTEM.md, document the `light` and `dark` value pair in a table
+- Document which components require logic changes in dark mode (not just a token swap), with the implementation approach
+- Dark mode test procedure: system preference toggle → all pages, form states, and modals; no hardcoded light-mode values visible
+
+### 5 — Responsive quality gates
+- Document the breakpoints in this project (extract from DESIGN_SYSTEM.md, Tailwind config, or CSS variables):
+  | Breakpoint name | Min-width | Layout change | Nav change | Component changes |
+  |---|---|---|---|---|
+  | xs | — | stacked single column | hamburger menu | cards full-width |
+  | sm | … | … | … | … |
+  | md | … | … | … | … |
+  | lg | … | … | sidebar appears | … |
+  | xl | … | … | … | … |
+- **No horizontal scroll** on any viewport width — document the overflow-x strategy (container max-width, padding, etc.)
+- **Text truncation rule:** text that truncates must have a tooltip with the full value; body copy never truncates — use `overflow-wrap: break-word`
+- **Touch target sizing at mobile breakpoints:** document which components grow in size or change interaction model below `md`
+
+### 6 — Image and media quality rules
+- **Responsive images:** document whether `srcset`/`<picture>` or CSS `max-width: 100%` is used, and where
+- **Loading strategy:** above-the-fold images → `loading="eager"` (or no attribute); all others → `loading="lazy"`
+- **Alt text categories:** decorative → `alt=""`, informative → short meaningful description, functional (image-as-button) → describes the action, complex (chart) → `aria-describedby` pointing to prose description. List which categories apply to which image uses in this project
+- **Video/audio:** controls always visible; autoplay only if `muted`; content videos require captions; background videos require a pause control and `prefers-reduced-motion` stop
+
+Quality bar: a developer opening this document while building a new component knows exactly which states to implement, which tokens to use for motion, and what to check at every breakpoint. ReviewDev can verify design completeness without subjective judgment — each state either exists or it does not.
+
+---
+
 ## UNIT_TESTING_COMPLETE.md
 **Purpose:** Complete testing standards for both frontend and backend. The definitive reference for what to test, how to structure tests, and what coverage is required.
 

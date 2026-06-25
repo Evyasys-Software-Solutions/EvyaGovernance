@@ -1,5 +1,5 @@
 ---
-description: Scan the entire project and generate 25 comprehensive quality-gate documents into .evyasys/docs/ — covering architecture, standards, patterns, testing, security, deployment, design system, UI/UX standards, styling tokens, hook rules, dependency governance, complete unit testing standards, and backend micro-contracts. All new development must follow these documents. Use --retrain to update only docs affected by recent code changes.
+description: Scan the entire project and generate 37 quality-gate documents into .evyasys/docs/ — covering architecture, standards, patterns, testing, security, deployment, design system, UI/UX standards, accessibility (WCAG 2.1 AA), visual quality contracts, styling tokens, hook rules, dependency governance, complete unit testing standards, and backend micro-contracts. All new development must follow these documents. Use --retrain to update only docs affected by recent code changes.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, PowerShell
 argument-hint: [--update | --update <filename> | --retrain]
 skill: evyasys-train-docs
@@ -15,6 +15,7 @@ You are running **/evyasys:TrainDocs $ARGUMENTS**.
     - `$ARGUMENTS` is `--update <filename>` → confirm: "Regenerate `.evyasys/docs/<filename>` only?"
     - `$ARGUMENTS` is `--retrain` → switch to retrain mode (see PROMPT.md Step 0-R):
       read last generation date from INDEX.md, detect changed areas via git log, regenerate only affected docs.
+    Note: 37 documents total — 35 core + `fe/ACCESSIBILITY.md` + `fe/VISUAL_QUALITY.md` (skip if no frontend layer).
 0b. Read `CLAUDE.md` from project root if present. Carry its content into ARCHITECTURE.md and RULES.md.
 0c. **Find the plugin's installed workflow directory**, then load `AGENT.md`, `PROMPT.md`, and `DOC_MANIFEST.md` from it:
 
@@ -44,4 +45,4 @@ Wrap each document with `<!-- EVYADOC: FILENAME.md -->` so the hook can parse an
 Show a summary table (document name + 1-line description of what was found and documented).
 Wait for explicit user confirmation before the hook writes anything to disk.
 
-Output: 25 documents + `INDEX.md` written to `.evyasys/docs/` (5 micro-level docs in `fe/` and `be/` subdirectories).
+Output: 37 documents + `INDEX.md` written to `.evyasys/docs/` (7 micro-level docs in `fe/` and `be/` subdirectories).

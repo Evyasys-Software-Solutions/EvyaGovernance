@@ -25,10 +25,21 @@
 - [ ] All measurements at or below the documented threshold
 - [ ] Any measurement above threshold has a filed defect before sign-off
 
-## Accessibility gate (apply if story's Impacted Areas includes Frontend — DESIGN_SYSTEM.md)
-- [ ] Keyboard navigation verified through all new/changed interactive elements
-- [ ] ARIA labels confirmed on all interactive controls
-- [ ] Colour contrast confirmed against DESIGN_SYSTEM.md standard
+## Accessibility gate (apply if story's Impacted Areas includes Frontend — fe/ACCESSIBILITY.md or DESIGN_SYSTEM.md)
+- [ ] Colour contrast verified — ≥ 4.5:1 body text, ≥ 3:1 large text and UI components
+- [ ] Keyboard navigation verified through all new/changed interactive elements — no traps
+- [ ] Focus visible on all focusable elements — no bare `outline: none`
+- [ ] ARIA labels and roles confirmed on all icon buttons, custom widgets, and form errors
+- [ ] Semantic HTML verified — landmarks, heading hierarchy, form labels, image alt text
+- [ ] Touch targets ≥ 44×44 px verified for all interactive controls
+- [ ] Automated accessibility scan run (axe / jest-axe / Lighthouse) — zero new violations
+
+## Visual Quality gate (apply if story's Impacted Areas includes Frontend — fe/VISUAL_QUALITY.md)
+- [ ] Every new/changed interactive component has all required states: hover, focus-visible, disabled, loading, error, empty
+- [ ] All transitions and animations have `@media (prefers-reduced-motion: reduce)` override verified
+- [ ] Motion duration and easing values use project tokens — no magic values in CSS
+- [ ] Dark mode: all new/changed components use correct token pairs — no hardcoded colours in dark contexts
+- [ ] Layout and components verified at all documented breakpoints
 
 ## Data integrity gate (apply if story's Impacted Areas includes DB — DB_STANDARDS.md)
 - [ ] Migration up/down verified in test environment

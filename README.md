@@ -292,7 +292,7 @@ flowchart TD
 | # | Phase | Command | Role | What the Agent Does | Output | PM State |
 |---|-------|---------|------|---------------------|--------|----------|
 | 1 | Setup | `/evyasys:Setup` | 👤 Any | Choose PM + notification tool; collect + encrypt credentials | `project.yaml` · `credentials` | — |
-| 2 | Setup | `/evyasys:TrainDocs` | 🏗️ Tech Lead | Scan full codebase; generate 35 quality-gate docs | `.evyasys/docs/` (35 files) | — |
+| 2 | Setup | `/evyasys:TrainDocs` | 🏗️ Tech Lead | Scan full codebase; generate 37 quality-gate docs | `.evyasys/docs/` (37 files) | — |
 | 3 | Plan | `/evyasys:CreateStory` | 👔 PO / BA | Resolves/creates epics (Gate 1); plans full story batch (Gate 2); drafts all stories; syncs everything; 2 notifications | `{epicId}_Epic.md` · `{storyId}_UserStory.md` | Epics + Backlog |
 | 4 | Plan | `/evyasys:CreateSubtask EVYA-XXXX EVYA-XXYY` | 🏗️ Architect | Load shared context once; cross-story analysis; single consolidated plan approval; 3–7 dev tasks + QA task per story; 1 batch notification | `{storyId}_Subtasks.md` (per story) | Tasks created |
 | 5 | Dev | `/evyasys:StartDev EVYA-XXXX [EVYA-XXYY] [EP-00N]` | 💻 Dev Lead | Accepts one story, multiple stories, an epic, or a mix; epic IDs auto-expand to stories; brainstorm 3+ approaches per story; architecture approval gate | `TechBrainstorm.md` (per story) | **In Progress** |
@@ -338,7 +338,7 @@ Interactive wizard that configures Evyasys for this project. Run once per projec
 **Who:** Tech Lead — **When:** First time on a new project, then `--retrain` after major changes
 
 Scans the entire codebase — tech stack, source structure, architecture layers, CI/CD,
-tooling config, design system tokens, UI/UX patterns, code sampling — and generates **35 quality-gate documents** into
+tooling config, design system tokens, UI/UX patterns, code sampling — and generates **37 quality-gate documents** into
 `.evyasys/docs/`. These documents are automatically loaded by every downstream command
 before forming any technical opinion: StartDev loads them before brainstorming,
 ReviewDev checks the diff against them, FinishDev verifies compliance before sign-off,
@@ -367,6 +367,8 @@ StartQA uses them to set pass/fail criteria.
 | `fe/STYLING_MICRO_STANDARDS.md` | Complete token catalogue, icon size matrix, spacing anatomy, CSS architecture rules |
 | `fe/HOOKS_DEEP_RULES.md` | 8-rule hook contract, useEffect rules, memoization decision trees, banned anti-patterns |
 | `fe/DEPENDENCIES_WORKFLOW.md` | Approved libraries, new-dep checklist, bundle limits, feature workflow, review contract |
+| `fe/ACCESSIBILITY.md` | WCAG 2.1 AA compliance contract — contrast ratios, keyboard nav, ARIA patterns, focus management, touch targets |
+| `fe/VISUAL_QUALITY.md` | Interactive state contract (hover/focus/disabled/loading/error/empty per component type), motion standards, responsive gates |
 | `UNIT_TESTING_COMPLETE.md` | Coverage requirements, FE + BE test patterns, factories, MSW, naming rules |
 | `be/MICRO_STANDARDS_BE.md` | Controller/Service/Repository micro-contracts, error flow, logging rules |
 | + 8 more | STACK, BACKEND, WORKFLOWS, DEPLOYMENT, ERROR_HANDLING, DECISIONS, ONBOARDING, GLOSSARY |

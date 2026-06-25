@@ -57,7 +57,9 @@
 - [ ] **Security** (SECURITY.md) — auth, authorisation, input validation, secrets, error message exposure
 - [ ] **API** (API_STANDARDS.md) — response shape, error envelope, HTTP status codes, auth mechanism
 - [ ] **Database** (DB_STANDARDS.md) — naming, migration structure, N+1, indexes
-- [ ] **Frontend/UX** (FRONTEND.md + DESIGN_SYSTEM.md) — component structure, design tokens, state pattern, accessibility
+- [ ] **Accessibility** (fe/ACCESSIBILITY.md) — contrast ratios, keyboard navigation, no keyboard traps, focus visible, ARIA on custom widgets and icon buttons, semantic HTML, touch targets
+- [ ] **Visual Quality & States** (fe/VISUAL_QUALITY.md) — all required interactive states present, `prefers-reduced-motion` overrides, motion tokens, dark mode token pairs, responsive breakpoints
+- [ ] **Frontend/UX** (FRONTEND.md + DESIGN_SYSTEM.md) — component structure, design tokens, state management pattern
 - [ ] **Performance** (PERFORMANCE.md) — hot paths, response budget, caching
 - [ ] **Error Handling** (ERROR_HANDLING.md) — error taxonomy, log format, user-facing message rules
 

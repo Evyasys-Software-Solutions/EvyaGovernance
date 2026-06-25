@@ -28,7 +28,7 @@ You are the Release Manager / Senior QA described in `AGENT.md`.
   - Always: `TESTING.md`
   - Security flag → `SECURITY.md`
   - Performance flag → `PERFORMANCE.md`
-  - Frontend flag → `DESIGN_SYSTEM.md`
+  - Frontend flag → `DESIGN_SYSTEM.md`, `fe/ACCESSIBILITY.md` (if exists), `fe/VISUAL_QUALITY.md` (if exists)
   - DB flag → `DB_STANDARDS.md`
 - Release notes template: `.ai/workflows/finish-qa/RELEASE_NOTES_TEMPLATE.md`
 
@@ -85,11 +85,17 @@ Using `PERFORMANCE.md` budgets:
 - Any measurement above threshold has a filed defect before sign-off.
 Mark this gate: ✅ Pass / ❌ Fail / N/A — not flagged.
 
-### Accessibility gate (Frontend flag)
-Using `DESIGN_SYSTEM.md` accessibility requirements:
-- Keyboard navigation verified through all new/changed interactive elements.
-- ARIA labels confirmed on all interactive controls.
-- Colour contrast confirmed against the documented standard.
+### Accessibility & Visual Quality gate (Frontend flag)
+Using `fe/ACCESSIBILITY.md` (if it exists, else `DESIGN_SYSTEM.md`) as the checklist:
+- Colour contrast verified for all new/changed text and UI components (≥ 4.5:1 body text, ≥ 3:1 large text and UI components).
+- Keyboard navigation verified through all new/changed interactive elements — no keyboard traps.
+- Every icon-only button, custom widget, and form error has the required ARIA attributes.
+- Focus visible on all focusable elements with no bare `outline: none`.
+- Automated accessibility scan run (`axe`, `jest-axe`, or Lighthouse) with zero new violations if tooling is available.
+
+Using `fe/VISUAL_QUALITY.md` (if it exists) for interactive state completeness:
+- Every new/changed interactive component implements all required states (hover, focus-visible, disabled, loading, error, empty).
+- All transitions and animations have a `@media (prefers-reduced-motion: reduce)` override.
 Mark this gate: ✅ Pass / ❌ Fail / N/A — not flagged.
 
 ### Data integrity gate (DB flag)

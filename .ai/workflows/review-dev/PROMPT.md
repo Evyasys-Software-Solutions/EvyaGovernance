@@ -90,10 +90,14 @@ Before touching the diff, load and internalise all inputs above in this order:
    - `.evyasys/docs/FRONTEND.md` — component and styling rules
    - `.evyasys/docs/ADMINLTE.md` if it exists — AdminLTE layout, component, plugin, and responsive contracts
    - `.evyasys/docs/fe/STYLING_MICRO_STANDARDS.md` — CSS architecture rules (no raw values, no inline styles, no page overrides)
+   - `.evyasys/docs/fe/ACCESSIBILITY.md` if it exists — WCAG 2.1 AA compliance contract (contrast, keyboard nav, ARIA, focus)
+   - `.evyasys/docs/fe/VISUAL_QUALITY.md` if it exists — interactive state completeness contract, motion standards, responsive gates
    - `.ai/rules/adminlte.md` — AdminLTE hard rules (if file exists)
    These UI documents are the highest-priority constraints for frontend changes.
    A violation of the responsive behaviour matrix in ADMINLTE.md is **Critical**.
    A CSS token rule violation (raw value, inline style, page-specific override) is **Important** minimum.
+   A WCAG 2.1 AA violation from `fe/ACCESSIBILITY.md` (missing ARIA, insufficient contrast, keyboard trap) is **Critical**.
+   A missing interactive state from `fe/VISUAL_QUALITY.md` contract is **Important** minimum.
 
 Rules from all sources are **active constraints** throughout the review.
 A violation of any rule from any source is flagged at **Important** minimum.
@@ -147,6 +151,33 @@ For every changed file, check:
 ### Clarity
 - Can another engineer understand this code without asking the author?
 - Are there TODO/FIXME markers that should be resolved before QA?
+
+### UI Quality & Accessibility (frontend files only — skip if no frontend changes)
+Only run this section when `fe/VISUAL_QUALITY.md` or `fe/ACCESSIBILITY.md` exist in `.evyasys/docs/`.
+
+**Interactive state completeness** (from `fe/VISUAL_QUALITY.md`):
+- For every new or modified interactive component (button, input, dropdown, checkbox, modal, form, data row), verify every required state from the state contract is implemented.
+- List each component and check off: `default` · `hover` · `focus-visible` · `disabled` · `loading/submitting` · `error` · `empty` — flag any missing state as **Important**.
+- Verify `loading`/`submitting` state disables all inputs and shows a spinner or visual indicator — missing → **Important**.
+- Verify `empty` and `error` states exist for every data-loading view — missing → **Important**.
+
+**Accessibility compliance** (from `fe/ACCESSIBILITY.md`):
+- Every icon-only button has `aria-label` — missing → **Critical**.
+- Every form input is associated with a `<label>` (or `aria-label`/`aria-labelledby`) — missing → **Critical**.
+- Error messages use `role="alert"` or `aria-live="assertive"` and are linked to their input via `aria-describedby` — missing → **Critical**.
+- Custom interactive widgets (dropdowns, modals, accordions) carry the required ARIA attributes from the accessibility contract — missing → **Critical**.
+- No `outline: none` or `outline: 0` without a visible custom focus indicator — violation → **Critical**.
+- Decorative images have `alt=""`, informative images have meaningful `alt` text — missing or placeholder `alt` → **Important**.
+
+**Motion safety** (from `fe/VISUAL_QUALITY.md`):
+- Every CSS transition or animation has a `@media (prefers-reduced-motion: reduce)` override — missing → **Important**.
+- No animation duration exceeds 5 seconds without a user control — violation → **Important**.
+
+**Colour tokens** (from `DESIGN_SYSTEM.md` / `fe/STYLING_MICRO_STANDARDS.md`):
+- No hardcoded hex, rgb, or hsl values in CSS/SCSS/styled components — violation → **Important** minimum.
+- Semantic colours (error red, success green) not used decoratively — violation → **Important**.
+
+Report these as a distinct **UI Quality** section in the review report, separate from the general code quality findings.
 
 ## Step 5 — Architecture & Code Health
 

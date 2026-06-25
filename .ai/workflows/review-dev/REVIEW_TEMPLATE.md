@@ -112,14 +112,37 @@
 | No N+1 query patterns introduced | ✅ / ⚠️ / ❌ / N/A | |
 | Indexes added for new queries on large tables | ✅ / ⚠️ / ❌ / N/A | |
 
-### Frontend / UX — `.evyasys/docs/FRONTEND.md` + `DESIGN_SYSTEM.md` *(N/A if no UI changes)*
+### General Frontend / UX — `.evyasys/docs/FRONTEND.md` + `DESIGN_SYSTEM.md` *(N/A if no UI changes)*
 
 | Check | Status | Evidence |
 |---|---|---|
 | Components follow project structure and naming | ✅ / ⚠️ / ❌ / N/A | |
 | Design tokens used — no magic colour or spacing values | ✅ / ⚠️ / ❌ / N/A | |
 | State management follows approved project pattern | ✅ / ⚠️ / ❌ / N/A | |
-| Accessibility requirements met (ARIA, keyboard nav, contrast) | ✅ / ⚠️ / ❌ / N/A | |
+
+### Accessibility — `.evyasys/docs/fe/ACCESSIBILITY.md` *(run only if frontend files changed and doc exists)*
+
+| Check | Severity | Status | Evidence |
+|---|---|---|---|
+| Colour contrast ≥ 4.5:1 for body text, ≥ 3:1 for large text and UI components | Critical | ✅ / ⚠️ / ❌ / N/A | |
+| Keyboard navigation reaches all new/changed interactive elements | Critical | ✅ / ⚠️ / ❌ / N/A | |
+| No keyboard trap — Tab and Shift+Tab exit every element | Critical | ✅ / ⚠️ / ❌ / N/A | |
+| Focus visible on all focusable elements — no bare `outline: none` | Critical | ✅ / ⚠️ / ❌ / N/A | |
+| Every icon-only button has `aria-label` | Critical | ✅ / ⚠️ / ❌ / N/A | |
+| Every custom widget has correct ARIA role + state attributes | Critical | ✅ / ⚠️ / ❌ / N/A | |
+| Semantic HTML used — landmarks, heading hierarchy, form labels | Important | ✅ / ⚠️ / ❌ / N/A | |
+| Touch targets ≥ 44×44 px for all interactive elements | Important | ✅ / ⚠️ / ❌ / N/A | |
+
+### Visual Quality & Interactive States — `.evyasys/docs/fe/VISUAL_QUALITY.md` *(run only if frontend files changed and doc exists)*
+
+| Check | Severity | Status | Evidence |
+|---|---|---|---|
+| Every new/changed interactive component has all required states (hover, focus-visible, disabled, loading, error, empty) | Important | ✅ / ⚠️ / ❌ / N/A | |
+| All transitions and animations have a `@media (prefers-reduced-motion: reduce)` override | Important | ✅ / ⚠️ / ❌ / N/A | |
+| Motion duration and easing use project token values — no magic values | Important | ✅ / ⚠️ / ❌ / N/A | |
+| Dark mode token pairs used correctly — no hardcoded colour in dark contexts | Important | ✅ / ⚠️ / ❌ / N/A | |
+| Layout and components verified at all documented breakpoints | Important | ✅ / ⚠️ / ❌ / N/A | |
+| Visual hierarchy maintained — primary action, heading scale, information density correct | Important | ✅ / ⚠️ / ❌ / N/A | |
 
 ### Performance — `.evyasys/docs/PERFORMANCE.md`
 
@@ -149,6 +172,8 @@
 | `API_STANDARDS.md` | Yes / No | New API response or error pattern established |
 | `DB_STANDARDS.md` | Yes / No | New schema or migration convention introduced |
 | `PERFORMANCE.md` | Yes / No | New hot path identified or performance budget changed |
+| `fe/ACCESSIBILITY.md` | Yes / No | New widget type or ARIA pattern introduced |
+| `fe/VISUAL_QUALITY.md` | Yes / No | New component states, motion pattern, or dark mode usage introduced |
 
 **If any "Yes" rows exist:** the relevant doc must be updated before or alongside the PR merge.
 Run `/evyasys:TrainDocs --retrain` or update the specific doc directly.

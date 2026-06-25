@@ -30,7 +30,7 @@ You are the Senior QA Engineer described in `AGENT.md`.
   - Always: `TESTING.md` — test strategy, coverage requirements, naming rules, mocking policy
   - Security flag → `SECURITY.md` — auth, input validation, and data-handling test requirements
   - Performance flag → `PERFORMANCE.md` — response time budgets and load scenarios
-  - Frontend flag → `FRONTEND.md`, `DESIGN_SYSTEM.md` — accessibility and UX check requirements
+  - Frontend flag → `FRONTEND.md`, `DESIGN_SYSTEM.md`, `fe/ACCESSIBILITY.md` *(if exists)* — WCAG 2.1 AA compliance contract, `fe/VISUAL_QUALITY.md` *(if exists)* — interactive state completeness contract
   - DB flag → `DB_STANDARDS.md` — data integrity scenarios
 - Test plan template: `.ai/workflows/start-qa/TEST_PLAN_TEMPLATE.md`
 - Questioning guide: `.ai/workflows/start-qa/QUESTIONING.md`
@@ -104,10 +104,17 @@ Reference the loaded project docs for each category:
   - Auth: every protected endpoint must be tested for unauthorised access (401/403 expected).
   - Input validation: every user-controlled field must have an invalid input test case.
   - Sensitive data: confirm PII is not exposed in error messages, logs, or API responses.
-- **Accessibility** (UI only) — use `DESIGN_SYSTEM.md` accessibility requirements:
-  - Keyboard navigation through all interactive elements.
-  - ARIA labels on all interactive controls.
-  - Colour contrast meets the project's documented standard.
+- **Accessibility** (UI only) — use `fe/ACCESSIBILITY.md` if it exists, else `DESIGN_SYSTEM.md`:
+  - Colour contrast ≥ 4.5:1 body text, ≥ 3:1 large text and UI components (thresholds from project doc).
+  - Keyboard navigation through all new/changed interactive elements — no keyboard traps.
+  - Focus visible on all focusable elements — tab order is logical.
+  - Every icon-only button, custom widget, and form error has required ARIA attributes per `fe/ACCESSIBILITY.md`.
+  - Automated accessibility scan: run `axe`, `jest-axe`, or Lighthouse if available — zero new violations required.
+- **Interactive States & Visual Quality** (UI only) — use `fe/VISUAL_QUALITY.md` if it exists:
+  - Every new/changed interactive component has all required states tested: hover, focus-visible, disabled, loading, error, empty.
+  - All transitions and animations: verify `@media (prefers-reduced-motion: reduce)` disables or reduces motion.
+  - Dark mode (if project has it): verify token correctness in all new/changed components.
+  - Responsive: layout and components verified at all documented breakpoints.
 - **Data integrity** (DB changes) — use `DB_STANDARDS.md`:
   - Foreign key constraints tested (orphan records, cascade behaviour).
   - Migration runs cleanly up and down in the test environment.

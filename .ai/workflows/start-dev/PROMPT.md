@@ -70,7 +70,7 @@ Complete this step before forming any technical opinion.
    |---|---|
    | Security | `SECURITY.md`, `RBAC.md` |
    | DB | `DB_STANDARDS.md` |
-   | Frontend | `FRONTEND.md`, `DESIGN_SYSTEM.md`, `UI_UX_STANDARDS.md`, `fe/STYLING_MICRO_STANDARDS.md`, `ADMINLTE.md` *(if file exists)* |
+   | Frontend | `FRONTEND.md`, `DESIGN_SYSTEM.md`, `UI_UX_STANDARDS.md`, `fe/STYLING_MICRO_STANDARDS.md`, `fe/ACCESSIBILITY.md` *(if exists)*, `fe/VISUAL_QUALITY.md` *(if exists)*, `ADMINLTE.md` *(if file exists)* |
    | API | `API_STANDARDS.md`, `DTO_STANDARDS.md` |
    | Performance | `PERFORMANCE.md` |
 

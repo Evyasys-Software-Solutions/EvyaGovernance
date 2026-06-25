@@ -40,10 +40,10 @@ Check `.evyasys/docs/` for existing files. Report the status before proceeding:
 
 | State | Action |
 |---|---|
-| Directory missing or empty | Proceed: full generation of all 35 documents |
+| Directory missing or empty | Proceed: full generation of all 37 documents |
 | Partial (some files exist) | List what exists and what is missing; ask if user wants to generate missing, update existing, or both |
 | All present, no flag | Ask: "Regenerate all, update specific, retrain, or abort?" |
-| `--update` flag | Confirm "Regenerate all 35 documents, preserving project customisations?" before proceeding |
+| `--update` flag | Confirm "Regenerate all 37 documents, preserving project customisations?" before proceeding |
 | `--update <filename>` | Confirm "Update `.evyasys/docs/<filename>` only?" |
 | `--retrain` flag | Switch to Retrain mode (Step 0-R below) |
 
@@ -85,7 +85,7 @@ Group changed files into areas using this map:
 | `tsconfig.json`, `.eslintrc*`, `.prettierrc*` | `STANDARDS.md` |
 | `prisma/schema.prisma`, `migrations/` | `DB_STANDARDS.md` |
 | `src/services/`, `src/repositories/` | `BACKEND.md`, `PATTERNS.md` |
-| `src/components/`, `src/pages/`, `src/app/` | `FRONTEND.md`, `DESIGN_SYSTEM.md`, `UI_UX_STANDARDS.md` |
+| `src/components/`, `src/pages/`, `src/app/` | `FRONTEND.md`, `DESIGN_SYSTEM.md`, `UI_UX_STANDARDS.md`, `fe/ACCESSIBILITY.md`, `fe/VISUAL_QUALITY.md` |
 | `src/api/`, `routes/`, `controllers/` | `API_STANDARDS.md`, `BACKEND.md` |
 | Auth / security files | `SECURITY.md` |
 | `jest.config.*`, `playwright.config.*`, `*.test.*` | `TESTING.md` |
@@ -98,6 +98,10 @@ Group changed files into areas using this map:
 | CSS token file, icon system, spacing changes | `fe/STYLING_MICRO_STANDARDS.md`, `DESIGN_SYSTEM.md` |
 | Hook patterns or memoization changes | `fe/HOOKS_DEEP_RULES.md`, `FRONTEND.md` |
 | `package.json` dependencies changed | `fe/DEPENDENCIES_WORKFLOW.md`, `STACK.md`, `ONBOARDING.md` |
+| New interactive widget types added (input, modal, data view, etc.) | `fe/ACCESSIBILITY.md` — ARIA contract section, keyboard model table |
+| Dark mode token changes, motion library changes, component state changes | `fe/VISUAL_QUALITY.md` — interactive state table, motion section, dark mode section |
+| Accessibility audit results or automated axe scan violations found | `fe/ACCESSIBILITY.md` — full retrain |
+| Major component library upgrade or large-scale component refactor | `fe/ACCESSIBILITY.md`, `fe/VISUAL_QUALITY.md`, `DESIGN_SYSTEM.md` |
 | Test config, coverage thresholds, factory/MSW changes | `UNIT_TESTING_COMPLETE.md`, `TESTING.md` |
 | Controller/service/repository pattern changes | `be/MICRO_STANDARDS_BE.md`, `BACKEND.md`, `PATTERNS.md` |
 | Enum directory changed (`app/Enums/`, `src/enums/`, `lib/enums/`, or equivalent) | `LOCALISATION.md` — enum catalog + missing items |
@@ -329,6 +333,7 @@ After the scan, summarise findings privately before generating any document:
 16. **Scheduler** — all scheduled jobs with cron expressions, estimated durations, failure behaviours; if no scheduler found, note explicitly
 17. **Backup** — backup scripts found (or absent), schedule, destination; if absent, flag as a critical gap
 18. **Observability** — health check endpoint (or gap), uptime monitoring tool (or gap), error alerting mechanism (or gap), log paths
+19. **Frontend layer present** — determine `hasFrontend` (true/false) based on: presence of `src/components/**/*.tsx`, `pages/**`, `app/**/page.*`, `.stories.*` files, `tailwind.config.*`, or a frontend framework in package.json scripts (`"dev": "next"`, `"vite"`, `"react-scripts"`, etc.). Set `hasFrontend = false` if none found — documents 36 (`fe/ACCESSIBILITY.md`) and 37 (`fe/VISUAL_QUALITY.md`) will be marked Not applicable.
 
 This analysis is the foundation of every document. Do not start Phase 4 until it is complete.
 
@@ -387,7 +392,11 @@ Generate documents in this order — STACK.md first so other docs can reference 
 34. `UNIT_TESTING_COMPLETE.md`
 35. `be/MICRO_STANDARDS_BE.md`
 
-Documents 31–35 are supplementary micro-level documents. They add depth to the core docs and follow the same quality rules — if the project has no evidence for a document (e.g. no frontend layer), output the delimiter and write `> Not applicable — [specific reason].` at the top, exactly as you would for any other document.
+**Accessibility and visual quality docs (frontend only — skip if `hasFrontend = false` from Phase 3 item 19):**
+36. `fe/ACCESSIBILITY.md`
+37. `fe/VISUAL_QUALITY.md`
+
+Documents 31–37 are supplementary micro-level documents. They add depth to the core docs and follow the same quality rules — if the project has no evidence for a document (e.g. no frontend layer), output the delimiter and write `> Not applicable — [specific reason].` at the top, exactly as you would for any other document.
 
 For self-hosted projects (no cloud infrastructure): documents 22–26 (INFRASTRUCTURE.md through DEPLOYMENT.md) are critical — never mark them Not applicable unless the project explicitly uses a managed PaaS. Write them based on what the stack requires even if config files are not yet on disk.
 
@@ -439,7 +448,7 @@ Before the hook writes anything, show a summary table:
 | `UI_UX_STANDARDS.md` | [e.g. shadcn/ui + Tailwind — loading: skeleton, error: toast (sonner), form: react-hook-form + zod] |
 | ... | ... |
 
-Ask: **"Ready to write these 35 documents to `.evyasys/docs/`?"** (or N documents in retrain/update mode)
+Ask: **"Ready to write these 37 documents to `.evyasys/docs/`?"** (or N documents in retrain/update mode)
 
 Wait for explicit confirmation. Do not write anything before it.
 

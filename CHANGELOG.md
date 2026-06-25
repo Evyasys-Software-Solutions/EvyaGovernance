@@ -10,6 +10,47 @@ Versioning: [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.PATCH`
 
 ---
 
+## [1.2.0] — 2026-06-25
+
+### Added
+- **`fe/ACCESSIBILITY.md`** — new TrainDocs-generated document. WCAG 2.1 AA compliance
+  contract covering: colour contrast minimums (4.5:1 body, 3:1 large/UI), keyboard
+  navigation model per widget type, focus management rules (when focus moves
+  programmatically and where), ARIA usage contract per custom widget, semantic HTML
+  contract, minimum touch target sizes (44×44px recommended), and a screen reader
+  testing checklist. ReviewDev and StartQa load this automatically when the story has
+  a Frontend flag.
+- **`fe/VISUAL_QUALITY.md`** — new TrainDocs-generated document. Interactive state
+  contract that specifies every required state per component type (button, input,
+  select, checkbox, modal, form, data view — all states from `default` through `error`
+  and `empty`). Also covers: visual hierarchy rules (primary action, heading scale,
+  information density), motion/animation standards (`prefers-reduced-motion` mandatory,
+  duration and easing token catalogue), dark mode token pair table (if applicable),
+  breakpoint-by-breakpoint responsive quality gates, and image/media loading rules.
+  ReviewDev blocks merges on missing states. StartQa uses it to generate complete state
+  test cases.
+- **ReviewDev UI Quality section** — new `### UI Quality & Accessibility` review block
+  in Step 4. Checks interactive state completeness against `fe/VISUAL_QUALITY.md`,
+  ARIA compliance against `fe/ACCESSIBILITY.md`, motion safety (`prefers-reduced-motion`),
+  and colour token correctness. Each failure is graded: missing ARIA or keyboard trap →
+  **Critical**; missing interactive state or missing `prefers-reduced-motion` override →
+  **Important**. Only runs when frontend files are changed and the docs exist.
+- **FinishQa accessibility/visual gate upgraded** — the existing Accessibility gate now
+  loads `fe/ACCESSIBILITY.md` and `fe/VISUAL_QUALITY.md`, checks contrast ratios,
+  ARIA, focus visibility, automated axe scan (if available), and interactive state
+  completeness. Gate severity: fail blocks Done.
+
+### Changed
+- TrainDocs document count corrected and updated: **37 documents** (was labelled 25
+  in the command file despite the manifest having 35; now correctly 37 after the two
+  new `fe/` documents). `commands/TrainDocs.md` description and output line updated.
+  README command table and TrainDocs section updated.
+- `fe/` subdirectory grows from 3 to **5 documents**: `STYLING_MICRO_STANDARDS.md`,
+  `HOOKS_DEEP_RULES.md`, `DEPENDENCIES_WORKFLOW.md`, `ACCESSIBILITY.md`,
+  `VISUAL_QUALITY.md`.
+
+---
+
 ## [1.1.0] — 2026-06-22
 
 ### Added
