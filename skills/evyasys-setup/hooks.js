@@ -209,7 +209,8 @@ module.exports = async function (ctx) {
     `  PM Tool:           ${PM_LABELS[pmTool]           || pmTool}\n` +
     `  Notification Tool: ${N_LABELS[notificationTool]  || notificationTool}\n` +
     (releaseConfigured ? `  PDF Branding:      ${config.release_company_name || '(configured)'}\n` : '') +
-    `\n**Next step:** Run \`/evyasys:TrainDocs\` to scan your codebase and generate the 35 quality-gate documents that all delivery commands depend on.`
+    `\n**Next step:** Run \`/evyasys:TrainDocs\` to scan your codebase and generate the 37 quality-gate documents that all delivery commands depend on. ` +
+    `\nOptional but recommended: \`/evyasys:CreateFunctionalDocs --all\` to generate RAG-ready plain-language module docs.`
   );
 
   // ── Context compression — act on user's explicit preference ─────────────────

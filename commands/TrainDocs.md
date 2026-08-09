@@ -9,9 +9,9 @@ You are running **/evyasys:TrainDocs $ARGUMENTS**.
 
 ## Step 0 — Pre-flight
 0a. Check `.evyasys/docs/` for existing files:
-    - No docs → proceed with full generation (all 25 documents).
+    - No docs → proceed with full generation (all 37 documents).
     - Docs exist and `$ARGUMENTS` is empty → ask: "Docs already exist. Regenerate all, update specific, retrain, or abort?"
-    - `$ARGUMENTS` is `--update` → confirm: "Regenerate all 25 documents?"
+    - `$ARGUMENTS` is `--update` → confirm: "Regenerate all 37 documents?"
     - `$ARGUMENTS` is `--update <filename>` → confirm: "Regenerate `.evyasys/docs/<filename>` only?"
     - `$ARGUMENTS` is `--retrain` → switch to retrain mode (see PROMPT.md Step 0-R):
       read last generation date from INDEX.md, detect changed areas via git log, regenerate only affected docs.
@@ -37,7 +37,7 @@ You are running **/evyasys:TrainDocs $ARGUMENTS**.
 6. **Existing docs**: read `README.md`, `CONTRIBUTING.md`, any files under `docs/`.
 
 ## Phase 2 — Generate all documents
-Following `DOC_MANIFEST.md`, generate all 25 documents (or only affected docs in `--retrain` mode) using **actual project findings**.
+Following `DOC_MANIFEST.md`, generate all 37 documents (or only affected docs in `--retrain` mode) using **actual project findings**.
 No placeholder text. Every rule must have a concrete example from this project.
 Wrap each document with `<!-- EVYADOC: FILENAME.md -->` so the hook can parse and write them.
 

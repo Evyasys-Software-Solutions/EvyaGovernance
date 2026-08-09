@@ -104,9 +104,18 @@ A violation of any rule from any source is flagged at **Important** minimum.
 Project docs from `.evyasys/docs/` override generic plugin rules where they conflict.
 
 ## Step 1 — Understand the scope
+
+**Pre-flight — verify git is available:**
+Run `git rev-parse --is-inside-work-tree`. If it fails with "not a git repository":
+> "❌ ReviewDev cannot run outside a git repository — it needs the diff against `main` to review the change. Please run this command from inside the project's git repo (typically the folder where you cloned it)."
+Then stop and wait for user acknowledgement — do not attempt to review without a diff.
+
 Read the story ACs completely. These are your acceptance criteria for the review.
 Run `git diff main...HEAD --stat` to see which files changed.
 List the changed files and classify each: new / modified / deleted.
+
+If `git diff main...HEAD --stat` returns empty (no diff against main), tell the user:
+> "No changes detected against `main`. Either the branch has no commits yet, or the wrong base branch is configured. Confirm the base branch before continuing."
 
 ## Step 2 — Read the full diff
 Run `git diff main...HEAD`.
@@ -177,7 +186,20 @@ Only run this section when `fe/VISUAL_QUALITY.md` or `fe/ACCESSIBILITY.md` exist
 - No hardcoded hex, rgb, or hsl values in CSS/SCSS/styled components — violation → **Important** minimum.
 - Semantic colours (error red, success green) not used decoratively — violation → **Important**.
 
-Report these as a distinct **UI Quality** section in the review report, separate from the general code quality findings.
+**UI consistency check** (frontend files only — run even when the two doc files above are absent):
+When any view template, component, or CSS file is changed, compare the new UI against existing similar pages:
+1. Identify the page/component type from the diff: list view, detail view, form page, modal, card, widget.
+2. Glob for 2–3 existing pages of the same type (e.g. two other list pages if this story adds a list).
+3. Compare on these axes:
+   - Component/wrapper structure — same card nesting, same main/section/aside layout pattern?
+   - Data loading pattern — loading/error/empty state implemented the same way?
+   - Navigation — same breadcrumb approach, same action button placement?
+   - Form structure (if applicable) — same label placement, same error display, same submit button position?
+   - CSS class conventions — same AdminLTE/Bootstrap classes for same UI elements?
+4. Any structural departure from ≥ 2 existing similar pages → **Important**.
+5. Record reference pages in the "UI Consistency" section of the review report.
+
+Report these as a distinct **UI Quality & Consistency** section in the review report, separate from the general code quality findings.
 
 ## Step 5 — Architecture & Code Health
 
@@ -189,6 +211,31 @@ Report these as a distinct **UI Quality** section in the review report, separate
 - Divergence without documented team approval → **Important**.
 - Divergence that introduces risk absent from the agreed approach → **Critical**.
 - If no brainstorm exists: note it as **Minor** (the StartDev gate should have caught this).
+
+### Architecture consistency scan
+Beyond the brainstorm contract, verify the implementation is consistent with existing code
+for the same problem type. Documents like ARCHITECTURE.md describe the intended design; this
+scan checks what was actually built.
+
+**Scan sequence:**
+1. Identify the feature type from the diff: CRUD resource, API endpoint, background job, UI page, auth change.
+2. Grep/Glob for 2–3 existing implementations of the same type (e.g. two other controllers in the same layer, two other service classes, two other similar view templates).
+3. Read those reference files and compare directly against the new code on each axis:
+
+| Consistency axis | What to check | Finding severity |
+|---|---|---|
+| Class/module structure | Same parent class, same constructor pattern, same method layout | Important |
+| Error handling | Same exception types, same catch locations, same log format | Important |
+| Return shapes | Same response envelope, same DTO structure, same pagination format | Important |
+| Naming conventions | Same variable names for same concepts (`$resource`, `$id`, `$data`) | Important |
+| UI structure | Same component/wrapper nesting, same section order (header/body/footer) | Important |
+
+4. List the reference files used: `Compared against: path/to/ref1, path/to/ref2`.
+5. For each inconsistency found: raise as **Important** with the reference file and specific diff as evidence.
+6. If the new code improves on the existing pattern: note it as a **Strength** and flag it for `PATTERNS.md` update.
+
+> If no similar existing implementation exists (greenfield): confirm with the brainstorm reference block.
+> Note: "Greenfield pattern — no existing reference. Recommend team review before merge to establish canonical approach."
 
 ### Architectural compliance
 - Does new code respect the existing layer boundaries (e.g. business logic not in

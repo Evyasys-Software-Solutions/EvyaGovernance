@@ -66,7 +66,7 @@ When prompted, choose **Install for you (user scope)** so it works in every proj
 
 Then **fully quit Claude Code and reopen it** — commands appear after a fresh start.
 
-Type `/evya` — you should see 12 commands in autocomplete.
+Type `/evya` — you should see 13 commands in autocomplete.
 
 ---
 
@@ -221,10 +221,48 @@ Your `.evyasys/` docs, board artefacts, `project.yaml`, and credentials are **ne
 | Webhook missing | Run `/evyasys:Setup` to update the webhook URL |
 | Missing ADO org/project | Run `/evyasys:Setup` or edit `.evyasys/project.yaml` |
 | Wrong project loaded | Open Claude Code from inside the correct project folder |
+| `not a git repository` from StartDev/ReviewDev | Open Claude Code from inside your project's git repo. ReviewDev requires a git diff. |
+| `python: command not found` | Optional — install Python 3.8+ or run without it. StartDev/ReviewDev now degrade gracefully to Glob/Grep scan. |
+| Credential validator not found during Setup | Your plugin install is incomplete. Run `/evyasys:Repair`, then re-run `/evyasys:Setup`. |
+| Setup validation failed and I chose "skip" | Downstream sync commands will 401/403 until you re-run `/evyasys:Setup` and enter a valid token. |
 
 ---
 
-## The 10 Commands
+## Running your first sprint (team onboarding)
+
+New team members: this is the shortest path from "install" to "shipped story."
+
+### Day 1 — one-time setup (per project, first user)
+1. **Tech Lead:** `/evyasys:Setup` — pick PM tool + notification channel, enter credentials. ~3 min.
+2. **Tech Lead:** `/evyasys:TrainDocs` — scans the whole codebase, generates 37 quality-gate docs. ~5–10 min.
+3. **Tech Lead (recommended):** `/evyasys:CreateFunctionalDocs --all` — generates plain-language module docs (RAG-ready). ~5 min.
+4. Commit `.evyasys/project.yaml` and `.evyasys/docs/` so the whole team gets them via `git pull`.
+
+### Day 1 — per teammate (once per developer)
+1. Install Claude Code, install the Evyasys plugin (see Installation section above).
+2. Run `/evyasys:Setup` from inside the project — the wizard skips everything already saved by the Tech Lead and only asks for **your personal credentials** (PAT/token).
+
+### Running a story (any developer, any day)
+1. **PO / BA:** `/evyasys:CreateStory` — creates epic + story artefacts and syncs to the PM tool.
+2. **Architect:** `/evyasys:CreateSubtask EVYA-1042 EVYA-1043` — plans the tasks (batchable across stories).
+3. **Dev Lead:** `/evyasys:StartDev EVYA-1042` — brainstorm approaches, get architecture sign-off.
+4. **Developer:** implement + push code.
+5. **Senior Dev:** `/evyasys:ReviewDev EVYA-1042` — independent GO/NO-GO review.
+6. **Developer:** `/evyasys:FinishDev EVYA-1042` — DoD checklist, mark Ready for QA.
+7. **QA:** `/evyasys:StartQa EVYA-1042` — test plan with domain gates.
+8. **Release Mgr:** `/evyasys:FinishQa EVYA-1042` — exit gates, release notes, mark Done.
+
+Batch mode: any of steps 3–8 accept multiple story IDs or an epic ID.
+
+### Safe to re-run?
+- **Setup**: yes — remembers previous answers, only asks for changes.
+- **TrainDocs**: yes — use `--update` or `--retrain` to preserve project customisations.
+- **CreateStory / StartDev / StartQa**: yes — they detect existing artefacts and ask "resume or restart?"
+- **ReviewDev / FinishDev / FinishQa**: yes — they check for existing outputs and confirm before overwriting.
+
+---
+
+## The 13 Commands
 
 Type `/evya` in Claude Code to see all commands in autocomplete.
 
@@ -301,8 +339,12 @@ flowchart TD
 | 8 | QA | `/evyasys:StartQa EVYA-XXXX` | 🔬 QA Engineer | Load domain quality gates; ask env + test data; write AC-driven test cases (Gherkin) | `TestPlan.md` | **In QA** |
 | 9 | QA | `/evyasys:FinishQa EVYA-XXXX` | 📦 Release Mgr | Record TC outcomes; Security/Perf/A11y/DB exit gates; draft release notes | `ReleaseNotes.md` | **Done** ✅ |
 | 10 | Release | `/evyasys:GenerateReleaseNote EVYA-1042 EVYA-1043` | 📦 Release Mgr | Aggregate stories by Epic; consolidate quality gates; propose version; generate branded PDF | `releases/*.pdf` | — |
+| 11 | Docs | `/evyasys:CreateFunctionalDocs [--all \| ModuleName \| --update ModuleName]` | 📋 BA / Tech Lead | Scan each business module; generate plain-language functional docs (entities, permissions, validations, actions, business logic, workflows, error scenarios) — structured for RAG retrieval | `.evyasys/docs/functional/` | — |
+| 12 | Maint | `/evyasys:Update` | 👤 Any | Check installed vs. latest version; show changelog; manage compression preference; guide through 3-command update sequence | (guidance only — no artefacts) | — |
+| 13 | Maint | `/evyasys:Repair` | 👤 Any | Clean reinstall for broken plugin state — clears plugin cache and settings entries, then shows reinstall commands. Project config, credentials, and docs are never touched. | (guidance only — no artefacts) | — |
 
 > Every state transition and every notification fires **only after your approval**. Both GO and NO-GO review results are always saved to disk.
+> **Batch mode:** Commands #5 (StartDev), #6 (ReviewDev), #7 (FinishDev), #8 (StartQa), #9 (FinishQa), and #10 (GenerateReleaseNote) all accept multiple story IDs, epic IDs, or a mix — epic IDs auto-expand to their child stories.
 
 ---
 
@@ -345,7 +387,7 @@ ReviewDev checks the diff against them, FinishDev verifies compliance before sig
 StartQA uses them to set pass/fail criteria.
 
 **Arguments:**
-- _(no args)_ — Full scan and generate all 35 documents
+- _(no args)_ — Full scan and generate all 37 documents
 - `--update` — Regenerate all documents, preserving project customisations
 - `--update FILENAME.md` — Regenerate a single document
 - `--retrain` — Detect which files changed since last run (via `git log`) and regenerate only affected documents. Use after stack upgrades, schema changes, design system token updates, or component library changes.
@@ -373,7 +415,39 @@ StartQA uses them to set pass/fail criteria.
 | `be/MICRO_STANDARDS_BE.md` | Controller/Service/Repository micro-contracts, error flow, logging rules |
 | + 8 more | STACK, BACKEND, WORKFLOWS, DEPLOYMENT, ERROR_HANDLING, DECISIONS, ONBOARDING, GLOSSARY |
 
-**Produces:** 35 `.md` files + `INDEX.md` → `.evyasys/docs/` (micro docs in `fe/` and `be/` subdirectories)
+**Produces:** 37 `.md` files + `INDEX.md` → `.evyasys/docs/` (micro docs in `fe/` and `be/` subdirectories)
+
+---
+
+### `/evyasys:CreateFunctionalDocs`
+**Who:** BA / Tech Lead — **When:** After TrainDocs, then `--update` after significant feature changes
+
+Scans each business module and generates a **plain-language functional reference document** describing WHAT the module does — not how it is implemented. Documents are stored in `.evyasys/docs/functional/` and are structured for **RAG retrieval**: each section is self-contained and can be used to answer end-user chat queries about system behaviour.
+
+**Arguments:**
+- _(no args)_ — Detect modules from the codebase, show list, let you choose which to document
+- `--all` — Generate for all detected modules at once
+- `ModuleName` — Generate for one module by name (e.g. `UserManagement`, `Billing`)
+- `--update ModuleName` — Update an existing doc; only adds or corrects — never removes valid content
+
+**Each module document covers:**
+
+| Section | What it answers |
+|---|---|
+| Module Overview | What problem does this module solve and who uses it? |
+| Entities | What data does this module own? What status values exist? |
+| Access & Permissions | Which roles can view / create / edit / delete? What restrictions apply? |
+| Validations | What rules must be satisfied? What error does the user see when a rule fails? |
+| Actions | What can users do, who can do it, and what is the outcome? |
+| Business Logic | What decisions does the system make? What are the rules and scenarios? |
+| Workflows | What multi-step processes exist? Who acts at each step? |
+| Error Scenarios | What can go wrong and what does the user see? |
+| Integration Points | What other modules or external services does this connect to? |
+| Glossary | Domain terms specific to this module |
+
+**Produces:** `functional/{ModuleName}.md` + `functional/INDEX.md` → `.evyasys/docs/functional/`
+
+> **RAG use:** Every section is self-contained with no cross-section dependencies, specific role and field names, concrete scenario examples, and no code references — ready to be chunked and embedded for chat retrieval.
 
 ---
 
@@ -682,7 +756,7 @@ project repo. Project files always win over plugin defaults.
 
 | To customise | File in your project |
 |---|---|
-| **Quality-gate documents** | Run `/evyasys:TrainDocs` — generates all 35 docs into `.evyasys/docs/` |
+| **Quality-gate documents** | Run `/evyasys:TrainDocs` — generates all 37 docs into `.evyasys/docs/` |
 | Story naming rules | `.evyasys/rules/naming.md` |
 | Definition of Ready | `.evyasys/rules/definition-of-ready.md` |
 | Any workflow prompt | `.evyasys/workflows/<name>/PROMPT.md` |

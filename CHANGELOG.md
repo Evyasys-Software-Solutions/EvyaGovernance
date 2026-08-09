@@ -10,6 +10,131 @@ Versioning: [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.PATCH`
 
 ---
 
+## [1.3.1] — 2026-08-09
+
+Team-readiness hardening pass — audit found several friction points and one authenticated-encryption gap. All fixed before team rollout tomorrow.
+
+### Security
+- **`scripts/lib/encrypt.js` — upgraded from AES-256-CBC to AES-256-GCM (authenticated encryption).**
+  CBC mode allowed silent ciphertext tampering; GCM adds an authentication tag that fails
+  decryption if the credentials file is modified out-of-band. New format: `v2:<iv>:<tag>:<ciphertext>`.
+  Legacy CBC format (from ≤ v1.3.0) is still decrypted transparently for backwards compatibility,
+  so no user action needed on existing credentials — the next Setup re-save writes v2.
+
+### Fixed
+- **`scripts/lib/ensure-compress.js`** — `ensureCompress()` now verifies `isMcpRegistered()`
+  returns true after `headroom mcp install` runs. Previously it wrote "compression enabled" to
+  `~/.evyasys/settings.json` even if the MCP entry failed to land in `~/.claude/settings.json`,
+  so the team thought compression was active when it silently wasn't. Recovery path also now
+  requires both PATH + registered.
+- **`.ai/workflows/setup/PROMPT.md`** — credential validator lookup now emits `VALIDATOR_NOT_FOUND`
+  when the file is missing and Setup aborts cleanly with a clear "run /evyasys:Repair" message.
+  Previously it saved a `$VALIDATOR` empty string and produced cryptic `node: ""` errors later.
+- **`.ai/workflows/setup/PROMPT.md`** — the "skip validation" path for PM and notification
+  credentials now requires the exact confirmation phrase `yes, proceed unverified` after showing
+  a warning that downstream sync commands will fail with 401/403. Previously any keyword ("skip",
+  "no", enter) saved unverified credentials silently.
+- **`.ai/workflows/start-dev/PROMPT.md`** — Step 2 codebase probe now checks `.git/` and Python
+  availability before invoking `python scripts/repo_scan.py`. Missing git → continue with
+  standards-only brainstorm; missing Python → fall back to manual Glob/Grep scan. Neither aborts.
+- **`.ai/workflows/review-dev/PROMPT.md`** — Step 1 now verifies the working directory is a git
+  repo before running `git diff main...HEAD`. If not, stops with a clear error rather than crashing
+  with `fatal: not a git repository`.
+- **`commands/TrainDocs.md`** — corrected three remaining "25 documents" references to "37".
+- **`commands/command.json`** — refreshed all descriptions to reflect current behaviour; added
+  entries for `CreateFunctionalDocs` and `Repair` (previously missing); TrainDocs description
+  updated from "25 documents" to "37 documents".
+- **`QUICKSTART.md`** — "25 quality-gate documents" corrected to "37".
+- **`project-template/.evyasys/README.md`** — "(25 documents total)" corrected to "37".
+- **`.ai/workflows/create-docs/CHECKLIST.md`** — two "35 documents" references corrected to "37".
+- **`.ai/workflows/setup/PROMPT.md`** — Step 5 closing message updated from "35 documents" to "37".
+- **`README.md`** — heading "The 10 Commands" corrected to "The 13 Commands"; command table now
+  includes rows for `/evyasys:Update` (row 12) and `/evyasys:Repair` (row 13).
+
+### Scale & performance
+- **`scripts/lib/ado-map.js`** — added `snapshot(repoRoot)` for cached reads across a batch.
+  Previously a 50-story batch called `read()` (and thus `fs.readFileSync`) 50+ times; snapshot
+  caches the map in memory for the duration of one hook run. Old `lookup()`/`lookupDir()`/`save()`
+  exports still work for compatibility with existing hooks — new hooks should prefer `snapshot()`.
+- **`scripts/lib/ado-map.js`** — `save()` now does an atomic write (tmp file → rename) after
+  re-reading the file to merge in concurrent updates from a parallel hook. Reduces the
+  read-modify-write race window to just the rename step (atomic on POSIX and Windows).
+- **`scripts/lib/compress-settings.js`** — atomic write for `~/.evyasys/settings.json` (tmp+rename)
+  so a crash mid-write can no longer leave the file half-written.
+- **`scripts/lib/http-retry.js`** — fails fast on definitive network errors (`ENOTFOUND`,
+  `ECONNREFUSED`, `EHOSTUNREACH`, `EAI_AGAIN`) instead of retrying 3× with exponential backoff.
+  A 50-story batch against an unreachable Teams webhook now fails in ~50ms per attempt
+  instead of ~7s of pointless waiting.
+- **`scripts/lib/http-retry.js`** — 429 responses now honour the `Retry-After` header (capped
+  at 30s) instead of ignoring it. Azure DevOps / JIRA rate-limit responses now cause the retry
+  to wait the exact server-instructed interval.
+- **`scripts/lib/http-retry.js`** — fetch availability is now resolved upfront with a clear
+  error message if neither built-in fetch nor `node-fetch` is available, instead of throwing
+  a cryptic `require` error mid-retry.
+
+### Diagnostics
+- **`scripts/lib/compress-settings.js`** — `readSettings()` now emits a `console.warn` when
+  `~/.evyasys/settings.json` fails to parse (previously silent-swallow returned `{}`),
+  so a corrupt settings file is surfaced instead of silently overwritten.
+
+### Added
+- **`.ai/workflows/create-functional-docs/CHECKLIST.md`** — self-review gate for the new
+  functional-docs workflow, matching the pattern of other workflows.
+- **`.ai/workflows/setup/CHECKLIST.md`** — self-review gate for Setup, previously missing.
+- **README.md — "Running your first sprint (team onboarding)" section** — end-to-end walkthrough
+  for new team members: Day 1 one-time setup, Day 1 per-teammate steps, per-story flow, and a
+  "safe to re-run?" table for every command.
+- **README.md Troubleshooting** — four new rows: "not a git repository", "python: command not
+  found", "credential validator not found", "Setup skip left me unverified".
+- **README.md Command Reference** — batch-mode capability now explicitly noted for StartDev,
+  ReviewDev, FinishDev, StartQa, FinishQa, GenerateReleaseNote in a footnote below the table.
+
+---
+
+## [1.3.0] — 2026-08-08
+
+### Added
+- **`/evyasys:CreateFunctionalDocs` command** — new command that scans each business module
+  and generates a plain-language functional reference document into `.evyasys/docs/functional/`.
+  Documents cover: Module Overview, Entities, Access & Permissions, Validations, Actions,
+  Business Logic, Workflows, Error Scenarios, Integration Points, and Module Glossary.
+  Structured for RAG retrieval — every section is self-contained and can answer end-user
+  chat queries independently. Supports `--all`, single module name, and `--update <module>` modes.
+- **`skills/evyasys-create-functional-docs/`** — new skill: `SKILL.md` defining the command,
+  `hooks.js` parsing `<!-- EVYAFUNCDOC: ModuleName.md -->` delimiters and writing to
+  `.evyasys/docs/functional/`, generating `functional/INDEX.md`.
+- **`.ai/workflows/create-functional-docs/`** — new workflow directory with `AGENT.md` (Business
+  Analyst role), `PROMPT.md` (5-step workflow with module scan, template fill, self-review,
+  preview, and update-mode behaviour), and `MODULE_TEMPLATE.md` (RAG-optimized 10-section template).
+- **Architecture reference scan in StartDev (Step 0e)** — before generating any brainstorm option,
+  StartDev now scans for 2–3 existing implementations of the same feature type (CRUD resource,
+  API endpoint, background job, UI page, or auth change) and produces a **Reference Implementations**
+  block. Every brainstorm option must explicitly follow or justify deviation from the reference.
+  Also finds UI reference pages when Frontend flag is set, establishing a consistency anchor.
+- **Architecture consistency scan in ReviewDev** — new subsection in Step 5 (Architecture & Code
+  Health). The reviewer locates 2–3 existing implementations of the same type via Grep/Glob and
+  compares new code on five axes: class structure, error handling, return shapes, naming conventions,
+  and UI structure. Every inconsistency flagged at **Important** minimum. Greenfield patterns noted
+  for team review before merge.
+- **UI Consistency section in ReviewDev** — new subsection in Step 4. When frontend files change,
+  the reviewer finds 2–3 existing pages of the same type (list view, detail view, form, modal) and
+  compares component/wrapper structure, data loading pattern, navigation, form structure, and CSS class
+  conventions. Structural departure from ≥ 2 existing similar pages → **Important**.
+- **Architecture Consistency Scan table in REVIEW_TEMPLATE.md** — new table in Architecture & Code Health
+  section recording reference files used and consistency findings per axis.
+- **UI Consistency table in REVIEW_TEMPLATE.md** — new table in Domain-specific compliance section
+  recording reference pages and consistency per axis (component structure, data loading, navigation, form, CSS).
+- **Architecture Reference Scan section in CHECKLIST.md** — new checklist group verifying that the
+  feature type was identified, references found and read, reference block recorded, and UI reference
+  pages listed when applicable.
+- **UI Consistency checklist item in CHECKLIST.md** — new item in Domain docs compliance confirming
+  2+ existing similar pages were compared and structural departures flagged.
+
+### Changed
+- `skills/evyasys-train-docs/SKILL.md` — document count corrected: "up to 35 documents" → "up to 37 documents".
+
+---
+
 ## [1.2.0] — 2026-06-25
 
 ### Added

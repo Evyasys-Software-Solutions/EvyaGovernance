@@ -151,6 +151,59 @@ Please choose (a), (b), or (c) — or provide context that changes the assessmen
 - Choice **(b)**: note each override at the top of the brainstorm document under `## Standard overrides`.
 - Choice **(c)**: note the pending doc update — proceed as (b) for now.
 
+### 0e. Architecture reference scan — find existing similar implementations
+
+Before generating any brainstorm option, scan the codebase for existing implementations
+of the same type as this story. This grounds every option in what the team has already
+built rather than in theoretical patterns — and ensures any new code reinforces the
+existing approach rather than diverging silently.
+
+**Scan sequence:**
+
+1. From the story's Impacted Areas flags and ACs, identify the dominant feature type:
+   - CRUD resource → find existing controller/service/repository trios for a similar resource
+   - API endpoint → find existing route + request DTO + response DTO sets
+   - Background/queued job → find existing job classes (retry, queue assignment, logging pattern)
+   - UI page or component → find 2–3 existing pages/components of the same type (list, detail, form, modal)
+   - Auth/permission change → find existing guard, middleware, and ownership check implementations
+
+2. Use Grep/Glob to locate the 2–3 closest existing implementations:
+   - Same layer and type (e.g. two other service classes that handle a similar resource)
+   - Read those files fully — extract the structural pattern, error handling, return shape, naming conventions
+
+3. Produce a **Reference Implementations** block:
+   ```
+   ## Reference Implementations
+   Feature type: [CRUD resource / API endpoint / UI page / etc.]
+   References found:
+     - `path/to/similar1` — [1-line summary of what it does and pattern it uses]
+     - `path/to/similar2` — [1-line summary]
+   Key patterns in use:
+     - [Inheritance: e.g. all services extend BaseService]
+     - [Error handling: e.g. throws DomainException, caught in base controller]
+     - [Return shape: e.g. all return paginated DTO wrapped in ApiResponse::success()]
+     - [Naming: e.g. resource variable always named $resource, ID always $id]
+   Divergence between existing references:
+     - [Any inconsistency found between the 2–3 references — signals tech debt]
+   ```
+
+4. Every brainstorm option in Phase 1 must explicitly state:
+   - "Follows reference pattern" OR
+   - "Deviates from reference because [reason]" — with justification
+
+> **UI reference scan** (if Frontend flag is set):
+> - Additionally Glob for 2–3 existing pages of the same UI type (list view, detail view, form page, modal)
+> - Extract: component/wrapper structure, data loading approach, empty/error/loading state implementation, navigation pattern (breadcrumbs, action buttons), CSS class conventions
+> - Add a "UI Reference Pages" row to the reference block:
+>   `UI references: resources/views/users/index.blade.php, resources/views/orders/index.blade.php`
+> - New pages must match these patterns unless the brainstorm explicitly proposes and justifies a new standard
+
+If no similar implementation exists: note **"No reference found — greenfield pattern. Extra care required to establish an approach that future stories can follow as a canonical example."**
+
+Add the Reference Implementations block to the TechBrainstorm document as a new `## Reference Implementations` section immediately before `## Options`.
+
+**Do not wait for user input for this step — run it and include the findings automatically.**
+
 ---
 
 ## Phase 1 — Technical Brainstorm
@@ -161,8 +214,14 @@ summary of **what the system must do differently** after this story ships.
 No implementation detail — business outcome only.
 
 ### Step 2: Codebase probe
-Run `python scripts/repo_scan.py --story <id>`.
-List:
+
+**Pre-flight — check for git and Python before invoking the scan:**
+- If `.git/` is missing (`git rev-parse --is-inside-work-tree` fails), state clearly: "This directory is not a git repository. StartDev will continue without diff-based context — the brainstorm will be based on story text and standards docs only." Do not abort.
+- If Python is not available (`python --version` and `python3 --version` both fail), state: "Python not found — skipping automated codebase probe. Continuing with a manual Grep/Glob scan of the source tree." Then use Glob to enumerate the layers listed below manually.
+
+If both are available, run `python scripts/repo_scan.py --story <id>`.
+
+List (from either the scan or manual Glob/Grep):
 - Which existing modules / files will be touched.
 - Which shared utilities or services are in scope.
 - Any risky or unfamiliar areas flagged by the scan.

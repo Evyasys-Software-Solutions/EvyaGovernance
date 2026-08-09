@@ -85,7 +85,7 @@ git push
 ```
 
 Scans your codebase — tech stack, source structure, design system tokens, UI/UX patterns,
-and CI/CD — and writes 25 quality-gate documents to `.evyasys/docs/`.
+and CI/CD — and writes 37 quality-gate documents to `.evyasys/docs/`.
 Every downstream command loads these docs before forming any technical opinion.
 Re-run with `--retrain` after major architecture changes, stack upgrades, or design system updates.
 

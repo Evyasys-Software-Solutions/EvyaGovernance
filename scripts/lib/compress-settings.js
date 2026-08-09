@@ -22,10 +22,18 @@ const os   = require('os');
 const SETTINGS_FILE = path.join(os.homedir(), '.evyasys', 'settings.json');
 
 function readSettings() {
+  if (!fs.existsSync(SETTINGS_FILE)) return {};
   try {
-    if (!fs.existsSync(SETTINGS_FILE)) return {};
     return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
-  } catch { return {}; }
+  } catch (err) {
+    // Corrupt settings file — surface a warning so the user knows their preferences
+    // may be lost. Return {} so the caller degrades gracefully rather than crashing.
+    console.warn(
+      `[evyasys] Warning: could not parse ${SETTINGS_FILE} (${err.message}). ` +
+      `Preferences will be re-collected on next Setup. The file will be regenerated on next save.`
+    );
+    return {};
+  }
 }
 
 function writeSettings(updates) {
@@ -33,9 +41,15 @@ function writeSettings(updates) {
     fs.mkdirSync(path.dirname(SETTINGS_FILE), { recursive: true });
     const current = readSettings();
     const merged  = deepMerge(current, updates);
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(merged, null, 2) + '\n', 'utf8');
+    // Atomic write: tmp file then rename, so a crash mid-write can't leave settings.json corrupt.
+    const tmp = SETTINGS_FILE + '.tmp-' + process.pid + '-' + Date.now();
+    fs.writeFileSync(tmp, JSON.stringify(merged, null, 2) + '\n', 'utf8');
+    fs.renameSync(tmp, SETTINGS_FILE);
     return true;
-  } catch { return false; }
+  } catch (err) {
+    console.warn(`[evyasys] Warning: could not write ${SETTINGS_FILE}: ${err.message}`);
+    return false;
+  }
 }
 
 function readCompressSettings() {

@@ -30,7 +30,8 @@
  *   node teams_webhook.js <event> [--id <storyId>] [--file <path>] [--count <N>]
  */
 const fs = require('fs');
-const { loadConfig } = require('../lib/config');
+const { loadConfig }        = require('../lib/config');
+const { postJsonWithRetry } = require('../lib/http-retry');
 
 // ── Template primitives ───────────────────────────────────────────────────────
 
@@ -114,16 +115,12 @@ async function post(adaptiveCard) {
   if (!cfg.teams || !cfg.teams.webhook) {
     throw new Error('No Teams webhook configured. Run /evyasys:Setup to add the Teams workflow URL.');
   }
-  const fetchFn = typeof fetch !== 'undefined' ? fetch : require('node-fetch');
-  const res = await fetchFn(cfg.teams.webhook, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(adaptiveCard),
-  });
-  if (!res.ok) {
-    throw new Error('Teams POST failed: ' + res.status + ' ' + (await res.text()));
+  try {
+    const r = await postJsonWithRetry(cfg.teams.webhook, adaptiveCard);
+    return { ok: true, attempt: r.attempt };
+  } catch (err) {
+    throw new Error('Teams POST failed: ' + err.message);
   }
-  return { ok: true };
 }
 
 // ── Helper ────────────────────────────────────────────────────────────────────

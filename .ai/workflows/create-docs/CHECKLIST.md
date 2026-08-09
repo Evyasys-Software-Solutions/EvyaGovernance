@@ -42,7 +42,7 @@
 
 ## Phase 3 — Document quality (check every document)
 
-For each of the 35 documents generated:
+For each of the 37 documents generated:
 - [ ] No placeholder text (`[TODO]`, `[TBD]`, `<insert here>`)
 - [ ] Every rule or convention has a concrete example from this project (real file path, real value, real command)
 - [ ] Sections with no evidence are explicitly marked "Not applicable — [specific reason]"
@@ -100,7 +100,7 @@ For each of the 35 documents generated:
 ## Phase 5 — Output format
 
 - [ ] Every document wrapped with `<!-- EVYADOC: FILENAME.md -->` delimiter
-- [ ] All 35 documents present in the output (or explicitly marked Not applicable with reason)
+- [ ] All 37 documents present in the output (or explicitly marked Not applicable with reason)
 - [ ] Documents generated in the order specified in PROMPT.md (STACK.md first, operations cluster together)
 - [ ] Preview summary table shown to user before confirmation
 - [ ] Self-hosted infrastructure documents (INFRASTRUCTURE.md, BACKUP_RECOVERY.md, OBSERVABILITY.md, SCHEDULER.md) are NOT marked "Not applicable" unless the project is confirmed PaaS

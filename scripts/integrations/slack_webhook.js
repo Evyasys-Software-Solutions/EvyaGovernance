@@ -13,7 +13,8 @@
  *   node slack_webhook.js qa-finished       --id EVYA-id
  */
 const fs = require('fs');
-const { loadConfig } = require('../lib/config');
+const { loadConfig }       = require('../lib/config');
+const { postJsonWithRetry } = require('../lib/http-retry');
 
 const snippet = (t, max = 500) => (!t ? '' : t.length > max ? t.slice(0, max) + '…' : t);
 
@@ -38,17 +39,15 @@ async function post(message) {
     console.log('[evyasys:dry-run] Slack message:\n' + JSON.stringify(message, null, 2));
     return { dryRun: true };
   }
-  if (!cfg.slack.webhook) {
+  if (!cfg.slack || !cfg.slack.webhook) {
     throw new Error('No Slack webhook configured. Add slack.webhook to .evyasys/project.yaml or run /evyasys:Setup.');
   }
-  const fetchFn = typeof fetch !== 'undefined' ? fetch : require('node-fetch');
-  const res = await fetchFn(cfg.slack.webhook, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(message),
-  });
-  if (!res.ok) throw new Error('Slack POST failed: ' + res.status + ' ' + (await res.text()));
-  return { ok: true };
+  try {
+    const r = await postJsonWithRetry(cfg.slack.webhook, message);
+    return { ok: true, attempt: r.attempt };
+  } catch (err) {
+    throw new Error('Slack POST failed: ' + err.message);
+  }
 }
 
 function storyCreated({ storyId, file }) {

@@ -28,6 +28,21 @@
 | Technology choices consistent with brainstorm decision | ✅ / ⚠️ / ❌ | |
 | No undocumented deviation from agreed design | ✅ / ⚠️ / ❌ | |
 
+### Architecture Consistency Scan
+
+**Feature type:** _CRUD resource / API endpoint / Background job / UI page / Auth change_
+**Reference files used:**
+- `<path/to/existing/similar/implementation1>`
+- `<path/to/existing/similar/implementation2>`
+
+| Consistency axis | Reference | Status | Inconsistency found |
+|---|---|---|---|
+| Class/module structure (parent class, constructor, method layout) | `<ref1>` | ✅ / ⚠️ / N/A | |
+| Error handling (exception types, catch locations, log format) | `<ref1>` | ✅ / ⚠️ / N/A | |
+| Return shapes (response envelope, DTO structure, pagination format) | `<ref1>` | ✅ / ⚠️ / N/A | |
+| Naming conventions for same concepts ($resource, $id, $data) | `<ref1>` | ✅ / ⚠️ / N/A | |
+| Greenfield pattern (no reference found — document for future use) | N/A | ✅ / ⚠️ | |
+
 ### Architectural Compliance
 
 | Check | Status | Evidence |
@@ -119,6 +134,21 @@
 | Components follow project structure and naming | ✅ / ⚠️ / ❌ / N/A | |
 | Design tokens used — no magic colour or spacing values | ✅ / ⚠️ / ❌ / N/A | |
 | State management follows approved project pattern | ✅ / ⚠️ / ❌ / N/A | |
+
+### UI Consistency — compared against existing similar pages *(N/A if no UI changes)*
+
+**Page/component type:** _list view / detail view / form page / modal / card / widget_
+**Reference pages used:**
+- `<path/to/existing/similar/page1>`
+- `<path/to/existing/similar/page2>`
+
+| Consistency axis | Reference | Status | Inconsistency |
+|---|---|---|---|
+| Component/wrapper structure (card nesting, section layout) | `<ref1>` | ✅ / ⚠️ / ❌ / N/A | |
+| Data loading pattern (loading / error / empty state) | `<ref1>` | ✅ / ⚠️ / ❌ / N/A | |
+| Navigation pattern (breadcrumb, back button, action buttons) | `<ref1>` | ✅ / ⚠️ / ❌ / N/A | |
+| Form structure (label placement, error display, submit position) | `<ref1>` | ✅ / ⚠️ / ❌ / N/A | |
+| CSS class conventions (Bootstrap/AdminLTE class usage) | `<ref1>` | ✅ / ⚠️ / ❌ / N/A | |
 
 ### Accessibility — `.evyasys/docs/fe/ACCESSIBILITY.md` *(run only if frontend files changed and doc exists)*
 

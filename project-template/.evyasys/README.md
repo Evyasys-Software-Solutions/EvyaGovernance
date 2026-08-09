@@ -50,7 +50,7 @@ Everything here is yours to read, edit, and commit. Nothing is hidden from you.
 │   ├── API_STANDARDS.md
 │   ├── FRONTEND.md
 │   ├── DESIGN_SYSTEM.md
-│   └── ... (25 documents total)
+│   └── ... (37 documents total)
 │
 ├── memory/                         ← 🧠 Project memory (auto-maintained + editable)
 │   ├── release-notes.json          ← Release history (GenerateReleaseNote)

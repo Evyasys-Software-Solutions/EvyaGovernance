@@ -42,12 +42,16 @@ For Azure DevOps, JIRA, or GitHub Projects, collect credentials then validate be
 > **Finding the credential validator** (run once, then use `$VALIDATOR` in the commands below):
 > ```bash
 > # bash / macOS / Linux
-> VALIDATOR=$(find ~/.claude -name 'credential-validator.js' 2>/dev/null | grep -i 'EvyaGovernance' | head -1)
+> VALIDATOR=$(find ~/.claude -name 'credential-validator.js' 2>/dev/null | grep -i 'EvyaGovernance' | head -1); [ -z "$VALIDATOR" ] && echo "VALIDATOR_NOT_FOUND"
 > ```
 > ```powershell
 > # Windows PowerShell
-> $VALIDATOR = (Get-ChildItem "$env:USERPROFILE\.claude" -Recurse -Filter credential-validator.js -ErrorAction SilentlyContinue | Where-Object { $_.FullName -like '*EvyaGovernance*' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+> $VALIDATOR = (Get-ChildItem "$env:USERPROFILE\.claude" -Recurse -Filter credential-validator.js -ErrorAction SilentlyContinue | Where-Object { $_.FullName -like '*EvyaGovernance*' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName; if (-not $VALIDATOR) { Write-Output "VALIDATOR_NOT_FOUND" }
 > ```
+>
+> **If the output is `VALIDATOR_NOT_FOUND` or `$VALIDATOR` is empty**, stop and tell the user:
+> > "❌ Credential validator not found. Your plugin install may be incomplete. Run `/evyasys:Repair` and then re-run `/evyasys:Setup`. Setup cannot proceed without the validator — saving unverified credentials would cause silent failures in later commands."
+> Wait for the user to confirm before aborting.
 
 **If Azure DevOps:**
 - Ask: "Azure DevOps organisation name?" (e.g. `EvyaCorp`)
@@ -58,7 +62,10 @@ For Azure DevOps, JIRA, or GitHub Projects, collect credentials then validate be
   node "$VALIDATOR" ado --org "<org>" --pat "<pat>"
   ```
   - `ok: true`  → Show the `message` field verbatim (e.g. "✅ Azure DevOps connected…") and continue.
-  - `ok: false` → Show the `message` field. Ask: "Would you like to **re-enter** the token, or **skip** to proceed without validation?" Re-collect and re-validate if they re-enter.
+  - `ok: false` → Show the `message` field. Ask: "Would you like to **(1) re-enter** the token, or **(2) skip** and proceed without validation?"
+    - If they choose **skip**, first show this warning and require an explicit "yes, proceed" response before continuing:
+      > "⚠️ Skipping validation means Azure DevOps commands (CreateStory, CreateSubtask, etc.) will fail with 401/403 the first time they try to sync. You will need to re-run `/evyasys:Setup` to fix the credentials before any story sync works. Type **`yes, proceed unverified`** to confirm, or choose re-enter to try again."
+    - Only save unverified credentials if the user typed that exact confirmation phrase.
 
 **If JIRA:**
 - Ask: "JIRA domain?" (e.g. `your-org.atlassian.net`)
@@ -70,7 +77,7 @@ For Azure DevOps, JIRA, or GitHub Projects, collect credentials then validate be
   node "$VALIDATOR" jira --domain "<domain>" --email "<email>" --token "<token>"
   ```
   - `ok: true`  → Show the `message` field and continue.
-  - `ok: false` → Show the `message` field. Ask to re-enter or skip.
+  - `ok: false` → Show the `message` field. Ask: "**(1) re-enter** or **(2) skip** without validation?" If skip: warn that this credential will fail 401/403 on first use and require the exact confirmation phrase `yes, proceed unverified` before saving. Only save if the phrase matches.
 
 **If GitHub Projects:**
 - Ask: "GitHub owner (user or org)?" (e.g. `acme-corp`)
@@ -82,7 +89,7 @@ For Azure DevOps, JIRA, or GitHub Projects, collect credentials then validate be
   node "$VALIDATOR" github --token "<token>"
   ```
   - `ok: true`  → Show the `message` field and continue.
-  - `ok: false` → Show the `message` field. Ask to re-enter or skip.
+  - `ok: false` → Show the `message` field. Ask: "**(1) re-enter** or **(2) skip** without validation?" If skip: warn that this credential will fail 401/403 on first use and require the exact confirmation phrase `yes, proceed unverified` before saving. Only save if the phrase matches.
 
 ---
 
@@ -147,7 +154,7 @@ For Teams, Slack, WhatsApp, or Email, collect credentials then validate before c
   node "$VALIDATOR" whatsapp --account-sid "<sid>" --auth-token "<token>"
   ```
   - `ok: true`  → Show the `message` field and continue.
-  - `ok: false` → Show the `message` field. Ask to re-enter or skip.
+  - `ok: false` → Show the `message` field. Ask: "**(1) re-enter** or **(2) skip** without validation?" If skip: warn that this credential will fail 401/403 on first use and require the exact confirmation phrase `yes, proceed unverified` before saving. Only save if the phrase matches.
 
 **If Email:**
 - Ask: "Recipient (To) address for notifications?" (team distribution list or individual — e.g. `dev-team@yourcompany.com`) — goes into `project.yaml`. This is the only required field for now.
@@ -286,6 +293,8 @@ After outputting the block, tell the user:
 > - PM tool: [tool name]
 > - Notifications: [tool name]
 >
-> **Next step:** Run `/evyasys:TrainDocs` to scan your codebase and generate the 35 quality-gate documents that all delivery commands depend on.
+> **Next step:** Run `/evyasys:TrainDocs` to scan your codebase and generate the 37 quality-gate documents that all delivery commands depend on.
 >
 > Once done, the full pipeline is available: `/evyasys:CreateStory` → `/evyasys:CreateSubtask` → `/evyasys:StartDev` → `/evyasys:ReviewDev` → `/evyasys:FinishDev` → `/evyasys:StartQa` → `/evyasys:FinishQa` → `/evyasys:GenerateReleaseNote`
+>
+> **Optional but recommended:** After TrainDocs, run `/evyasys:CreateFunctionalDocs --all` to generate plain-language, RAG-ready functional docs per business module.

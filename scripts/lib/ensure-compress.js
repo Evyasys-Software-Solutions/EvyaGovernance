@@ -101,12 +101,21 @@ function ensureCompress() {
     }
 
     run('headroom mcp install');
+
+    // Post-install verification — pip success + `headroom mcp install` exit=0
+    // is not enough. Confirm the MCP entry actually landed in ~/.claude/settings.json
+    // before writing settings, otherwise the user thinks compression is active when it isn't.
+    if (!isMcpRegistered()) {
+      return { registered: false, freshInstall: false, version: getInstalledVersion() };
+    }
+
     const version = getInstalledVersion();
     writeCompressSettings({ enabled: true, version });
     return { registered: true, freshInstall: true, version };
   } catch {
-    // mcp install may throw "already registered" — if binary is on PATH, treat as success.
-    if (isHeadroomOnPath()) {
+    // `headroom mcp install` sometimes throws "already registered" — recover only if
+    // both the binary is on PATH AND the MCP entry is actually present.
+    if (isHeadroomOnPath() && isMcpRegistered()) {
       const version = getInstalledVersion();
       writeCompressSettings({ enabled: true, version });
       return { registered: true, freshInstall: false, version };

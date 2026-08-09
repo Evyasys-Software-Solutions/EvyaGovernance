@@ -26,12 +26,19 @@
 - [ ] Implementation matches the approach agreed in the TechBrainstorm
 - [ ] No undocumented deviation from the agreed technology or design decisions
 
+### Architecture Reference Scan
+- [ ] Feature type identified from the story and diff (CRUD / API / job / UI / auth)
+- [ ] 2–3 existing implementations of the same type located via Grep/Glob and read in full
+- [ ] Reference implementation block recorded in report (files used, patterns extracted)
+- [ ] Every brainstorm option or the implementation explicitly references or deviates from the reference pattern with justification
+- [ ] UI reference pages found and listed (if frontend changes present)
+
 ### Architecture & Structure
+- [ ] Architecture consistency scan run — inconsistencies in class structure, error handling, return shapes, naming flagged as Important
 - [ ] Architectural layer boundaries checked for every changed file — no cross-layer leaks
 - [ ] New files/classes land in the correct module and folder
 - [ ] Existing interfaces and contracts not silently broken
 - [ ] Single Responsibility checked — no God functions or God class additions
-- [ ] Consistency checked — searched codebase for the same pattern; divergence flagged
 
 ### Standard Practices
 - [ ] Every rule from `.ai/rules/*.md` checked — violation raised at Important minimum, rule name cited
@@ -57,6 +64,7 @@
 - [ ] **Security** (SECURITY.md) — auth, authorisation, input validation, secrets, error message exposure
 - [ ] **API** (API_STANDARDS.md) — response shape, error envelope, HTTP status codes, auth mechanism
 - [ ] **Database** (DB_STANDARDS.md) — naming, migration structure, N+1, indexes
+- [ ] **UI Consistency** — 2+ existing pages of same type found and compared; structural departures flagged as Important; reference page paths recorded in report
 - [ ] **Accessibility** (fe/ACCESSIBILITY.md) — contrast ratios, keyboard navigation, no keyboard traps, focus visible, ARIA on custom widgets and icon buttons, semantic HTML, touch targets
 - [ ] **Visual Quality & States** (fe/VISUAL_QUALITY.md) — all required interactive states present, `prefers-reduced-motion` overrides, motion tokens, dark mode token pairs, responsive breakpoints
 - [ ] **Frontend/UX** (FRONTEND.md + DESIGN_SYSTEM.md) — component structure, design tokens, state management pattern
