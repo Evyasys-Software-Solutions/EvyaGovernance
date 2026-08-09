@@ -10,6 +10,29 @@ Versioning: [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.PATCH`
 
 ---
 
+## [1.3.2] — 2026-08-09
+
+### Changed
+- **`skills/evyasys-update/hooks.js`** — the "already on latest" path now shows a
+  proper confirmation banner instead of a single line. When a user runs `/evyasys:Update`
+  after a successful upgrade, they see:
+  - A boxed **"You're on the latest version: vX.Y.Z"** banner
+  - Release date and source (extracted from CHANGELOG.md)
+  - The **"What's in this version"** changelog entry for the current version
+    (so the user knows exactly what they got)
+  - A clear "Nothing to do — up to date" closing line
+- The pre-reopen instruction line also now surfaces the target version in a highlighted
+  🎯 line ("After reopening you will be on vX.Y.Z"), making the version transition obvious.
+- Added `extractVersionEntry()` helper in the update hook to parse the changelog entry for
+  a specific version (date + first ~25 body lines).
+
+### Why
+Previously the confirmation post-update was a plain sentence — users couldn't tell
+whether the update actually took effect or what they now had. The new banner makes
+the version prominent and shows what the release contained.
+
+---
+
 ## [1.3.1] — 2026-08-09
 
 Team-readiness hardening pass — audit found several friction points and one authenticated-encryption gap. All fixed before team rollout tomorrow.

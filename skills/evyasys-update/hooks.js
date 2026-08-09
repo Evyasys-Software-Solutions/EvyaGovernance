@@ -63,6 +63,28 @@ function parseChangelog(text, fromVersion) {
   return out.length > 0 ? out.join('\n\n') : null;
 }
 
+/**
+ * Extract the changelog entry (date + first ~25 lines) for a specific version.
+ * Used to build the "what you're on" confirmation banner when the user is
+ * already on the latest version.
+ * @param {string} text — full CHANGELOG.md content
+ * @param {string} version — the version to extract, e.g. "1.3.1"
+ * @returns {{ date: string|null, body: string|null }}
+ */
+function extractVersionEntry(text, version) {
+  if (!text) return { date: null, body: null };
+  const sections = text.split(/\n(?=## \[)/);
+  for (const section of sections) {
+    const m = section.match(/^## \[([^\]]+)\](?:\s*[—–-]\s*([^\n]+))?/);
+    if (!m || m[1] !== version) continue;
+    const date = m[2] ? m[2].trim() : null;
+    // Skip the heading line, take up to 25 body lines (enough for a summary)
+    const body = section.split('\n').slice(1, 25).join('\n').trimEnd() || null;
+    return { date, body };
+  }
+  return { date: null, body: null };
+}
+
 // ── Main hook ─────────────────────────────────────────────────────────────────
 
 module.exports = async function (ctx) {
@@ -90,10 +112,27 @@ module.exports = async function (ctx) {
 
   if (latestVersion) {
     if (latestVersion === currentVersion) {
-      ctx.send(`✅ Already on the latest plugin version (v${latestVersion}).`);
-    } else {
-      ctx.send(`📦 **v${currentVersion} → v${latestVersion}**`);
+      // Already on latest — build a proper confirmation banner so the user can
+      // clearly see which version they're on and what it contains.
+      const entry = extractVersionEntry(changelogRaw, currentVersion);
+      const dateLine = entry.date ? ` · released ${entry.date}` : '';
+      ctx.send(
+        `╔══════════════════════════════════════════════════════╗\n` +
+        `║  ✅  You're on the latest version: **v${latestVersion}**${' '.repeat(Math.max(0, 12 - latestVersion.length))}║\n` +
+        `╚══════════════════════════════════════════════════════╝\n` +
+        `\n` +
+        `Plugin: **evyasys v${latestVersion}**${dateLine}\n` +
+        `Source: \`main\` @ ${RAW_BASE.replace('https://raw.githubusercontent.com/', '')}`
+      );
+      if (entry.body) {
+        ctx.send(`**What's in this version:**\n\n${entry.body}`);
+      }
+      ctx.send(`Nothing to do — your plugin is up to date. Run any \`/evyasys:*\` command to continue working.`);
+      return; // no need to show the "run these 3 commands" block
     }
+
+    // Upgrade available
+    ctx.send(`📦 **v${currentVersion} → v${latestVersion}**`);
     const highlights = parseChangelog(changelogRaw, currentVersion);
     if (highlights) ctx.send(`**What's new:**\n\n${highlights}`);
   } else {
@@ -148,7 +187,8 @@ module.exports = async function (ctx) {
     '**Step 4 — Fully quit Claude Code and reopen it.**\n\n' +
 
     (latestVersion && latestVersion !== currentVersion
-      ? `> After reopening, you will be on **v${latestVersion}**. Run \`/evyasys:Update\` once more to confirm.\n> \n`
+      ? `> 🎯 **After reopening you will be on v${latestVersion}** (currently v${currentVersion}).\n` +
+        `> Run \`/evyasys:Update\` once more to confirm — it will show a "you're on the latest version" banner.\n> \n`
       : '') +
     '> Your `.evyasys/` docs, board artefacts, `project.yaml`, credentials, and\n' +
     '> compression preferences (`~/.evyasys/settings.json`) were not changed.\n' +
