@@ -40,6 +40,10 @@
     "description": "Release sign-off — validates all TC outcomes recorded, no P0/P1 defects open, all domain gates green (Security/Performance/Accessibility+VisualQuality/DataIntegrity). Drafts plain-language release notes. Transitions ADO to Done. Pass StoryID."
   },
   {
+    "name": "Deliver",
+    "description": "End-to-end story delivery in one command — reads the story + subtasks, batches clarifying questions into one exchange, runs an architecture reference scan, writes the code following every loaded standard, runs a full self code-review with up to 2 auto-fix iterations, drafts a test plan, queues doc updates, drafts release notes; on your final approval commits locally on a feature branch, updates PM to Ready for QA, and fires one notification per story or epic. Three approval gates only. Never pushes."
+  },
+  {
     "name": "GenerateReleaseNote",
     "description": "Compile a short, beautiful, branded PDF release notes document from one or more completed stories. Pass story IDs as arguments, or omit to be asked. Groups by Epic, emoji quality gate table, compact format. e.g. EVYA-1042 EVYA-1043."
   },

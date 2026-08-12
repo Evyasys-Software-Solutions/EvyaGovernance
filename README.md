@@ -66,7 +66,7 @@ When prompted, choose **Install for you (user scope)** so it works in every proj
 
 Then **fully quit Claude Code and reopen it** — commands appear after a fresh start.
 
-Type `/evya` — you should see 13 commands in autocomplete.
+Type `/evya` — you should see 14 commands in autocomplete.
 
 ---
 
@@ -262,7 +262,7 @@ Batch mode: any of steps 3–8 accept multiple story IDs or an epic ID.
 
 ---
 
-## The 13 Commands
+## The 14 Commands
 
 Type `/evya` in Claude Code to see all commands in autocomplete.
 
@@ -338,10 +338,11 @@ flowchart TD
 | 7 | Dev | `/evyasys:FinishDev EVYA-XXXX` | 💻 Developer | AC audit; diff scope check; DoD checklist; architect gate (docs-to-update list) | `DevSummary.md` | **Ready for QA** |
 | 8 | QA | `/evyasys:StartQa EVYA-XXXX` | 🔬 QA Engineer | Load domain quality gates; ask env + test data; write AC-driven test cases (Gherkin) | `TestPlan.md` | **In QA** |
 | 9 | QA | `/evyasys:FinishQa EVYA-XXXX` | 📦 Release Mgr | Record TC outcomes; Security/Perf/A11y/DB exit gates; draft release notes | `ReleaseNotes.md` | **Done** ✅ |
-| 10 | Release | `/evyasys:GenerateReleaseNote EVYA-1042 EVYA-1043` | 📦 Release Mgr | Aggregate stories by Epic; consolidate quality gates; propose version; generate branded PDF | `releases/*.pdf` | — |
-| 11 | Docs | `/evyasys:CreateFunctionalDocs [--all \| ModuleName \| --update ModuleName]` | 📋 BA / Tech Lead | Scan each business module; generate plain-language functional docs (entities, permissions, validations, actions, business logic, workflows, error scenarios) — structured for RAG retrieval | `.evyasys/docs/functional/` | — |
-| 12 | Maint | `/evyasys:Update` | 👤 Any | Check installed vs. latest version; show changelog; manage compression preference; guide through 3-command update sequence | (guidance only — no artefacts) | — |
-| 13 | Maint | `/evyasys:Repair` | 👤 Any | Clean reinstall for broken plugin state — clears plugin cache and settings entries, then shows reinstall commands. Project config, credentials, and docs are never touched. | (guidance only — no artefacts) | — |
+| 10 | Deliver | `/evyasys:Deliver EVYA-XXXX [...] \| EP-00N` | 💻 Dev + 🎯 Reviewer combined | **End-to-end orchestrator**: reads story + subtasks, batches clarifying questions, architecture reference scan + brainstorm, writes the code following every loaded standard, full self code-review with auto-fix, drafts test plan + release notes, queues doc updates; on approval commits locally on feature branch + updates PM + notifies. **3 gates only, never pushes.** Batch-supports multiple stories or epic IDs. | `TechBrainstorm.md`, `DevSummary.md`, `CodeReview.md`, `TestPlan.md`, `ReleaseNotes.md` + local git commit | **Ready for QA** |
+| 11 | Release | `/evyasys:GenerateReleaseNote EVYA-1042 EVYA-1043` | 📦 Release Mgr | Aggregate stories by Epic; consolidate quality gates; propose version; generate branded PDF | `releases/*.pdf` | — |
+| 12 | Docs | `/evyasys:CreateFunctionalDocs [--all \| ModuleName \| --update ModuleName]` | 📋 BA / Tech Lead | Scan each business module; generate plain-language functional docs (entities, permissions, validations, actions, business logic, workflows, error scenarios) — structured for RAG retrieval | `.evyasys/docs/functional/` | — |
+| 13 | Maint | `/evyasys:Update` | 👤 Any | Check installed vs. latest version; show changelog; manage compression preference; guide through 3-command update sequence | (guidance only — no artefacts) | — |
+| 14 | Maint | `/evyasys:Repair` | 👤 Any | Clean reinstall for broken plugin state — clears plugin cache and settings entries, then shows reinstall commands. Project config, credentials, and docs are never touched. | (guidance only — no artefacts) | — |
 
 > Every state transition and every notification fires **only after your approval**. Both GO and NO-GO review results are always saved to disk.
 > **Batch mode:** Commands #5 (StartDev), #6 (ReviewDev), #7 (FinishDev), #8 (StartQa), #9 (FinishQa), and #10 (GenerateReleaseNote) all accept multiple story IDs, epic IDs, or a mix — epic IDs auto-expand to their child stories.

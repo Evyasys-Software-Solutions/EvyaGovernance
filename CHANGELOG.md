@@ -10,6 +10,62 @@ Versioning: [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.PATCH`
 
 ---
 
+## [1.4.0] — 2026-08-12
+
+New end-to-end delivery orchestrator: one command takes a story from planning through
+coded, self-reviewed, tested, doc-flagged, and committed — with only three human approval
+gates. Designed for speed (< 5 min small stories) without sacrificing the quality standards
+the plugin already enforces.
+
+### Added
+- **`/evyasys:Deliver <StoryID|EpicID> [...]`** — the new end-to-end orchestrator.
+  Runs 10 phases with 3 gates: batched clarifying questions (Gate 1, auto-skipped if the
+  loaded standards answer everything); architecture recommendation with reference scan
+  (Gate 2); final commit summary (Gate 3). Between gates it writes source code following
+  every loaded standard, runs a full self code-review with up to 2 auto-fix iterations,
+  drafts test plan + release notes, and queues doc updates. On Gate 3 approval the hook
+  writes all 5 artefacts, creates/checkouts the feature branch, commits the source
+  changes locally (never pushes), transitions PM state to Ready for QA, and fires one
+  notification per story or per epic in epic mode.
+- **`.ai/workflows/deliver/`** — new workflow directory with `AGENT.md` (Delivery
+  Orchestrator role, mandate, three-gate contract, speed targets by story size),
+  `PROMPT.md` (10-phase workflow with parallel batch load in Phase 0, standards-driven
+  autonomous coding in Phase 3, ReviewDev criteria in Phase 4, structured output blocks
+  for the hook), and `CHECKLIST.md` (self-review gate matching the pattern of other
+  workflows).
+- **`skills/evyasys-deliver/`** — `SKILL.md` (skill definition with speed targets and
+  safety guarantees) and `hooks.js` (parses `<!-- EVYADELIVER: EVYA-XXXX { ... } -->`
+  blocks and `<!-- EVYADELIVERBATCH { ... } -->` manifest; writes artefact files;
+  creates the feature branch if missing; stages listed source paths and creates a
+  local commit via `git commit -F <tmpfile>`; transitions PM state via `pm.setState`;
+  fires `notify.send({ event: 'dev-finished', ... })`; per-story status report).
+- **`commands/Deliver.md`** — command file with the plugin-dir locator pattern
+  (matches all other delivery commands).
+- **`README.md`** — new Deliver row (10) in the command table with full description;
+  command count updated to 14; autocomplete count updated to 14.
+- **`commands/command.json`** — new Deliver entry with description.
+
+### Design decisions
+- **Three gates, no more.** Clarifying questions are batched into one exchange, not
+  one-at-a-time. Architecture is a single recommendation, not a full brainstorm doc.
+  Final approval is a compact summary with counts and quality-gate results.
+- **Never pushes.** The hook creates a local git commit only. The user pushes when
+  they're ready. This preserves reviewability and keeps the plugin from touching
+  the remote branch.
+- **Parallel batch load in Phase 0.** All rules, quality-gate docs, templates, and
+  story artefacts are read in a single message. Cached context is reused across
+  every subsequent phase — no re-reads.
+- **Auto-fix loop bounded at 2 iterations.** If Critical review findings remain
+  after two attempts, the run is marked BLOCKED and the user chooses fix/override/abort
+  at Gate 3.
+- **Structured output for the hook.** The agent produces machine-parseable
+  `<!-- EVYADELIVER: EVYA-XXXX { ... } -->` blocks with all fields the hook needs
+  (files changed, commit message, artefacts, quality gate results, docs to update).
+- **Speed targets in AGENT.md.** Small stories < 5 min, medium < 15 min, large
+  < 30 min with an offer to split up-front.
+
+---
+
 ## [1.3.2] — 2026-08-09
 
 ### Changed
