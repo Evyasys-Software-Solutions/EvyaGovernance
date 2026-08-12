@@ -10,6 +10,53 @@ Versioning: [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.PATCH`
 
 ---
 
+## [1.4.1] — 2026-08-12
+
+Deliver command hardening — a critical review of v1.4.0 surfaced 5 Critical and 5 Important
+issues. All Critical + top Important fixed before rollout.
+
+### Fixed
+- **`skills/evyasys-deliver/hooks.js`** — `parseArtefactBlocks` now treats the delimiter
+  `EVYADELIVER: EVYA-XXXX` as authoritative and validates the JSON body's `storyId` matches.
+  Mismatches produce a warning and the delimiter ID wins, so PM updates always go to the right
+  story even if the agent copy-pasted a block from a template.
+- **`skills/evyasys-deliver/hooks.js`** — `ensureFeatureBranch` now auto-detects the default
+  branch (`origin/HEAD` symref → `main` → `master`) instead of hardcoding `main`. Repos on
+  `master` no longer fail branch creation with cryptic checkout errors.
+- **`skills/evyasys-deliver/hooks.js`** — `commitSourceChanges` validates every path via a new
+  `validateStagingPath()` guard that rejects: absolute paths, `..` traversal, glob patterns
+  (`* ? [ ]`), `.git/` internal paths, and empty strings. All paths validated up-front so no
+  partial staging on rejection.
+- **`skills/evyasys-deliver/hooks.js`** — `writeArtefacts` rejects artefact filenames containing
+  `..`, `/`, `\`, or absolute paths. Empty bodies are skipped with a `skipped` list returned to
+  the status report.
+- **`skills/evyasys-deliver/hooks.js`** — per-phase error attribution. Each phase (`artefacts`,
+  `branch`, `commit`, `pm`, `notify`) records its own error in `result.errors.<phase>` so the
+  status report shows exactly which step failed for each story, instead of a generic error line.
+- **`skills/evyasys-deliver/hooks.js`** — Gate 3 confirmation now shows real totals (source file
+  count, artefact count, docs-to-flag count, quality gates, Critical/Important finding counts)
+  per story and a batch summary — no more approving without seeing scope.
+- **`.ai/workflows/deliver/PROMPT.md`** — Phase 3 explicitly instructs the agent to use the Write
+  tool for new files and the Edit tool for modifications, not just describe changes. Also adds
+  a working-tree hygiene check: if unrelated dirty files exist, ask the user to commit/stash first.
+- **`.ai/workflows/deliver/PROMPT.md`** — Phase 4 auto-fix loop now explicit: re-run the FULL
+  criteria table after each fix iteration, not just the previously-failed rows. Hard cap of
+  2 iterations before escalating to BLOCKED at Gate 3.
+- **`.ai/workflows/deliver/PROMPT.md`** — output-block format rules made strict: no comments,
+  no trailing commas, no single quotes, escape special characters. Path safety rules for
+  `filesChanged[].path` documented (no `..`, no glob, no absolute).
+- **`.ai/workflows/deliver/PROMPT.md`** — idempotency guards added to Phase 0: detect existing
+  DevSummary/TechBrainstorm/downstream PM state and confirm redo vs continue vs abort before
+  starting Phase 3.
+
+### Verified via test
+- Malformed JSON blocks are safely skipped with a warning (not thrown)
+- Mismatched `storyId` in JSON body triggers a warning but uses the delimiter ID
+- All 6 unsafe path patterns rejected by `validateStagingPath`: `../evil.js`, `/etc/passwd`,
+  `src/*.js`, `src/foo?.js`, `.git/config`, empty string
+
+---
+
 ## [1.4.0] — 2026-08-12
 
 New end-to-end delivery orchestrator: one command takes a story from planning through

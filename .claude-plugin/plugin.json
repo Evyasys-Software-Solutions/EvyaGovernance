@@ -1,7 +1,7 @@
 {
   "name": "evyasys",
   "description": "AI-assisted delivery pipeline for teams — story, brainstorm, dev, QA, release — driven by /evyasys:* commands.",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "author": {
     "name": "Evyasys Software Solutions",
     "email": "business@evyasys.com"

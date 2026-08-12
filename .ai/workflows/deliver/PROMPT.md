@@ -61,6 +61,16 @@ If any critical doc is missing:
 - No `_UserStory.md` for the ID → stop: "No user story found for `<id>`. Run `/evyasys:CreateStory` first."
 - No subtasks → warn but continue (subtasks improve planning; not blocking).
 
+**Idempotency guards — detect and confirm before proceeding:**
+- If `<id>_DevSummary.md` already exists → warn: "This story appears already delivered.
+  Options: (r) redo — overwrite artefacts and start fresh; (c) continue — treat as
+  in-progress and append to existing artefacts; (a) abort."
+- If `<id>_TechBrainstorm.md` exists but `<id>_DevSummary.md` does not → offer:
+  "Resume from the existing brainstorm approach, or start fresh with a new brainstorm?"
+- If the PM tool already reports the story is in a downstream state (Ready for QA / In QA / Done)
+  → warn strongly: "This story is already at state X. Delivering will transition it back
+  to In Progress→Ready for QA. Confirm you want to redo it."
+
 After loading, announce (one line per story):
 > `📋 EVYA-XXXX — <title>. Impacted: Security · Frontend · API. Loaded 18 standards docs, 3 templates.`
 
@@ -180,7 +190,16 @@ Total: X files. Estimated LoC delta: ~Y.
 
 ### 3b. Write the code
 
-For each file in the plan, write it now. Apply every standard from the loaded docs:
+For each file in the plan, **call the Write tool for new files or the Edit tool for
+modifications — do not just print pseudocode or describe changes.** The hook stages
+the exact paths you list in `filesChanged` (Phase 9 output block) and any file you
+mention but don't actually create/modify will fail the commit stage.
+
+Working-tree hygiene: if `git status --porcelain` shows unrelated dirty files at the
+start of Phase 3, stop and ask the user to commit or stash them first — otherwise the
+commit at Gate 3 would mix in unrelated changes.
+
+Apply every standard from the loaded docs:
 
 | Standard | Where it applies |
 |---|---|
@@ -234,15 +253,18 @@ Run the full `ReviewDev` criteria against the changes:
 | Architecture consistency with references | Phase 2a scan | Important |
 | UI consistency with existing pages | Phase 2a scan (frontend only) | Important |
 
-### Auto-fix loop (max 2 iterations)
+### Auto-fix loop (max 2 iterations — hard cap)
 
-If Critical issues are found:
-1. Fix them autonomously.
-2. Re-run the review criteria.
-3. If Critical issues remain after 2 iterations → escalate to Gate 3 as a **BLOCKED** verdict
-   with the specific findings for the user to decide.
+If Critical issues are found on the first pass:
+1. Fix them autonomously using Edit/Write.
+2. **Re-run the FULL table above** — not just the previously-failed rows.
+   A fix can regress an unrelated check.
+3. If Critical issues remain → apply one more fix iteration and re-run the full table.
+4. After **exactly 2 auto-fix iterations**, if any Critical issue remains, stop the loop
+   and escalate the specific unresolved findings to Gate 3 as a **BLOCKED** verdict.
 
 If only Important issues remain → record them in `<id>_CodeReview.md` and continue.
+The verdict is `PARTIAL` when 0 Critical + ≥1 Important remain; `SUCCESS` when both are 0.
 
 Generate `<id>_CodeReview.md` with the standard REVIEW_TEMPLATE structure.
 
@@ -299,9 +321,10 @@ Story: EVYA-XXXX — <title>
 Feature type: <CRUD / API / UI …>
 
 Changes:
-- N files modified, M created (+X lines / −Y lines)
-- P new tests
-- Feature branch: feature/<id>-<title> (will create if missing)
+- N files modified, M created (+X lines / −Y lines net)
+- P new test cases across Q test files
+- Feature branch: feature/<id>-<title> (will create from `<detected default branch>` if missing)
+- Base branch auto-detected: main / master (via `origin/HEAD` symref)
 
 Quality gates:
   ✅ AC coverage       X/X ACs have covering tests
@@ -377,6 +400,16 @@ Next steps:
 For each story, emit **one** artefact block. After all stories, emit **one** batch manifest.
 
 ### Per-story artefact block
+
+**Format rules — the hook uses strict JSON parsing:**
+- Emit exactly one block per story. The delimiter storyId (after `EVYADELIVER:`) is authoritative;
+  if the JSON body has a different `storyId`, the hook logs a warning and uses the delimiter.
+- The JSON must be **valid JSON only** — no comments (`//`, `/* */`), no trailing commas,
+  no single quotes. Verify with `JSON.parse` mentally before emitting.
+- Escape special characters in string values (`\n` for newlines inside `commitMessage`, `\"` for quotes).
+- Every markdown body in `artefacts` is a full document (headings, sections, all filled).
+- File paths in `filesChanged[].path` must be **relative to the repo root** and must NOT contain
+  `..`, glob characters (`* ? [ ]`), or absolute prefixes — the hook rejects unsafe paths.
 
 ```
 <!-- EVYADELIVER: EVYA-XXXX
