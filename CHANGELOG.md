@@ -10,6 +10,79 @@ Versioning: [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.PATCH`
 
 ---
 
+## [1.6.0] — 2026-08-12
+
+Refined `/evyasys:Deliver` after user feedback. The command now respects a clear
+separation of concerns: it writes code and delivers the artefacts; **the developer
+owns git**; **FinishQa owns release notes**.
+
+### Changed
+- **`.ai/workflows/deliver/PROMPT.md`** — removed Phase 7 ReleaseNotes draft. Deliver now
+  produces exactly **4 artefacts** (TechBrainstorm, DevSummary, CodeReview, TestPlan).
+  `_ReleaseNotes.md` is produced by `/evyasys:FinishQa` after QA sign-off, when test outcomes
+  are known and user-facing wording can be accurate.
+- **`.ai/workflows/deliver/PROMPT.md`** — Phase 3 no longer runs any git operations by default.
+  Source code is written to the working tree via Edit/Write. The developer commits and pushes
+  themselves. Phase 3c ("Feature branch + local commit prep") now explicitly forbids the agent
+  from running `git add`, `git commit`, `git checkout`, or any other git command.
+- **`.ai/workflows/deliver/PROMPT.md`** — new opt-in `--commit` flag (added to
+  `argument-hint`). When present in `$ARGUMENTS`, the hook additionally ensures the feature
+  branch and creates a local commit after Gate 3. Never pushes. Absent by default.
+- **`.ai/workflows/deliver/PROMPT.md`** — verifier CLI path now uses `$EVYA_AI/../scripts/lib/verifier.js`
+  (resolvable from the plugin-dir locator captured at Phase 0) instead of the ambiguous
+  `<plugin-root>` placeholder.
+- **`.ai/workflows/deliver/PROMPT.md`** — Gate 3 summary reworded: "Ready to finalise
+  delivery" (not "commit"). Explicitly names the 4 artefacts. Shows git behaviour on its
+  own line (`📝 default (no git operations)` vs `🔧 --commit enabled`).
+- **`.ai/workflows/deliver/PROMPT.md`** — Phase 10 status report has two variants —
+  default (no commit) and `--commit`-enabled — each with its own "next steps" list.
+- **`.ai/workflows/deliver/PROMPT.md`** — output-block schema updated: `featureBranch`
+  and `commitMessage` are **conditional** — emit them only when `--commit` was passed.
+  `qualityGates.verifier` added as a required gate (PASS only when the fact-check batch
+  passed — never fake it).
+- **`.ai/workflows/deliver/PROMPT.md`** — batch manifest schema adds `commitEnabled` (boolean).
+- **`.ai/workflows/deliver/AGENT.md`** — mandate updated: "never touch git unless the
+  user explicitly passes `--commit`". Non-negotiable #6 changed from "No commit without
+  approval" to "No git operations by default".
+- **`.ai/workflows/deliver/CHECKLIST.md`** — Phase 3 no-git check made explicit. Phase 7
+  now checks that ReleaseNotes is NOT drafted. Phase 9 checks the 4-artefact constraint and
+  the conditional emission of commit fields.
+- **`skills/evyasys-deliver/hooks.js`** — Phase B (branch + commit) is now gated behind
+  `manifest.commitEnabled`. When absent, the hook still records the file count as
+  "working tree only" for the status report and traceability.
+- **`skills/evyasys-deliver/hooks.js`** — Gate 3 confirmation prompt now shows the git
+  behaviour explicitly (`📝 default (no git operations)` vs `🔧 --commit enabled`) so the
+  user sees exactly what will happen before approving.
+- **`skills/evyasys-deliver/hooks.js`** — status report and next-steps message split into
+  two variants matching the two modes (default vs `--commit`).
+- **`skills/evyasys-deliver/SKILL.md`** — description reworked: emphasises "no git by
+  default", lists exactly 4 artefacts, documents the `--commit` opt-in.
+- **`commands/command.json`** — Deliver description reworked to match.
+- **`README.md`** — Deliver row updated: 4 artefacts, `--commit` mentioned in signature,
+  clear "no git by default" phrasing.
+
+### Why
+
+The prior design conflated "delivered" with "committed". That was:
+1. Redundant — FinishQa already produces the release notes, and developers already know how to `git commit`.
+2. Risky — auto-committing means the LLM's commit message and file selection could be wrong, and the developer might not notice until much later.
+3. Confusing — teams that already have their own commit conventions or PR flows would fight the plugin's behaviour.
+
+The revised design:
+- Deliver focuses on **what only Deliver can do well**: brainstorm + write code + self-review + verifier + test plan + PM update + notification.
+- Developer keeps full control of git — the smallest possible surface for surprise.
+- Users who genuinely want the auto-commit behaviour opt in with `--commit`.
+
+Version 1.5.0 was still fresh (v1.5.0 shipped hours before this change), so users of the auto-commit path can migrate to `--commit` in one edit.
+
+### Also improved (quality pass on Deliver)
+- Verifier CLI resolution is now unambiguous (`$EVYA_AI/../scripts/lib/verifier.js`).
+- Confirmation prompt explicitly shows the git behaviour before proceeding — no surprises.
+- Traceability still records `filesTouched` even without a commit (schema keeps `commitSha` as null).
+- All hook return-shape edge cases (empty commits, missing manifest, mismatched storyId) still fact-checked.
+
+---
+
 ## [1.5.0] — 2026-08-12
 
 Four expert-level additions that raise the plugin to superpower quality: an always-loaded

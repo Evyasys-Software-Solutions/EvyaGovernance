@@ -35,7 +35,7 @@
 - [ ] Auth + permission checks in middleware, not view
 - [ ] Frontend files: all required states implemented + WCAG compliance + `prefers-reduced-motion`
 - [ ] Progress announced per file (`[K/N] path — Y lines`)
-- [ ] Nothing committed yet — all changes remain in working tree
+- [ ] No git commands run (no `git add`, no `git commit`, no `git checkout`) — all changes remain in the working tree
 
 ## Phase 4 — Self review
 - [ ] Full ReviewDev criteria run against every changed file
@@ -54,9 +54,9 @@
 - [ ] Docs-to-update list built based on introduced patterns / schemas / permissions
 - [ ] List recorded in DevSummary; no doc updated here (deferred to `/evyasys:TrainDocs --retrain`)
 
-## Phase 7 — DevSummary + ReleaseNotes
+## Phase 7 — DevSummary
 - [ ] DevSummary lists ACs met, files touched, tests added, manual QA hints, docs to update, assumptions, standards deviations
-- [ ] ReleaseNotes drafted in plain user-facing language (no class names, no jargon)
+- [ ] ReleaseNotes NOT drafted here — FinishQa owns that artefact after QA sign-off
 
 ## Phase 8 — Gate 3
 - [ ] Summary shows counts (files, tests, LoC delta) and all quality-gate outcomes
@@ -66,11 +66,13 @@
 - [ ] If BLOCKED, options are: fix / override / abort — never silent proceed
 
 ## Phase 9 — Hook actions (structured output)
-- [ ] Per-story `<!-- EVYADELIVER: EVYA-XXXX { ... } -->` block emitted with all fields
-- [ ] `commitMessage` follows conventional commit format
-- [ ] `filesChanged` lists every touched file with status
-- [ ] `artefacts` contains full markdown for every generated document
-- [ ] Batch manifest `<!-- EVYADELIVERBATCH { ... } -->` appended once at the end
+- [ ] Per-story `<!-- EVYADELIVER: EVYA-XXXX { ... } -->` block emitted with all required fields
+- [ ] `filesChanged` lists every touched file with status (for traceability + summary counts)
+- [ ] `artefacts` contains exactly 4 markdown bodies: TechBrainstorm, DevSummary, CodeReview, TestPlan (never ReleaseNotes)
+- [ ] `qualityGates.verifier` truthfully reflects the anti-hallucination fact-check outcome
+- [ ] Batch manifest `<!-- EVYADELIVERBATCH { ... } -->` appended once at the end with `commitEnabled` set
+- [ ] `featureBranch` and `commitMessage` fields ONLY present when `--commit` was in `$ARGUMENTS`; omitted otherwise
+- [ ] No git operations attempted by the agent itself — the hook handles that if `commitEnabled` is `true`
 
 ## Phase 10 — Status report
 - [ ] Per-story status printed (files, tests, commit SHA, PM state, notification target)

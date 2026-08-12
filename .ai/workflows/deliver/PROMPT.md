@@ -1,4 +1,4 @@
-# Prompt: /evyasys:Deliver <StoryID|EpicID> [...]
+# Prompt: /evyasys:Deliver <StoryID|EpicID> [...] [--commit]
 
 You are the **Delivery Orchestrator** described in `AGENT.md`.
 You will take each story from planning → coded → self-reviewed → tests → docs → PM update →
@@ -8,7 +8,8 @@ notification in a single autonomous run, pausing at exactly **three gates** for 
 
 ## Batch input — epic or multiple stories
 
-`$ARGUMENTS` may be one or more story IDs, one or more epic IDs, or a mix.
+`$ARGUMENTS` may be one or more story IDs, one or more epic IDs, or a mix. It may also include
+an optional `--commit` flag (see "Git behaviour" below).
 
 - **Epic ID** (any token not matching `EVYA-\d+`): Glob `.evyasys/board/epics/{epicId}/stories/*/` to enumerate.
 - **Empty**: ask once — "Which story or epic IDs should I deliver?"
@@ -20,10 +21,34 @@ stories are done — not per-story.
 
 ---
 
+## Git behaviour — code is written, nothing is committed
+
+**Default (no flag):**
+- The agent WRITES source code to the working tree via Edit/Write tools.
+- The hook does NOT create a branch, does NOT run `git add`, does NOT commit, does NOT push.
+- The developer stays in full control of git — they review with `git status` / `git diff`
+  and commit + push themselves when they're happy.
+
+**Opt-in (`--commit` flag present in `$ARGUMENTS`):**
+- On Gate 3 approval, the hook will additionally:
+  - Ensure the feature branch exists (create from the auto-detected default branch if not)
+  - Stage only the paths listed in `filesChanged`
+  - Create a local commit using the message the agent produces
+  - Never push
+- Extract the flag by checking if `$ARGUMENTS` contains the token `--commit` (case-sensitive).
+  Remove it from the story-ID list before parsing. Set `commitEnabled: true` in the batch manifest.
+
+If `--commit` is not present, DO NOT emit `featureBranch` or `commitMessage` fields in the
+per-story output blocks — the hook will ignore them anyway, but omitting them keeps the
+output clean and unambiguous.
+
+---
+
 <HARD-GATE>
-This command WRITES CODE to the working tree and COMMITS it locally (never pushes).
-Every phase result must be evidence-based. Every claim must cite a real file, a real rule,
-or a real test outcome. No estimates presented as facts. No commits without Gate 3 approval.
+This command WRITES CODE to the working tree via Edit/Write. It does NOT commit or touch
+git in any way unless the user passes `--commit`. Every phase result must be evidence-based.
+Every claim must cite a real file, a real rule, or a real test outcome. No estimates
+presented as facts. No PM state change or notification without Gate 3 approval.
 </HARD-GATE>
 
 ---
@@ -226,11 +251,14 @@ Use context compression on already-read implementation files if `headroom_compre
 Announce progress **once per file** with a brief status:
 > `[3/8] src/services/UserService.js — 45 lines, follows BaseService pattern`
 
-### 3c. Feature branch + local commit prep
+### 3c. Working-tree only — do not touch git
 
-- If `feature/<id>-*` branch doesn't exist, plan to create it at Gate 3 (not now).
-- Do **not** run `git add` or `git commit` yet. All changes stay in the working tree
-  until Gate 3 passes.
+All source-code changes stay in the working tree. Do NOT run `git add`, `git commit`,
+`git checkout`, or any other git command. The developer commits and pushes themselves
+when they're satisfied with the changes.
+
+If `--commit` was passed in `$ARGUMENTS`, note it in the manifest — the hook will handle
+the branch + commit for you after Gate 3 approval. You still do not run git yourself.
 
 ---
 
@@ -286,7 +314,8 @@ cat > /tmp/evya-claims.json <<'JSON'
   { "type": "parse",   "path": "src/services/UserService.js" }
 ]
 JSON
-node <plugin-root>/scripts/lib/verifier.js batch /tmp/evya-claims.json
+# EVYA_AI was captured at Phase 0; the verifier lives at $EVYA_AI/../scripts/lib/verifier.js
+node "$EVYA_AI/../scripts/lib/verifier.js" batch /tmp/evya-claims.json
 ```
 
 - Every claim about a file existing → include one `"type": "file"` entry.
@@ -307,7 +336,7 @@ $claims = @'
 [ {...} ]
 '@
 Set-Content -Path $env:TEMP\evya-claims.json -Value $claims
-node <plugin-root>\scripts\lib\verifier.js batch "$env:TEMP\evya-claims.json"
+node "$EVYA_AI\..\scripts\lib\verifier.js" batch "$env:TEMP\evya-claims.json"
 ```
 
 Generate `<id>_CodeReview.md` with the standard REVIEW_TEMPLATE structure.
@@ -345,12 +374,15 @@ in the DevSummary "Docs to update" section.
 
 ---
 
-## Phase 7 — DevSummary + ReleaseNotes drafts
+## Phase 7 — DevSummary draft
 
 - Fill `<id>_DevSummary.md`: ACs met, files touched, tests added, manual QA hints, docs to update,
   standards deviations (with justification), assumptions from Gate 1 defaults.
-- Draft `<id>_ReleaseNotes.md` — plain-language, user-facing paragraph + short bullet list.
-- Both artefacts held in memory until Gate 3 passes.
+- Held in memory until Gate 3 passes.
+
+> **Release notes are NOT drafted here.** `/evyasys:FinishQa` produces `_ReleaseNotes.md`
+> after QA sign-off — that's the correct stage for user-facing wording, once test outcomes
+> are known.
 
 ---
 
@@ -359,16 +391,14 @@ in the DevSummary "Docs to update" section.
 Present a single compact summary and wait for the user:
 
 ```
-🚀 Gate 3 — Ready to commit and update the board
+🚀 Gate 3 — Ready to finalise delivery
 
 Story: EVYA-XXXX — <title>
 Feature type: <CRUD / API / UI …>
 
-Changes:
+Changes (in your working tree — not committed):
 - N files modified, M created (+X lines / −Y lines net)
 - P new test cases across Q test files
-- Feature branch: feature/<id>-<title> (will create from `<detected default branch>` if missing)
-- Base branch auto-detected: main / master (via `origin/HEAD` symref)
 
 Quality gates:
   ✅ AC coverage       X/X ACs have covering tests
@@ -376,6 +406,7 @@ Quality gates:
   ✅ Security          [details or "N/A"]
   ✅ Accessibility     [details or "N/A"]
   ✅ Standards         All docs applied
+  ✅ Verifier          All fact-check claims passed
   ⚠️  Important        [K findings — details in CodeReview.md]
 
 Docs flagged for update:
@@ -385,7 +416,15 @@ Docs flagged for update:
 Assumptions from Gate 1:
 - Q3 answered "your call" — I chose (b) event-driven per PATTERNS.md.
 
-Approve? (y = commit locally + update PM to Ready for QA + notify · n = abort · d = show diff · s = show artefact <name>)
+On approval I will:
+  · Write 4 artefacts (TechBrainstorm, DevSummary, CodeReview, TestPlan) to .evyasys/board/**/<id>/
+  · Update PM state to Ready for QA
+  · Send one notification
+[If --commit was passed]
+  · Ensure feature branch `feature/<id>-<title>` exists (creating from `<default>` if needed)
+  · Create a local commit of the working-tree changes (never pushed)
+
+Approve? (y = proceed · n = abort · d = show diff of the changed files · s <name> = show artefact)
 ```
 
 If **BLOCKED** (Critical issues still failing after auto-fix):
@@ -403,38 +442,58 @@ Wait for user response. **Do nothing else until they answer.**
 
 ---
 
-## Phase 9 — Batch commit + PM update + notification
+## Phase 9 — Hook actions (batched)
 
 Runs **only on Gate 3 approval**.
 
 The hook takes care of the mechanical steps — you emit structured blocks (below) and the hook:
-1. Writes all artefacts to `.evyasys/board/**/<id>/`
-2. Creates the feature branch if missing
-3. Stages the source-file changes and creates a local commit (no push)
-4. Updates PM state (Story → Ready for QA)
-5. Fires ONE notification per story (or one per epic in epic mode)
+1. Writes all 4 artefacts (TechBrainstorm, DevSummary, CodeReview, TestPlan) to `.evyasys/board/**/<id>/`
+2. Updates PM state (Story → Ready for QA)
+3. Fires ONE notification per story (or one per epic in epic mode)
+4. Records traceability to `.evyasys/traceability.json`
+5. Regenerates `.evyasys/CONTEXT.md`
+6. **If and only if `commitEnabled: true` in the manifest**: ensures the feature branch,
+   stages the paths in `filesChanged`, and creates a local commit (never pushes)
 
-You do NOT run `git commit` yourself — the hook does it after parsing your output blocks.
+You never run git yourself. You never write to `.evyasys/board/` yourself.
 
 ---
 
 ## Phase 10 — Status report
 
 After the hook finishes, present a compact per-story status. When batch mode is used, present
-one line per story followed by a batch total:
+one line per story followed by a batch total.
 
+**Default mode (no `--commit`):**
 ```
 ✅ EVYA-XXXX delivered — Ready for QA
-   Files: 4 new · 3 modified · 87 net lines
+   Files changed (in your working tree — not committed): 4 new · 3 modified · 87 net lines
    Tests: 8 new
-   Commit: feat(EVYA-XXXX): <title> — a1b2c3d (local — not pushed)
+   Artefacts: TechBrainstorm.md · DevSummary.md · CodeReview.md · TestPlan.md
    PM state: In Progress → Ready for QA
    Notification: sent to #dev-team
 
 Next steps:
-  1. Review the diff: git diff main...feature/<id>-<title>
-  2. Push when ready: git push -u origin feature/<id>-<title>
-  3. QA sign-off: /evyasys:StartQa EVYA-XXXX
+  1. Review the changes:  git status  ·  git diff
+  2. Commit + push when ready
+  3. QA sign-off:  /evyasys:StartQa EVYA-XXXX
+```
+
+**With `--commit`:**
+```
+✅ EVYA-XXXX delivered — Ready for QA
+   Files: 4 new · 3 modified · 87 net lines
+   Tests: 8 new
+   Artefacts: TechBrainstorm.md · DevSummary.md · CodeReview.md · TestPlan.md
+   Branch: feature/EVYA-XXXX-title (created from main)
+   Commit: a1b2c3d — local, not pushed
+   PM state: In Progress → Ready for QA
+   Notification: sent to #dev-team
+
+Next steps:
+  1. Review the commit:  git show HEAD
+  2. Push when ready:    git push -u origin feature/EVYA-XXXX-title
+  3. QA sign-off:        /evyasys:StartQa EVYA-XXXX
 ```
 
 ---
@@ -461,9 +520,7 @@ For each story, emit **one** artefact block. After all stories, emit **one** bat
   "storyId": "EVYA-XXXX",
   "epicId": "EP-XXX",
   "title": "Short story title",
-  "featureBranch": "feature/EVYA-XXXX-short-title",
   "verdict": "SUCCESS",
-  "commitMessage": "feat(EVYA-XXXX): <title>\n\n<body>",
   "filesChanged": [
     { "path": "src/services/UserService.js", "status": "added" },
     { "path": "src/controllers/UserController.js", "status": "modified" }
@@ -472,11 +529,10 @@ For each story, emit **one** artefact block. After all stories, emit **one** bat
     "TechBrainstorm.md": "<full body>",
     "DevSummary.md":     "<full body>",
     "CodeReview.md":     "<full body>",
-    "TestPlan.md":       "<full body>",
-    "ReleaseNotes.md":   "<full body>"
+    "TestPlan.md":       "<full body>"
   },
   "docsToUpdate":  ["PATTERNS.md", "API_STANDARDS.md"],
-  "qualityGates":  { "ac": "PASS", "arch": "PASS", "security": "PASS", "a11y": "N/A", "standards": "PASS" },
+  "qualityGates":  { "ac": "PASS", "arch": "PASS", "security": "PASS", "a11y": "N/A", "standards": "PASS", "verifier": "PASS" },
   "assumptions":   ["Q3 answered 'your call' — chose (b) event-driven per PATTERNS.md"],
   "importantFindings": 2,
   "criticalFindings":  0
@@ -485,10 +541,22 @@ For each story, emit **one** artefact block. After all stories, emit **one** bat
 ```
 
 - `verdict`: `"SUCCESS"` | `"PARTIAL"` (Important findings remain — user still approved) | `"BLOCKED"` (aborted).
-- `commitMessage`: pass-through — the hook uses this verbatim for the local commit.
+- `filesChanged`: always emit — used for traceability and for the summary counts, even without `--commit`.
 - `filesChanged.status`: `"added"` | `"modified"` | `"deleted"`.
-- `artefacts`: full markdown body of each file — the hook writes them under `.evyasys/board/**/<id>/`.
-- `docsToUpdate`: list of doc filenames flagged; the hook records them in the DevSummary.
+- `artefacts`: exactly 4 files (TechBrainstorm, DevSummary, CodeReview, TestPlan). **Never `ReleaseNotes.md`** — FinishQa owns that artefact.
+- `docsToUpdate`: list of doc filenames flagged; the hook records them in traceability.
+- `qualityGates.verifier`: PASS only when the anti-hallucination fact-check batch returned all-pass. Never fake this.
+
+**Only if `--commit` was passed**, add these two extra fields:
+
+```
+  "featureBranch":   "feature/EVYA-XXXX-short-title",
+  "commitMessage":   "feat(EVYA-XXXX): <title>\n\n<body>",
+```
+
+- `commitMessage` is passed to `git commit -F <tmpfile>` verbatim.
+- `featureBranch` follows the naming convention `feature/<id>-<kebab-title>`.
+- Omit both fields when `--commit` was not passed — cleaner output.
 
 ### Batch manifest — one per run, at the end
 
@@ -500,7 +568,8 @@ For each story, emit **one** artefact block. After all stories, emit **one** bat
   ],
   "inputMode": "story",
   "epicGroups": [],
-  "projectName": "Customer Portal"
+  "projectName": "Customer Portal",
+  "commitEnabled": false
 }
 -->
 ```
@@ -508,3 +577,5 @@ For each story, emit **one** artefact block. After all stories, emit **one** bat
 - `inputMode`: `"story"` → hook notifies once per story · `"epic"` → hook notifies once per epic group.
 - `epicGroups` populated only in epic mode: `[{ "epicId": "EP-001", "storyIds": ["EVYA-1001", "EVYA-1002"] }]`.
   Use `"_standalone"` as `epicId` for stories supplied directly (not via an epic ID).
+- `commitEnabled`: `true` if `--commit` was passed in `$ARGUMENTS`; `false` otherwise (default).
+  The hook only runs branch/commit operations when this is `true`.

@@ -41,7 +41,7 @@
   },
   {
     "name": "Deliver",
-    "description": "End-to-end story delivery in one command — reads the story + subtasks, batches clarifying questions into one exchange, runs an architecture reference scan, writes the code following every loaded standard, runs a full self code-review with up to 2 auto-fix iterations, drafts a test plan, queues doc updates, drafts release notes; on your final approval commits locally on a feature branch, updates PM to Ready for QA, and fires one notification per story or epic. Three approval gates only. Never pushes."
+    "description": "End-to-end story delivery in one command — reads the story + subtasks, batches clarifying questions, runs an architecture reference scan, writes the code to the working tree following every loaded standard, runs a full self code-review with up to 2 auto-fix iterations plus an anti-hallucination verifier fact-check, drafts a test plan and DevSummary; on final approval writes 4 artefacts (TechBrainstorm, DevSummary, CodeReview, TestPlan), updates PM to Ready for QA, and fires one notification. Three approval gates only. No git operations by default — the developer commits and pushes. Opt-in `--commit` flag makes the hook additionally create the feature branch and a local commit (never pushed). Never drafts release notes (FinishQa owns that)."
   },
   {
     "name": "GenerateReleaseNote",

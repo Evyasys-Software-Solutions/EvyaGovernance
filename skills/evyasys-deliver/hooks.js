@@ -2,14 +2,22 @@
  * Post-agent hook for evyasys-deliver.
  *
  * End-to-end delivery: parses the agent's per-story artefact blocks and does
- * the mechanical work — writes artefact files, creates the feature branch,
- * commits the source-file changes locally, transitions PM state to Ready for QA,
- * fires one notification per story (or per epic in epic mode).
+ * the mechanical work — writes 4 artefact files (TechBrainstorm, DevSummary,
+ * CodeReview, TestPlan), transitions PM state to Ready for QA, fires one
+ * notification per story (or per epic in epic mode), records traceability,
+ * regenerates CONTEXT.md.
  *
- * The agent DOES the code work (writes source files during Phase 3).
- * The hook DOES the mechanical dispatch (git commit, PM update, notification).
+ * Git operations are OFF BY DEFAULT. The agent writes source code to the
+ * working tree; the developer commits and pushes themselves.
  *
- * Nothing is pushed to the remote — user pushes manually when ready.
+ * If the manifest sets `commitEnabled: true` (set by the workflow when the
+ * user passed `--commit` in $ARGUMENTS), the hook additionally:
+ *   · ensures the feature branch exists (creating from the auto-detected
+ *     default branch — main/master/origin-HEAD — if not)
+ *   · stages only the paths in `filesChanged` (validated for safety)
+ *   · creates a local commit via `git commit -F <tmpfile>` using the
+ *     agent-supplied `commitMessage`
+ * Never pushes.
  */
 const path            = require('path');
 const fs              = require('fs');
@@ -277,16 +285,23 @@ module.exports = async function (ctx) {
            (gateStr ? `\n      gates: ${gateStr}` : '');
   }).join('\n');
 
-  const prompt = `Ready to deliver ${deliverable.length} stor${deliverable.length !== 1 ? 'ies' : 'y'}?\n\n${summary}\n\n` +
-                 `Batch totals: ${totalFiles} src files · ${totalArtefacts} artefacts · ${totalDocs} doc(s) to flag for retrain\n\n` +
+  const commitEnabled = !!(manifest && manifest.commitEnabled);
+  const gitStep = commitEnabled
+    ? `  · Ensure feature branch exists and create a local commit of the working-tree changes (never pushed)\n`
+    : '';
+
+  const prompt = `Ready to finalise ${deliverable.length} stor${deliverable.length !== 1 ? 'ies' : 'y'}?\n\n${summary}\n\n` +
+                 `Batch totals: ${totalFiles} src files touched · ${totalArtefacts} artefacts · ${totalDocs} doc(s) to flag for retrain\n` +
+                 `Git behaviour: ${commitEnabled ? '🔧 --commit enabled (branch + local commit will be created)' : '📝 default (no git operations — you commit manually)'}\n\n` +
                  `For each story I will:\n` +
-                 `  1. Write artefacts to .evyasys/board/**/{storyId}/\n` +
-                 `  2. Create/checkout the feature branch and commit source changes locally (never pushed)\n` +
-                 `  3. Set state to Ready for QA in ${pmLabel}\n` +
-                 (hasNotify ? `  4. Send one dev-finished notification to ${notifyLabel} (per-story mode)\n` : '');
+                 `  · Write 4 artefacts to .evyasys/board/**/{storyId}/ (TechBrainstorm, DevSummary, CodeReview, TestPlan)\n` +
+                 gitStep +
+                 `  · Set state to Ready for QA in ${pmLabel}\n` +
+                 (hasNotify ? `  · Send one dev-finished notification to ${notifyLabel} (per-${manifest?.inputMode === 'epic' ? 'epic' : 'story'})\n` : '') +
+                 `  · Update traceability + refresh .evyasys/CONTEXT.md\n`;
 
   if (!(await ctx.confirm(prompt))) {
-    ctx.send('Delivery cancelled — nothing was written, committed, or notified.');
+    ctx.send('Delivery cancelled — nothing was written or notified. Working-tree changes are intact.');
     return;
   }
 
@@ -317,8 +332,8 @@ module.exports = async function (ctx) {
       result.errors.artefacts = err.message;
     }
 
-    // Phase B — Feature branch + local commit
-    if (s.featureBranch && Array.isArray(s.filesChanged) && s.filesChanged.length > 0) {
+    // Phase B — Feature branch + local commit (ONLY when --commit was passed)
+    if (commitEnabled && s.featureBranch && Array.isArray(s.filesChanged) && s.filesChanged.length > 0) {
       try {
         const br = ensureFeatureBranch(cfg.repoRoot, s.featureBranch);
         result.featureBranch = br.branch;
@@ -340,6 +355,11 @@ module.exports = async function (ctx) {
       } catch (err) {
         result.errors.commit = err.message;
       }
+    } else if (!commitEnabled) {
+      // Explicitly record the file count so the traceability entry still has it,
+      // but flag the state as "in working tree, uncommitted" for the status report.
+      result.workingTreeOnly = true;
+      result.filesInWorkingTree = (s.filesChanged || []).length;
     }
 
     // Phase C — PM state → Ready for QA
@@ -431,12 +451,15 @@ module.exports = async function (ctx) {
 
   for (const r of results) {
     const parts = [];
+    if ((r.artefacts || []).length > 0) parts.push(`${r.artefacts.length} artefact(s) written`);
+    if (r.workingTreeOnly && r.filesInWorkingTree > 0) {
+      parts.push(`${r.filesInWorkingTree} file(s) in working tree (uncommitted)`);
+    }
     if (r.featureBranch)  parts.push(`branch \`${r.featureBranch}\`${r.branchCreated ? ' (created)' : ''}${r.baseBranch ? ` from ${r.baseBranch}` : ''}`);
     if (r.commitSha)      parts.push(`commit \`${r.commitSha}\` (local — not pushed)`);
     if (r.commitNote)     parts.push(r.commitNote);
     if (r.pmUpdated)      parts.push(`PM → Ready for QA${r.pmId ? ` (#${r.pmId})` : ''}`);
     if (r.notified)       parts.push(`notified ${notifyLabel}`);
-    if ((r.artefacts || []).length > 0) parts.push(`${r.artefacts.length} artefact(s) written`);
 
     const errParts = [];
     if (r.errors.artefacts) errParts.push(`artefacts: ${r.errors.artefacts.slice(0, 80)}`);
@@ -454,12 +477,13 @@ module.exports = async function (ctx) {
     ctx.send(body);
   }
 
+  const nextStepsCommit = commitEnabled
+    ? `Next: review the commit with \`git show HEAD\`, push when ready (\`git push -u origin <feature-branch>\`), then \`/evyasys:StartQa <StoryID>\` to begin QA.`
+    : `Next: review the changes in your working tree with \`git status\` / \`git diff\`, commit + push when ready, then \`/evyasys:StartQa <StoryID>\` to begin QA.`;
+
   ctx.send(
     `\n📊 Delivery batch complete — ` +
     `${succeeded.length} succeeded, ${partial.length} with warnings, ${blocked.length} blocked.\n` +
-    (succeeded.length > 0
-      ? `Next: review with \`git diff <base>...HEAD\`, push when ready ` +
-        `(\`git push -u origin <feature-branch>\`), then \`/evyasys:StartQa <StoryID>\` to begin QA.`
-      : '')
+    (succeeded.length > 0 ? nextStepsCommit : '')
   );
 };
