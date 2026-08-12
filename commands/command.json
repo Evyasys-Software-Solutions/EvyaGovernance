@@ -54,5 +54,9 @@
   {
     "name": "Repair",
     "description": "Clean reinstall for broken plugin state — clears plugin cache and settings entries, then shows the 4-step reinstall sequence. Project config, credentials, docs, board artefacts, and compression preferences are never touched."
+  },
+  {
+    "name": "Diagnose",
+    "description": "Read-only 20-point health check across plugin install (dir resolution, commands/skills/workflows present, compression engine), project config (project.yaml validity, credentials decrypt, PM+notify configured), integrations reachability (PM API, notification webhook DNS, compression MCP), docs & memory (universal docs present, docs freshness thresholds, CONTEXT.md, functional docs), board consistency (every story has _UserStory.md, ado-map coverage), and git state (in git repo, default branch detected). Each check reported as PASS/WARN/FAIL/SKIP with an actionable fix. Never modifies state. Target under 15 seconds."
   }
 ]

@@ -19,6 +19,8 @@ const { loadConfig }     = require('../../scripts/lib/config');
 const adoMap             = require('../../scripts/lib/ado-map');
 const pm                 = require('../../scripts/lib/pm-adapter');
 const notify             = require('../../scripts/lib/notify-adapter');
+const traceability       = require('../../scripts/lib/traceability');
+const contextDoc         = require('../../scripts/lib/context-doc');
 
 // ── Parsing helpers ─────────────────────────────────────────────────────────────
 
@@ -369,7 +371,34 @@ module.exports = async function (ctx) {
       }
     }
 
+    // Phase E — Traceability (best-effort — never blocks delivery on I/O error)
+    try {
+      traceability.record(cfg.repoRoot, s.storyId, {
+        verdict:           s.verdict,
+        commitSha:         result.commitSha || null,
+        branch:            result.featureBranch || null,
+        epicId:            s.epicId || null,
+        filesTouched:      (s.filesChanged || []).map(f => f && f.path).filter(Boolean),
+        docsFlagged:       s.docsToUpdate || [],
+        criticalFindings:  s.criticalFindings  || 0,
+        importantFindings: s.importantFindings || 0,
+      });
+      result.tracked = true;
+    } catch (err) {
+      result.errors.traceability = err.message;
+    }
+
     results.push(result);
+  }
+
+  // Regenerate CONTEXT.md once after the batch — the always-loaded summary
+  // for every future command's Phase 0. Best-effort: failure logs a warning
+  // but never blocks the batch report.
+  const ctxRes = contextDoc.regenerate(cfg.repoRoot);
+  if (ctxRes.ok) {
+    ctx.send(`📝 Refreshed \`.evyasys/CONTEXT.md\` (${ctxRes.bytes} bytes) — always-loaded summary now current.`);
+  } else if (ctxRes.error) {
+    ctx.send(`⚠️  Could not refresh CONTEXT.md: ${ctxRes.error}`);
   }
 
   // Epic-mode batched notifications (one per epic group). `count` is passed

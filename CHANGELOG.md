@@ -10,6 +10,82 @@ Versioning: [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.PATCH`
 
 ---
 
+## [1.5.0] — 2026-08-12
+
+Four expert-level additions that raise the plugin to superpower quality: an always-loaded
+project summary that makes every command faster and less prone to hallucination, an
+anti-hallucination fact-checker for LLM claims, story traceability that survives across
+sessions, and a full 20-point health check.
+
+### Added
+
+- **`scripts/lib/context-doc.js` + `.evyasys/CONTEXT.md`** — auto-maintained "big picture"
+  summary of the project (tech stack, architecture, patterns, permission model, recent
+  deliveries, active board stories, health signals). Regenerated on every
+  `/evyasys:TrainDocs`, `/evyasys:CreateFunctionalDocs`, and `/evyasys:Deliver` run.
+  StartDev, ReviewDev, and Deliver PROMPTs now read this file first at Phase 0 — a small
+  single-file read that replaces multi-doc scanning as the primary ground-truth source.
+  Under 100 lines so it stays fast to load and easy to read.
+
+- **`scripts/lib/verifier.js`** — anti-hallucination verifier with both programmatic and
+  CLI interfaces. Fact-checks LLM claims against the actual codebase:
+    - `verifyFilePath` — does the claimed file actually exist?
+    - `verifySymbolExists` — does the referenced symbol exist anywhere in the repo (via `git grep` with fs-walk fallback)?
+    - `verifyPatternMarker` — does the file actually contain the claimed marker (e.g. "extends BaseService")?
+    - `verifyCodeParses` — does the JS/TS/Python actually parse? (uses `node --check`, `tsc`, `py_compile`)
+    - `verifyClaimBatch` — batch API used by the agent mid-run
+  CLI usage: `node scripts/lib/verifier.js batch claims.json`. Exit code 0 on all-pass, 1 on any fail. Deliver PROMPT Phase 4 now instructs the agent to invoke this before finalising the CodeReview verdict.
+
+- **`scripts/lib/traceability.js` + `.evyasys/traceability.json`** — records what every
+  Deliver run touched: files, docs flagged for retrain, commit SHA, feature branch,
+  verdict, findings counts. Atomic write via tmp+rename. Query API: `findByFile()`,
+  `findByDoc()`, `recent()`. CONTEXT.md consumes `recent()` to surface the last 5
+  delivered stories in the summary.
+
+- **`/evyasys:Diagnose` command** — 20-point read-only health check across 6 areas:
+    1. Plugin install (dir resolution, 15/15 commands, 15/15 skills, workflow dirs, compression engine)
+    2. Project config (`project.yaml` valid, credentials decrypt, PM+notify configured)
+    3. Integrations reachability (PM API, notification webhook DNS, compression MCP)
+    4. Docs & memory (universal docs present, 90/180-day freshness, CONTEXT.md, functional docs)
+    5. Board consistency (every story has `_UserStory.md`, ado-map coverage)
+    6. Git state (in git repo, default branch detected via `origin/HEAD` → main → master)
+  Each check reported as `✅ PASS · ⚠️  WARN · ❌ FAIL · ➖ SKIP` with an actionable fix.
+  Target under 15s. Never modifies state. Hook records history to `.evyasys/diagnostics.json`
+  (last 10 runs) so drift can be tracked over time.
+
+- **`.ai/workflows/diagnose/` + `skills/evyasys-diagnose/`** — full workflow and skill,
+  including CHECKLIST.md that enforces the "no fake results" contract (SKIP a check you
+  can't run, never fake a PASS).
+
+- **`commands/Diagnose.md`** — command file with the plugin-dir locator pattern.
+
+### Changed
+
+- **Deliver hook** — after each story succeeds it now:
+    - Records to `.evyasys/traceability.json` (files touched, docs flagged, commit SHA, verdict, findings counts)
+    - Regenerates `.evyasys/CONTEXT.md` at the end of the batch so the next command starts from fresh ground truth
+- **TrainDocs hook** — now regenerates CONTEXT.md after writing the 37 quality-gate docs.
+- **CreateFunctionalDocs hook** — now regenerates CONTEXT.md after writing functional docs.
+- **Deliver PROMPT Phase 0** — CONTEXT.md is the first file read (always-loaded summary).
+- **Deliver PROMPT Phase 4** — new anti-hallucination fact-check step: before finalising
+  the CodeReview verdict, the agent invokes `scripts/lib/verifier.js batch` on all claims
+  (files cited, symbols referenced, pattern markers claimed, generated code parses).
+  Verifier failures = Critical findings that must be resolved before Gate 3.
+- **StartDev + ReviewDev PROMPTs** — Step 0 now reads CONTEXT.md first (fast ground truth).
+- **`commands/command.json`** — Diagnose entry added (now 15 commands).
+- **README.md** — 15 Commands header, new Diagnose row (row 15) in the command table.
+
+### Why these matter (for the SDLC)
+
+- **No hallucination**: the verifier fact-checks every LLM claim before Gate 3 — no more "invented function names", "wrong file paths", or "pattern doesn't actually exist" going unnoticed.
+- **Speed**: CONTEXT.md is one small file read at Phase 0 instead of scanning 20+ heavy docs. Every downstream phase leans on it.
+- **Architecture management**: CONTEXT.md surfaces layers, patterns, permission model, active stories, and health signals in one view — architecture drift becomes visible.
+- **Feature documentation**: traceability.json links stories to files and docs — enables "which stories touched this module?" queries, and drives auto-triggered `TrainDocs --retrain` in future.
+- **Stability + maintainability**: Diagnose catches misconfiguration and drift before a delivery command hits it. Runs in under 15s.
+- **Team readiness**: onboarding a new teammate is now "read CONTEXT.md" instead of "read 40 docs".
+
+---
+
 ## [1.4.1] — 2026-08-12
 
 Deliver command hardening — a critical review of v1.4.0 surfaced 5 Critical and 5 Important

@@ -16,6 +16,7 @@
 const path = require('path');
 const fs   = require('fs');
 const { loadConfig } = require('../../scripts/lib/config');
+const contextDoc     = require('../../scripts/lib/context-doc');
 
 /**
  * Parse <!-- EVYAFUNCDOC: filename --> delimiters from agent output.
@@ -138,5 +139,9 @@ module.exports = async function (ctx) {
   if (created.length) ctx.send(`✅ Created (${created.length}): ${created.join(', ')}`);
   if (updated.length) ctx.send(`✅ Updated (${updated.length}): ${updated.join(', ')}`);
   ctx.send(`INDEX.md regenerated → .evyasys/docs/functional/`);
+
+  const ctxRes = contextDoc.regenerate(cfg.repoRoot);
+  if (ctxRes.ok) ctx.send(`📝 .evyasys/CONTEXT.md refreshed (${ctxRes.bytes} bytes).`);
+
   ctx.send('Functional docs ready. Use /evyasys:CreateFunctionalDocs --update <ModuleName> after significant feature changes.');
 };

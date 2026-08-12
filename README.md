@@ -66,7 +66,7 @@ When prompted, choose **Install for you (user scope)** so it works in every proj
 
 Then **fully quit Claude Code and reopen it** — commands appear after a fresh start.
 
-Type `/evya` — you should see 14 commands in autocomplete.
+Type `/evya` — you should see 15 commands in autocomplete.
 
 ---
 
@@ -262,7 +262,7 @@ Batch mode: any of steps 3–8 accept multiple story IDs or an epic ID.
 
 ---
 
-## The 14 Commands
+## The 15 Commands
 
 Type `/evya` in Claude Code to see all commands in autocomplete.
 
@@ -343,6 +343,7 @@ flowchart TD
 | 12 | Docs | `/evyasys:CreateFunctionalDocs [--all \| ModuleName \| --update ModuleName]` | 📋 BA / Tech Lead | Scan each business module; generate plain-language functional docs (entities, permissions, validations, actions, business logic, workflows, error scenarios) — structured for RAG retrieval | `.evyasys/docs/functional/` | — |
 | 13 | Maint | `/evyasys:Update` | 👤 Any | Check installed vs. latest version; show changelog; manage compression preference; guide through 3-command update sequence | (guidance only — no artefacts) | — |
 | 14 | Maint | `/evyasys:Repair` | 👤 Any | Clean reinstall for broken plugin state — clears plugin cache and settings entries, then shows reinstall commands. Project config, credentials, and docs are never touched. | (guidance only — no artefacts) | — |
+| 15 | Health | `/evyasys:Diagnose` | 👤 Any | **20-point read-only health check** across plugin install, project config, PM/notification reachability, docs freshness, board consistency, git state. PASS/WARN/FAIL/SKIP per check with actionable fixes. Target < 15s. | (report only) · `diagnostics.json` history | — |
 
 > Every state transition and every notification fires **only after your approval**. Both GO and NO-GO review results are always saved to disk.
 > **Batch mode:** Commands #5 (StartDev), #6 (ReviewDev), #7 (FinishDev), #8 (StartQa), #9 (FinishQa), and #10 (GenerateReleaseNote) all accept multiple story IDs, epic IDs, or a mix — epic IDs auto-expand to their child stories.

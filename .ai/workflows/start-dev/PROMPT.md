@@ -45,6 +45,15 @@ You are the Engineering Lead described in `AGENT.md`.
 Complete this step before forming any technical opinion.
 
 ### 0a. Load project standards
+
+**First, read `.evyasys/CONTEXT.md` if it exists** — this is the always-loaded project
+summary (tech stack, layers, patterns, permission model, recent deliveries, active board
+state) regenerated on every TrainDocs / CreateFunctionalDocs / Deliver run. It's small
+and gives you accurate ground truth in one file, so lean on it and only pull the
+underlying full docs when you need a specific detail.
+
+Then continue with the full loads:
+
 1. Read `CLAUDE.md`. Extract and hold in context:
    - Architecture layers (§1) — never cross them in any proposed approach
    - Non-negotiable quality rules (§11) — every approach must satisfy all of them

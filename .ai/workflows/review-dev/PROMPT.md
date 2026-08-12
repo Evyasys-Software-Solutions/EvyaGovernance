@@ -51,6 +51,10 @@ Evidence before claims — always.
 ## Step 0 — Load context
 Before touching the diff, load and internalise all inputs above in this order:
 
+0. **Read `.evyasys/CONTEXT.md` if it exists** — the always-loaded project summary
+   (tech stack, layers, patterns, permission model, recent deliveries). It's small
+   and gives you accurate ground truth in one file. Continue with the full loads
+   below for specific rules and standards.
 1. Read `.ai/rules/*.md` — list every rule as an active constraint.
 2. Read `.evyasys/rules/*.md` — apply any project overrides or additions; these win.
 3. Read `.evyasys/project.yaml` — note naming conventions, work-item type names, any team standards.

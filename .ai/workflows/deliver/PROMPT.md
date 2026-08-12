@@ -34,6 +34,10 @@ or a real test outcome. No estimates presented as facts. No commits without Gate
 
 Load all of the following in a single parallel batch:
 
+0. **`.evyasys/CONTEXT.md`** — the always-loaded project summary (small, ~50 lines).
+   This is the fastest path to accurate ground truth about the codebase. Read it FIRST.
+   If it does not exist, note it and continue — the individual docs below still give you
+   full coverage.
 1. **Story** — `.evyasys/board/**/<id>/<id>_UserStory.md` (via Glob to locate the folder)
 2. **Subtasks** — `.evyasys/board/**/<id>/subtasks/<id>_Subtasks.md`
 3. **Existing artefacts** — `<id>_TechBrainstorm.md`, `<id>_DevSummary.md`, `<id>_CodeReview*.md`,
@@ -265,6 +269,46 @@ If Critical issues are found on the first pass:
 
 If only Important issues remain → record them in `<id>_CodeReview.md` and continue.
 The verdict is `PARTIAL` when 0 Critical + ≥1 Important remain; `SUCCESS` when both are 0.
+
+### Anti-hallucination fact-check (run before finalising the verdict)
+
+Every "cite specific file:line" or "follows pattern X" claim in the CodeReview must be
+fact-checked against the actual code. Do this by invoking the plugin's verifier CLI in
+one Bash call per batch of claims:
+
+```bash
+# Write your claims to a temp file, then batch-check them
+cat > /tmp/evya-claims.json <<'JSON'
+[
+  { "type": "file",    "path": "src/services/UserService.js" },
+  { "type": "symbol",  "name": "BaseService" },
+  { "type": "pattern", "path": "src/services/UserService.js", "marker": "extends BaseService" },
+  { "type": "parse",   "path": "src/services/UserService.js" }
+]
+JSON
+node <plugin-root>/scripts/lib/verifier.js batch /tmp/evya-claims.json
+```
+
+- Every claim about a file existing → include one `"type": "file"` entry.
+- Every claim referencing a named symbol elsewhere in the codebase → include a `"type": "symbol"` entry.
+- Every claim about a pattern being followed → include a `"type": "pattern"` entry with the exact marker (e.g. `"extends BaseService"`, `"@Injectable"`).
+- Every new/modified JS/TS/PY file → include a `"type": "parse"` entry so we catch syntax errors before Gate 3.
+
+**If the verifier returns `ok: false`:** treat every failed claim as a Critical finding. Either:
+- Correct the code (a symbol reference was hallucinated → fix or remove it), or
+- Correct the CodeReview text (a citation was wrong → update it).
+
+**Do not present a CodeReview to Gate 3 with an unresolved verifier failure.** Hallucinated
+citations are worse than no citations because they erode trust in every future finding.
+
+On Windows PowerShell the equivalent is:
+```powershell
+$claims = @'
+[ {...} ]
+'@
+Set-Content -Path $env:TEMP\evya-claims.json -Value $claims
+node <plugin-root>\scripts\lib\verifier.js batch "$env:TEMP\evya-claims.json"
+```
 
 Generate `<id>_CodeReview.md` with the standard REVIEW_TEMPLATE structure.
 

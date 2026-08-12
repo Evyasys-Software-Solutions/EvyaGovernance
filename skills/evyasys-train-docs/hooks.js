@@ -14,6 +14,7 @@
 const path = require('path');
 const fs   = require('fs');
 const { loadConfig } = require('../../scripts/lib/config');
+const contextDoc     = require('../../scripts/lib/context-doc');
 
 /**
  * Split agent output on <!-- EVYADOC: filename --> delimiters.
@@ -122,9 +123,13 @@ module.exports = async function (ctx) {
     'utf8',
   );
 
+  // ── Refresh the always-loaded project summary ─────────────────────────────────
+  const ctxRes = contextDoc.regenerate(cfg.repoRoot);
+
   // ── Success ───────────────────────────────────────────────────────────────────
   if (created.length) ctx.send(`✅ Created (${created.length}): ${created.join(', ')}`);
   if (updated.length) ctx.send(`✅ Updated (${updated.length}): ${updated.join(', ')}`);
   ctx.send(`INDEX.md regenerated → .evyasys/docs/`);
-  ctx.send('Quality gates active. These documents are loaded by /evyasys:StartDev at Step 0.');
+  if (ctxRes.ok) ctx.send(`📝 .evyasys/CONTEXT.md refreshed (${ctxRes.bytes} bytes) — always-loaded project summary.`);
+  ctx.send('Quality gates active. These documents are loaded by every command at Phase 0.');
 };
